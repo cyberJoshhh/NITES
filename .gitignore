@@ -1,0 +1,50 @@
+# Python
+*.py[cod]
+*$py.class
+__pycache__/
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+# Redis
+dump.rdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project specific
+run_daphne.bat 
