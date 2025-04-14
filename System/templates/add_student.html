@@ -1,0 +1,203 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Pupil - OB Pagsasarili</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Include CSS files - sidebar.css must come first for proper overrides -->
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/add_student.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tdash.css' %}">
+    
+    <style>
+        /* Add any add_student specific styles that don't affect the sidebar */
+        .required-field:after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .form-note {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay"></div>
+
+    <!-- Include the sidebar -->
+    {% include 'sidebar.html' %}
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Register New Pupil</h1>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <form method="POST" action="{% url 'add_student' %}">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <!-- Student Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-child"></i> Student Information</h3>
+                        <div class="form-group">
+                            <label for="child_name" class="required-field">Child's Name</label>
+                            <input type="text" id="child_name" name="child_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sex" class="required-field">Sex</label>
+                            <select id="sex" name="sex" class="form-control" required>
+                                <option value="">Select Sex</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob" class="required-field">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="handedness" class="required-field">Handedness</label>
+                            <select id="handedness" name="handedness" class="form-control" required>
+                                <option value="">Select Handedness</option>
+                                <option value="Right">Right-handed</option>
+                                <option value="Left">Left-handed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studying" class="required-field">Currently Studying?</label>
+                            <select id="studying" name="studying" class="form-control" required>
+                                <option value="">Select Option</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth_order" class="required-field">Birth Order</label>
+                            <input type="text" id="birth_order" name="birth_order" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="num_siblings" class="required-field">Number of Siblings</label>
+                            <input type="number" id="num_siblings" name="num_siblings" class="form-control" required min="0">
+                        </div>
+                    </div>
+
+                    <!-- Address Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-map-marker-alt"></i> Address</h3>
+                        <div class="form-group">
+                            <label for="address" class="required-field">Street Address</label>
+                            <input type="text" id="address" name="address" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="barangay" class="required-field">Barangay</label>
+                            <input type="text" id="barangay" name="barangay" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="municipality" class="required-field">Municipality</label>
+                            <input type="text" id="municipality" name="municipality" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="province" class="required-field">Province</label>
+                            <input type="text" id="province" name="province" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="region" class="required-field">Region</label>
+                            <input type="text" id="region" name="region" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- Father's Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-male"></i> Father's Information</h3>
+                        <div class="form-group">
+                            <label for="father_name" class="required-field">Name</label>
+                            <input type="text" id="father_name" name="father_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="father_age" class="required-field">Age</label>
+                            <input type="number" id="father_age" name="father_age" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="father_occupation" class="required-field">Occupation</label>
+                            <input type="text" id="father_occupation" name="father_occupation" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="father_education" class="required-field">Education</label>
+                            <input type="text" id="father_education" name="father_education" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- Mother's Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-female"></i> Mother's Information</h3>
+                        <div class="form-group">
+                            <label for="mother_name" class="required-field">Name</label>
+                            <input type="text" id="mother_name" name="mother_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mother_age" class="required-field">Age</label>
+                            <input type="number" id="mother_age" name="mother_age" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="mother_occupation" class="required-field">Occupation</label>
+                            <input type="text" id="mother_occupation" name="mother_occupation" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mother_education" class="required-field">Education</label>
+                            <input type="text" id="mother_education" name="mother_education" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Login Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-lock"></i> Login Information</h3>
+                        <div class="form-group">
+                            <label for="username" class="required-field">Username</label>
+                            <input type="text" id="username" name="username" class="form-control" required>
+                            <p class="form-note">This will be used for parent login</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="password" class="required-field">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
+                            <p class="form-note">Choose a secure password</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Register Student</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Include sidebar JavaScript -->
+    <script src="{% static 'js/sidebar.js' %}"></script>
+</body>
+</html> 

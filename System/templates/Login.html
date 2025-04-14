@@ -1,0 +1,56 @@
+{% block content %}
+{% load static %}
+<!-- Add viewport meta tag for mobile responsiveness -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- Add Font Awesome and Google Fonts -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-image">
+            <div class="logo">
+                <i class="fas fa-seedling"></i>
+            </div>
+            <h2 style="text-align: center;">OB Pagsasarili ECCD Center</h2>
+            <p>Empowering children through personalized development tracking and support</p>
+        </div>
+        
+        <div class="login-form">
+            <div class="login-header">
+                <h3>Welcome!</h3>
+                <p>Please sign in to access your account</p>
+            </div>
+            
+            <form method="POST">
+                {% csrf_token %}
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label for="username">Full Name (as registered)</label>
+                    <i class="fas fa-user form-icon"></i>
+                    <input type="text" class="form-control" id="username" name="username" 
+                           placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <i class="fas fa-lock form-icon"></i>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

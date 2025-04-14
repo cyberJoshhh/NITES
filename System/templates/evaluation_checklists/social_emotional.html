@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Checklist - Social Emotional</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Add this to inherit your site's common styles -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            padding: 0;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* For parent view - add container margin for sidebar */
+        @media (min-width: 768px) {
+            .container {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .container {
+                margin-left: 0;
+                width: 100%;
+                padding: 20px 10px;
+            }
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2d6a4f;
+        }
+        .evaluation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .evaluation-table th, 
+        .evaluation-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .evaluation-table th {
+            background-color: #2d6a4f;
+            color: white;
+            font-weight: bold;
+        }
+        .evaluation-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .evaluation-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .italic-text {
+            font-style: italic;
+            color: #666;
+        }
+        .checkbox-cell {
+            text-align: center;
+            width: 80px;
+        }
+        .checkbox-input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .domain-nav {
+            width:1100px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .domain-link {
+            padding: 10px 20px;
+            background-color: white;
+            text-decoration: none;
+            color: #333;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            border: 1px solid #ddd;
+        }
+        .domain-link:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .domain-link.active {
+            background-color: #2d6a4f;
+            color: white;
+            border-color: #2d6a4f;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #2d6a4f;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #1b4332;
+        }
+        #total1, #total2, #total3 {
+            font-weight: bold;
+            color: #2d6a4f;
+            font-size: 1.1em;
+        }
+        @media (max-width: 768px) {
+            .evaluation-table {
+                font-size: 14px;
+            }
+            .domain-nav {
+                flex-direction: column;
+            }
+            .domain-link {
+                text-align: center;
+            }
+            .checkbox-cell {
+                width: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add mobile menu toggle and sidebar for parent view -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay"></div>
+
+    <!-- Include the sidebar -->
+    {% include 'sidebar.html' %}
+
+    <div class="container">
+        <!-- Check if user is parent and show appropriate back button -->
+        {% if request.user.is_parent %}
+            <a href="{% url 'parent_dashboard' %}" class="back-btn">Back to Dashboard</a>
+        {% else %}
+            <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
+        {% endif %}
+        
+        {% include 'evaluation_checklists/nav.html' with domain='social_emotional' %}
+
+        <div class="student-info" style="margin-bottom: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 8px;">
+            <h2 style="margin: 0; color: #2d6a4f;">Student: <span id="studentName">{{ student_name }}</span></h2>
+        </div>
+
+        <h1>Social-Emotional Domain</h1>
+
+        {% block checklist_content %}
+        <table class="evaluation-table">
+            <tr>
+                <th style="width: 5%"></th>
+                <th style="width: 20%">Social-Emotional</th>
+                <th style="width: 35%">Material/Procedure</th>
+                <th style="width: 10%">1st Eval</th>
+                <th style="width: 10%">2nd Eval</th>
+                <th style="width: 10%">3rd Eval</th>
+                <th style="width: 10%">Comments</th>
+            </tr>
+            <tr>
+                <td>1.</td>
+                <td>Enjoys watching activities of nearby people or animals</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2.</td>
+                <td>Friendly with strangers but initially may show slight anxiety or shyness</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3.</td>
+                <td>Plays alone but likes to be near familiar adults or brothers and sisters</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4.</td>
+                <td>Laughs or squeals aloud in play</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5.</td>
+                <td>Plays peek-a-boo (bulaga)</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6.</td>
+                <td>Rolls ball interactively with caregiver/examiner</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>7.</td>
+                <td>Hugs or cuddles toys</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8.</td>
+                <td>Demonstrates respect for elders using term like "po" and "opo"</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9.</td>
+                <td>Shares toys with others</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10.</td>
+                <td>Imitates adult activities (e.g., cooking, washing)</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>11.</td>
+                <td>Identifies feelings in others</td>
+                <td><span class="italic-text">Credit if the child can tell when the caregiver is feeling happy, sad, worried, etc. Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>12.</td>
+                <td>Appropriately uses cultural gestures of greeting without much prompting (e.g., mano, bless, kiss, etc.)</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>13.</td>
+                <td>Comfort playmates/siblings in distress</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>14.</td>
+                <td>Persists when face with a problem or obstacle to his wants</td>
+                <td><span class="italic-text">Credit if the child tries to solve the problem instead of crying when something stands in the way he wants (e.g., fastening a box with his treasures with a string if he lid no longer closes) Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>15.</td>
+                <td>Helps the family chores (e.g., wiping tables, watering plants, etc.)</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>16.</td>
+                <td>Curious about environment but knows when to stop asking questions of adults</td>
+                <td><span class="italic-text">Credit if the child asks questions about things around him but knows when he is being "enough" about the topic. Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>17.</td>
+                <td>Waits for his turn</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>18.</td>
+                <td>Ask permission to play with toy being used by another</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>19.</td>
+                <td>Defends possessions with determination</td>
+                <td><span class="italic-text">Credit if the child tries to hold on to what is his when someone tries to grab this from him. Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>20.</td>
+                <td>Plays organize group games fairly (e.g., does not cheat to win)</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>21.</td>
+                <td>Can talk about complex feelings (e.g., anger, sadness, worry) he sometimes feels</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>22.</td>
+                <td>Honors simple bargain with caregiver (e.g., plays outside only after cleaning/fixing his/her room)</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>23.</td>
+                <td>Watches responsibly over younger siblings/family members</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>24.</td>
+                <td>Cooperates with adults and peers in group situations without quarrels and conflicts</td>
+                <td><span class="italic-text">Parental report will suffice.</span></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()"></td>
+                <td class="checkbox-cell"><input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: right;"><strong>TOTAL SCORE</strong></td>
+                <td class="checkbox-cell"><span id="total1">0</span></td>
+                <td class="checkbox-cell"><span id="total2">0</span></td>
+                <td class="checkbox-cell"><span id="total3">0</span></td>
+                <td></td>
+            </tr>
+        </table>
+        {% endblock %}
+
+        <!-- For parent view, maybe disable form submission or adjust as needed -->
+        <div style="margin-top: 20px; text-align: center;">
+            <p><strong>Note:</strong> This is your child's evaluation checklist. Assessment is performed by teachers.</p>
+        </div>
+    </div>
+
+    <!-- Add sidebar toggle script -->
+    <script>
+        // Define calculateScores function globally
+        function calculateScores() {
+            const eval1Total = document.querySelectorAll('.eval1:checked').length;
+            const eval2Total = document.querySelectorAll('.eval2:checked').length;
+            const eval3Total = document.querySelectorAll('.eval3:checked').length;
+            
+            // Update display
+            document.getElementById('total1').textContent = eval1Total;
+            document.getElementById('total2').textContent = eval2Total;
+            document.getElementById('total3').textContent = eval3Total;
+            
+            // Update hidden form inputs
+            if (document.getElementById('eval1Score')) document.getElementById('eval1Score').value = eval1Total;
+            if (document.getElementById('eval2Score')) document.getElementById('eval2Score').value = eval2Total;
+            if (document.getElementById('eval3Score')) document.getElementById('eval3Score').value = eval3Total;
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle functionality
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            // Function to toggle sidebar
+            function toggleSidebar() {
+                if (sidebar) {
+                    sidebar.classList.toggle('active');
+                }
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.toggle('active');
+                }
+            }
+            
+            // Add click event to mobile menu toggle
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', toggleSidebar);
+            }
+            
+            // Close sidebar when clicking on overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', toggleSidebar);
+            }
+            
+            // Initial calculation of scores
+            calculateScores();
+            
+            // For parent view, disable checkboxes to make them read-only
+            const checkboxes = document.querySelectorAll('.checkbox-input');
+            checkboxes.forEach(checkbox => {
+                checkbox.disabled = true;
+            });
+        });
+    </script>
+</body>
+</html> 

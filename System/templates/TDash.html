@@ -1,0 +1,958 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Dashboard</title>
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Include CSS files -->
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tdash.css' %}">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Include the sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Dashboard</h1>
+            <div class="date">{% now "F d, Y" %}</div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon students">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ students|length }}</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon evaluations">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ users_count }}</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon messages">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>#Under Development#</Under></h3>
+                    <p>New Messages</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="page-header">
+            <h2 class="page-title">List of Pupils</h2>
+        </div>
+        
+        <!-- Search bar for students -->
+        <div class="search-container">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="studentSearch" placeholder="Search students by name..." class="search-input">
+                <button id="clearSearch" class="clear-search" style="display: none;"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <div class="students-grid">
+            {% for student in students %}
+            <div class="student-card">
+                <div class="student-name">{{ student.child_name }}</div>
+                <div class="student-info">
+                    <p><i class="fas fa-venus-mars"></i> <strong>Sex:</strong> {{ student.sex }}</p>
+                    <p><i class="fas fa-birthday-cake"></i> <strong>Date of Birth:</strong> {{ student.dob }}</p>
+                    <p data-parent="father"><i class="fas fa-male"></i> <strong>Father:</strong> {{ student.father_name }}</p>
+                    <p data-parent="mother"><i class="fas fa-female"></i> <strong>Mother:</strong> {{ student.mother_name }}</p>
+                </div>
+                <div class="card-actions">
+                    <a href="{% url 'evaluation_checklist' %}?student_name={{ student.child_name }}" class="btn btn-update">
+                        <i class="fas fa-clipboard-list"></i> Evaluate
+                    </a>
+                    <a href="#" class="btn btn-update" onclick="openPerformanceModal('{{ student.child_name }}')">
+                        <i class="fas fa-chart-bar"></i> Performance
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-users-slash"></i>
+                <p>No students found. Add your first student!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title">Register New Student</h2>
+            <form method="POST" action="{% url 'add_student' %}">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <!-- Student Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-child"></i> Student Information</h3>
+                        <div class="form-group">
+                            <label for="child_name">Child's Name</label>
+                            <input type="text" id="child_name" name="child_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sex">Sex</label>
+                            <select id="sex" name="sex" class="form-control" required>
+                                <option value="">Select Sex</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="handedness">Handedness</label>
+                            <select id="handedness" name="handedness" class="form-control" required>
+                                <option value="">Select Handedness</option>
+                                <option value="Right">Right-handed</option>
+                                <option value="Left">Left-handed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studying">Currently Studying?</label>
+                            <select id="studying" name="studying" class="form-control" required>
+                                <option value="">Select Option</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth_order">Birth Order</label>
+                            <input type="text" id="birth_order" name="birth_order" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="num_siblings">Number of Siblings</label>
+                            <input type="number" id="num_siblings" name="num_siblings" class="form-control" required min="0">
+                        </div>
+                    </div>
+
+                    <!-- Address Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-map-marker-alt"></i> Address</h3>
+                        <div class="form-group">
+                            <label for="address">Street Address</label>
+                            <input type="text" id="address" name="address" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="barangay">Barangay</label>
+                            <input type="text" id="barangay" name="barangay" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="municipality">Municipality</label>
+                            <input type="text" id="municipality" name="municipality" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="province">Province</label>
+                            <input type="text" id="province" name="province" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="region">Region</label>
+                            <input type="text" id="region" name="region" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- Father's Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-male"></i> Father's Information</h3>
+                        <div class="form-group">
+                            <label for="father_name">Name</label>
+                            <input type="text" id="father_name" name="father_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="father_age">Age</label>
+                            <input type="number" id="father_age" name="father_age" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="father_occupation">Occupation</label>
+                            <input type="text" id="father_occupation" name="father_occupation" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="father_education">Education</label>
+                            <input type="text" id="father_education" name="father_education" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- Mother's Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-female"></i> Mother's Information</h3>
+                        <div class="form-group">
+                            <label for="mother_name">Name</label>
+                            <input type="text" id="mother_name" name="mother_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mother_age">Age</label>
+                            <input type="number" id="mother_age" name="mother_age" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="mother_occupation">Occupation</label>
+                            <input type="text" id="mother_occupation" name="mother_occupation" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mother_education">Education</label>
+                            <input type="text" id="mother_education" name="mother_education" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Login Information -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-lock"></i> Login Information</h3>
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Register Student</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Performance Modal -->
+    <div id="performanceModal" class="modal">
+        <div class="modal-content performance-modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title">Pupil's Performance</h2>
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="domain-icon"><i class="fas fa-chart-bar"></i></div>
+                    <h3 id="performance-student-name"></h3>
+                </div>
+                <div class="card-body">
+                    <div id="performance-loading">Loading performance data...</div>
+                    <div id="performance-content" style="display: none;">
+                        <table class="performance-table">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>1st Eval (Teacher)</th>
+                                    <th>1st Eval (Parent)</th>
+                                    <th>2nd Eval (Teacher)</th>
+                                    <th>2nd Eval (Parent)</th>
+                                    <th>3rd Eval (Teacher)</th>
+                                    <th>3rd Eval (Parent)</th>
+                                    <th class="total-column">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-running" style="color: rgb(255, 99, 132);"></i> Gross Motor
+                                    </td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-hand-paper" style="color: rgb(54, 162, 235);"></i> Fine Motor
+                                    </td>
+                                    <td class="teacher-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="teacher-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="teacher-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-hands-helping" style="color: rgb(75, 192, 192);"></i> Self Help
+                                    </td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-ear-listen" style="color: rgb(153, 102, 255);"></i> Receptive Language
+                                    </td>
+                                    <td class="teacher-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="teacher-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="teacher-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-comments" style="color: rgb(255, 159, 64);"></i> Expressive Language
+                                    </td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-brain" style="color: rgb(255, 205, 86);"></i> Cognitive
+                                    </td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="teacher-score">0</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-users" style="color: rgb(201, 203, 207);"></i> Social-Emotional
+                                    </td>
+                                    <td>N/A</td>
+                                    <td class="parent-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="parent-score">0</td>
+                                    <td>N/A</td>
+                                    <td class="parent-score">0</td>
+                                    <td class="domain-total">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="performance-chart-container" class="chart-container" style="display: none;">
+                        <h4 style="text-align: center; color: var(--primary); margin-bottom: 20px; font-weight: 600;">Development Domains Progress</h4>
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <a href="" id="view-full-report" class="btn btn-primary">View Full Report</a>
+                <button class="btn btn-secondary close-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include sidebar JavaScript -->
+    <script src="{% static 'js/sidebar.js' %}"></script>
+    
+    <!-- Add Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Hidden chat container for WebSocket initialization -->
+    <div id="chat-container" data-room="general" data-username="{{ request.user.username }}" style="display: none;"></div>
+    
+    <!-- WebSocket diagnostics -->
+    <div id="ws-diagnostics" style="position: fixed; bottom: 20px; right: 20px; display: none; background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 9999; max-width: 350px;">
+        <h4>WebSocket Diagnostics</h4>
+        <div id="ws-status-details">Loading...</div>
+        <button id="force-reconnect" class="btn btn-sm btn-primary mt-2">Force Reconnect</button>
+        <button id="close-diagnostics" class="btn btn-sm btn-secondary mt-2 ms-2">Close</button>
+    </div>
+    
+    <script>
+        // Diagnostics buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add toggle diagnostics to chat status
+            const chatStatus = document.getElementById('chat-status');
+            if (chatStatus) {
+                chatStatus.style.cursor = 'pointer';
+                chatStatus.title = 'Click to show WebSocket diagnostics';
+                chatStatus.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.getElementById('ws-diagnostics').style.display = 'block';
+                    updateDiagnostics();
+                });
+            }
+            
+            // Close diagnostics
+            document.getElementById('close-diagnostics').addEventListener('click', function() {
+                document.getElementById('ws-diagnostics').style.display = 'none';
+            });
+            
+            // Force reconnect
+            document.getElementById('force-reconnect').addEventListener('click', function() {
+                if (window.chatWs) {
+                    if (window.chatWs.socket) {
+                        window.chatWs.socket.close();
+                    }
+                    window.chatWs.connect();
+                    updateDiagnostics();
+                }
+            });
+            
+            function updateDiagnostics() {
+                const statusDetails = document.getElementById('ws-status-details');
+                let html = '';
+                
+                if (window.chatWs) {
+                    const state = window.chatWs.socket ? 
+                        ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][window.chatWs.socket.readyState] : 
+                        'Not initialized';
+                    
+                    html += `<div><strong>Socket State:</strong> ${state}</div>`;
+                    html += `<div><strong>Connection Attempts:</strong> ${window.chatWs.connectionAttempts}</div>`;
+                    html += `<div><strong>Room:</strong> ${window.chatWs.roomName}</div>`;
+                    html += `<div><strong>Username:</strong> ${window.chatWs.username}</div>`;
+                    html += `<div><strong>URL:</strong> ${window.location.href}</div>`;
+                } else {
+                    html = '<div class="text-danger">WebSocket not initialized</div>';
+                }
+                
+                statusDetails.innerHTML = html;
+            }
+        });
+        
+        // Get the performance modal
+        var performanceModal = document.getElementById("performanceModal");
+        
+        // Student search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('studentSearch');
+            const clearButton = document.getElementById('clearSearch');
+            const studentCards = document.querySelectorAll('.student-card');
+            
+            // Function to filter students based on search input
+            function filterStudents() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                let hasResults = false;
+                
+                studentCards.forEach(card => {
+                    const studentName = card.querySelector('.student-name').textContent.toLowerCase();
+                    if (studentName.includes(searchTerm)) {
+                        card.style.display = '';
+                        hasResults = true;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                // Show clear button if search has input
+                if (searchTerm.length > 0) {
+                    clearButton.style.display = 'block';
+                } else {
+                    clearButton.style.display = 'none';
+                }
+                
+                // Show empty state if no results
+                const emptyState = document.querySelector('.empty-state');
+                if (emptyState) {
+                    if (!hasResults && searchTerm.length > 0) {
+                        emptyState.style.display = 'flex';
+                        emptyState.innerHTML = '<i class="fas fa-search"></i><p>No students found matching "' + searchInput.value + '"</p>';
+                    } else if (studentCards.length === 0) {
+                        emptyState.style.display = 'flex';
+                        emptyState.innerHTML = '<i class="fas fa-users-slash"></i><p>No students found. Add your first student!</p>';
+                    } else {
+                        emptyState.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Event listeners
+            searchInput.addEventListener('input', filterStudents);
+            
+            // Clear search
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                filterStudents();
+                searchInput.focus();
+            });
+        });
+        
+        // Performance Modal functions
+        function openPerformanceModal(studentName) {
+            // Set student name in the modal
+            document.getElementById("performance-student-name").textContent = studentName + "'s Overall Performance";
+            document.getElementById("view-full-report").href = "{% url 'student_performance' %}?student_name=" + encodeURIComponent(studentName);
+            
+            // Display the modal
+            performanceModal.style.display = "block";
+            
+            // Show loading state
+            document.getElementById("performance-loading").style.display = "block";
+            document.getElementById("performance-content").style.display = "none";
+            document.getElementById("performance-chart-container").style.display = "none";
+            
+            // Fetch actual data from API
+            fetch(`{% url 'get_student_performance_data' %}?student_name=${encodeURIComponent(studentName)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update table data
+                        updatePerformanceTable(data.table_data, data.totals);
+                        
+                        // Create chart with real data
+                        createPerformanceChart(data.chart_data);
+                        
+                        // Show content and hide loading
+                        document.getElementById("performance-loading").style.display = "none";
+                        document.getElementById("performance-content").style.display = "block";
+                        document.getElementById("performance-chart-container").style.display = "block";
+                    } else {
+                        // Show error message
+                        document.getElementById("performance-loading").innerHTML = 
+                            `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${data.message || 'Error loading data'}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching student data:', error);
+                    document.getElementById("performance-loading").innerHTML = 
+                        `<div class="error-message"><i class="fas fa-exclamation-circle"></i> Error loading data: ${error.message}</div>`;
+                });
+        }
+        
+        // Function to update the performance table with actual data
+        function updatePerformanceTable(tableData, totals) {
+            // Update Gross Motor row
+            updateTableRow('Gross Motor', tableData.gross_motor, totals.gross_motor);
+            
+            // Update Fine Motor row
+            updateTableRow('Fine Motor', tableData.fine_motor, totals.fine_motor);
+            
+            // Update Self Help row
+            updateTableRow('Self Help', tableData.self_help, totals.self_help);
+            
+            // Update Receptive Language row
+            updateTableRow('Receptive Language', tableData.receptive, totals.receptive);
+            
+            // Update Expressive Language row
+            updateTableRow('Expressive Language', tableData.expressive, totals.expressive);
+            
+            // Update Cognitive row
+            updateTableRow('Cognitive', tableData.cognitive, totals.cognitive);
+            
+            // Update Social-Emotional row
+            updateTableRow('Social-Emotional', tableData.social, totals.social);
+        }
+        
+        // Helper function to update a single table row
+        function updateTableRow(domainName, domainData, total) {
+            // Find the row by domain name
+            const rows = document.querySelectorAll('.performance-table tbody tr');
+            let row;
+            
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i].querySelector('td').textContent.trim().includes(domainName)) {
+                    row = rows[i];
+                    break;
+                }
+            }
+            
+            if (!row) return;
+            
+            // Update the cells with data
+            const cells = row.querySelectorAll('td');
+            
+            // Teacher Eval 1
+            if (domainData.teacher_eval1 !== 'N/A') {
+                cells[1].textContent = domainData.teacher_eval1;
+                cells[1].classList.add('teacher-score');
+            } else {
+                cells[1].textContent = 'N/A';
+                cells[1].classList.remove('teacher-score');
+            }
+            
+            // Parent Eval 1
+            if (domainData.parent_eval1 !== 'N/A') {
+                cells[2].textContent = domainData.parent_eval1;
+                cells[2].classList.add('parent-score');
+            } else {
+                cells[2].textContent = 'N/A';
+                cells[2].classList.remove('parent-score');
+            }
+            
+            // Teacher Eval 2
+            if (domainData.teacher_eval2 !== 'N/A') {
+                cells[3].textContent = domainData.teacher_eval2;
+                cells[3].classList.add('teacher-score');
+            } else {
+                cells[3].textContent = 'N/A';
+                cells[3].classList.remove('teacher-score');
+            }
+            
+            // Parent Eval 2
+            if (domainData.parent_eval2 !== 'N/A') {
+                cells[4].textContent = domainData.parent_eval2;
+                cells[4].classList.add('parent-score');
+            } else {
+                cells[4].textContent = 'N/A';
+                cells[4].classList.remove('parent-score');
+            }
+            
+            // Teacher Eval 3
+            if (domainData.teacher_eval3 !== 'N/A') {
+                cells[5].textContent = domainData.teacher_eval3;
+                cells[5].classList.add('teacher-score');
+            } else {
+                cells[5].textContent = 'N/A';
+                cells[5].classList.remove('teacher-score');
+            }
+            
+            // Parent Eval 3
+            if (domainData.parent_eval3 !== 'N/A') {
+                cells[6].textContent = domainData.parent_eval3;
+                cells[6].classList.add('parent-score');
+            } else {
+                cells[6].textContent = 'N/A';
+                cells[6].classList.remove('parent-score');
+            }
+            
+            // Total
+            cells[7].textContent = total;
+        }
+        
+        // Close modal when X is clicked
+        var performanceCloseBtn = performanceModal.querySelector(".close");
+        if (performanceCloseBtn) {
+            performanceCloseBtn.onclick = function() {
+                performanceModal.style.display = "none";
+            }
+        }
+        
+        // Close modal when close button is clicked
+        var closeModalBtn = performanceModal.querySelector(".close-modal");
+        if (closeModalBtn) {
+            closeModalBtn.onclick = function() {
+                performanceModal.style.display = "none";
+            }
+        }
+        
+        // Create performance chart with the provided data
+        function createPerformanceChart(chartData) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Check if a chart already exists and destroy it
+            if (window.performanceChart && typeof window.performanceChart.destroy === 'function') {
+                window.performanceChart.destroy();
+            }
+            
+            // Create the new chart
+            window.performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: chartData.datasets.map(dataset => ({
+                        ...dataset,
+                        borderWidth: 3,
+                        tension: 0.3
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: "'Poppins', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleFont: {
+                                family: "'Poppins', sans-serif",
+                                size: 14
+                            },
+                            bodyFont: {
+                                family: "'Poppins', sans-serif",
+                                size: 13
+                            },
+                            padding: 15,
+                            cornerRadius: 8,
+                            displayColors: true
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+        
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == performanceModal) {
+                performanceModal.style.display = "none";
+            }
+        }
+    </script>
+
+    <style>
+        /* Existing styles */
+        
+        /* Search bar styles */
+        .search-container {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .search-box {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 40px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary, #52b788);
+            box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.25);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+        
+        .clear-search {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .clear-search:hover {
+            color: #666;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            background: #f9f9f9;
+            border-radius: 10px;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: modalFadeIn 0.3s;
+        }
+        
+        @keyframes modalFadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        /* Performance Modal Styles */
+        .performance-modal-content {
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .performance-table th,
+        .performance-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .performance-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .performance-table .total-column {
+            background-color: #52b788;
+            color: white;
+        }
+        
+        .performance-table .domain-total {
+            background-color: #f0f7f4;
+            font-weight: bold;
+            border-left: 2px solid #52b788;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin: 30px auto 0;
+        }
+        
+        .card-header {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        
+        .domain-icon {
+            font-size: 1.5rem;
+            color: #52b788;
+            margin-right: 15px;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #52b788;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-primary {
+            background-color: #52b788;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: #d9534f;
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1rem;
+        }
+
+        .error-message i {
+            margin-right: 8px;
+        }
+    </style>
+</body>
+</html>

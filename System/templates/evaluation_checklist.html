@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Checklist</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .evaluation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .evaluation-table th, 
+        .evaluation-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .evaluation-table th {
+            background-color: #4a4a4a;
+            color: white;
+        }
+        .present-cell {
+            display: flex;
+            justify-content: space-between;
+        }
+        .eval-box {
+            border: 1px solid #000;
+            padding: 2px 8px;
+            margin: 0 2px;
+        }
+        .back-btn {
+            margin-bottom: 20px;
+        }
+        .italic-text {
+            font-style: italic;
+        }
+        .checkbox-cell {
+            text-align: center;
+        }
+        .checkbox-input {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
+        <h1>Gross Motor Domain</h1>
+
+        <table class="evaluation-table">
+            <tr>
+                <th style="width: 5%"></th>
+                <th style="width: 20%">Gross Motor</th>
+                <th style="width: 35%">Material / Procedure</th>
+                <th style="width: 10%">1st Eval</th>
+                <th style="width: 10%">2nd Eval</th>
+                <th style="width: 10%">3rd Eval</th>
+                <th style="width: 10%">Comments</th>
+            </tr>
+            <tr>
+                <td>1.</td>
+                <td>Climbs on the chair or other elevated furniture like a bed without a help</td>
+                <td>Parental report will suffice.</td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2.</td>
+                <td>Walk backwards</td>
+                <td>
+                    MATERIAL: toy<br>
+                    PROCEDURE:<br>
+                    Ask the child to walk backwards by demonstrating this. <span class="italic-text">Credit if the child is able to walk backwards without falling and holding anything.</span> Parental report will suffice.
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3.</td>
+                <td>Runs without tripping or falling</td>
+                <td>
+                    MATERIAL: ball<br>
+                    PROCEDURE:<br>
+                    Encourage the child to run by rolling a ball across the floor. <span class="italic-text">Credit if the child can run past and without tripping or falling</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4.</td>
+                <td>Walks downstairs, 2 feet on each step, with one handheld</td>
+                <td>
+                    <span class="italic-text">Automatically credit if item #6 is passed.</span><br>
+                    Parental report will suffice.
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5.</td>
+                <td>Walks upstairs holding onto a handrail, 2 feet on each step</td>
+                <td>
+                    MATERIAL: toy<br>
+                    PROCEDURE:<br>
+                    Place a toy in the middle of the 4th and 5th step and ask the child to walk up the stairs to get the toy. <span class="italic-text">Credit if the child walks up the stairs using the handrail or wall for support and places both feet on each step before stepping on the next one.</span> Automatically credit if item #6 is passed. Parental report will suffice.
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6.</td>
+                <td>Walks upstairs with alternate feet without holding onto a handrail</td>
+                <td>
+                    MATERIAL: toy<br>
+                    PROCEDURE:<br>
+                    Place a toy in the middle of the 4th and 5th step and ask the child to walk up the stairs to get the toy. <span class="italic-text">Credit if the child walks upstairs, alternating his feet as he steps on each successive step without holding onto the handrail or wall for support.</span> Parental report will suffice.
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>7.</td>
+                <td>Walks downstairs with alternate feet without holding onto a handrail</td>
+                <td>
+                    MATERIAL: toy<br>
+                    PROCEDURE:<br>
+                    Place a toy at the bottom of the stairs and ask the child to walk downstairs to get the toy. <span class="italic-text">Credit if the child walks upstairs, alternating his feet as he steps on each successive step without holding onto the handrail or wall for support. Do not give credit if the child places both feet on the step or uses the handrail or wall for support.</span> Parental report will suffice.
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8.</td>
+                <td>Moves body part as directed</td>
+                <td>
+                    PROCEDURE:<br>
+                    Ask the child to raise both arms
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9.</td>
+                <td>Jumps up</td>
+                <td>
+                    <span class="italic-text">This must be elicited by the interviewer.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10.</td>
+                <td>Throws ball overhead with direction</td>
+                <td>
+                    MATERIAL: ball<br>
+                    PROCEDURE:<br>
+                    Give the child the ball and stand at least 3 feet away from him. Ask the child to throw. You may show the child how to it. <span class="italic-text">Credit if the child throws the ball within you arm's reach between your knees and head using an overhand throw and not sideways of underhand.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>11.</td>
+                <td>Hops 3 steps on preferred foot</td>
+                <td>
+                    PROCEDURE:<br>
+                    Ask the child to lift his foot and hot at least 3 times on his preferred foot. <span class="italic-text">Credits if the child is able to hop at least 3 times on his preferred foot without holding on to anything.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>12.</td>
+                <td>Jumps and turns</td>
+                <td>
+                    PROCEDURES:<br>
+                    Ask the child to jump while making a half-turn. <span class="italic-text">Credit if the child is able to do this without tripping or falling.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>13.</td>
+                <td>Dances patterns/joins group movement activities</td>
+                <td>
+                    Parental report will suffice.
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: right;"><strong>TOTAL SCORE</strong></td>
+                <td class="checkbox-cell"><span id="total1">0</span></td>
+                <td class="checkbox-cell"><span id="total2">0</span></td>
+                <td class="checkbox-cell"><span id="total3">0</span></td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        function calculateScores() {
+            // Calculate total for each evaluation column
+            const eval1Total = document.querySelectorAll('.eval1:checked').length;
+            const eval2Total = document.querySelectorAll('.eval2:checked').length;
+            const eval3Total = document.querySelectorAll('.eval3:checked').length;
+
+            // Update the total score displays
+            document.getElementById('total1').textContent = eval1Total;
+            document.getElementById('total2').textContent = eval2Total;
+            document.getElementById('total3').textContent = eval3Total;
+        }
+
+        // Add classes to all checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            // First evaluation checkboxes
+            const firstEvalBoxes = document.querySelectorAll('td:nth-child(4) input[type="checkbox"]');
+            firstEvalBoxes.forEach(box => box.classList.add('eval1'));
+
+            // Second evaluation checkboxes
+            const secondEvalBoxes = document.querySelectorAll('td:nth-child(5) input[type="checkbox"]');
+            secondEvalBoxes.forEach(box => box.classList.add('eval2'));
+
+            // Third evaluation checkboxes
+            const thirdEvalBoxes = document.querySelectorAll('td:nth-child(6) input[type="checkbox"]');
+            thirdEvalBoxes.forEach(box => box.classList.add('eval3'));
+
+            // Add onchange event to all checkboxes
+            const allCheckboxes = document.querySelectorAll('.checkbox-input');
+            allCheckboxes.forEach(box => box.addEventListener('change', calculateScores));
+        });
+    </script>
+</body>
+</html> 

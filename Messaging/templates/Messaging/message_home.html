@@ -1,0 +1,1079 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/messaging/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<style>
+    /* Add additional styles to ensure visibility */
+    .chat-interface {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .d-none {
+        display: none !important;
+    }
+    
+    .chat-interface.d-none {
+        display: none !important;
+    }
+    
+    .chat-interface:not(.d-none) {
+        display: flex !important;
+    }
+    
+    /* Add styles to accommodate sidebar */
+    .messaging-content {
+        margin-left: 250px;
+        width: calc(100% - 250px);
+        transition: margin-left 0.3s ease;
+        position: relative;
+        z-index: 1; /* Ensure content is above any overlays */
+    }
+    
+    /* Fix sidebar visibility - use !important for overriding */
+    #sidebar {
+        background: linear-gradient(135deg, #2d6a4f, #1b4332) !important;
+        color: white !important;
+        z-index: 1000 !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        display: block !important;
+        height: 100vh !important;
+        width: 250px !important;
+        padding: 20px !important;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2) !important;
+        transition: transform 0.3s ease !important;
+        transform: translateX(0) !important;
+        will-change: transform;
+        pointer-events: auto !important; /* Ensure sidebar can be interacted with */
+    }
+    
+    .sidebar-header h2, .sidebar-header h3 {
+        color: white !important;
+    }
+    
+    .sidebar-btn, .logout-btn {
+        color: white !important;
+        pointer-events: auto !important; /* Ensure buttons can be clicked */
+    }
+    
+    /* Ensure tabs are visible and working properly */
+    .nav-pills .nav-link {
+        cursor: pointer;
+        color: #2d6a4f;
+        font-weight: 500;
+        pointer-events: auto !important; /* Ensure tabs can be clicked */
+    }
+    
+    .nav-pills .nav-link.active {
+        background-color: #2d6a4f;
+        color: white;
+    }
+    
+    .tab-content {
+        display: block;
+        width: 100%;
+    }
+    
+    .tab-pane {
+        opacity: 0;
+        height: 0;
+        overflow: hidden;
+        transition: opacity 0.3s;
+    }
+    
+    .tab-pane.active,
+    .tab-pane.show.active {
+        opacity: 1;
+        height: auto;
+        overflow: visible;
+    }
+    
+    /* Fix group list display */
+    .group-list, .contact-list {
+        max-height: 60vh;
+        overflow-y: auto;
+        pointer-events: auto !important; /* Ensure lists can be interacted with */
+    }
+    
+    /* Make sure contact items are clickable */
+    .contact-item, .group-item {
+        cursor: pointer !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Mobile menu toggle button */
+    #mobileMenuToggle {
+        display: none;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1100;
+        background-color: #2d6a4f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        pointer-events: auto !important; /* Ensure button can be clicked */
+    }
+    
+    /* Make sure message input and buttons are clickable */
+    .chat-input, .input-group, .form-control, .input-group-append, .btn {
+        pointer-events: auto !important;
+    }
+    
+    /* Remove any overlay that might be blocking interactions */
+    #sidebarOverlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background-color: rgba(0,0,0,0.5) !important;
+        z-index: 999 !important;
+        display: none !important; /* Hide by default */
+        pointer-events: auto !important; /* Ensure it can be clicked */
+    }
+    
+    #sidebarOverlay.active {
+        display: block !important;
+    }
+    
+    /* Tablet responsive adjustments */
+    @media (max-width: 992px) {
+        .messaging-content {
+            margin-left: 80px;
+            width: calc(100% - 80px);
+        }
+        
+        #sidebar {
+            width: 80px !important;
+            padding: 15px 10px !important;
+        }
+        
+        .sidebar-header h2, .sidebar-header h3, .sidebar-btn span {
+            display: none !important;
+        }
+        
+        .sidebar-btn i {
+            font-size: 1.5rem !important;
+            margin-right: 0 !important;
+        }
+    }
+    
+    /* Mobile specific styles */
+    @media (max-width: 576px) {
+        .messaging-content {
+            margin-left: 0;
+            width: 100%;
+            padding-top: 60px;
+            transition: margin-left 0.3s ease;
+        }
+        
+        #sidebar {
+            transform: translateX(-100%) !important;
+            width: 250px !important;
+            transition: transform 0.3s ease !important;
+            left: 0 !important;
+        }
+        
+        #sidebar.active {
+            transform: translateX(0) !important;
+        }
+        
+        #mobileMenuToggle {
+            display: block;
+        }
+        
+        .sidebar-header h2, .sidebar-header h3, .sidebar-btn span {
+            display: inline-block !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Add data attribute to the body tag through JavaScript to pass user role -->
+<script>
+    document.body.setAttribute('data-is-staff', '{% if user.is_staff %}true{% else %}false{% endif %}');
+    document.body.setAttribute('data-user-id', '{{ user.id }}');
+</script>
+
+<!-- Add user-specific sidebar based on user type -->
+{% if user.is_staff %}
+{% include 'sidebar.html' %}
+{% else %}
+    <!-- Parent User Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>OB Pagsasarili</h3>
+        </div>
+        <div class="sidebar-content">
+            <a href="{% url 'dashboard' %}" class="sidebar-btn">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'student_profile' %}" class="sidebar-btn">
+                <i class="fas fa-user"></i>
+                <span>Pupil's Profile</span>
+            </a>
+            <a href="{% url 'student_performance' %}" class="sidebar-btn">
+                <i class="fas fa-chart-line"></i>
+                <span>Performance Report</span>
+            </a>
+            <a href="{% url 'message_home' %}" class="sidebar-btn active">
+                <i class="fas fa-envelope"></i>
+                <span>Messages</span>
+                <span class="notification-badge"></span>
+            </a>
+            <a href="{% url 'evaluation_gross' %}" class="sidebar-btn">
+                <i class="fas fa-chart-bar"></i>
+                <span>Evaluation</span>
+            </a>
+            <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+    <!-- Add this for the sidebar overlay -->
+    <div id="sidebarOverlay"></div>
+{% endif %}
+
+<div class="container-fluid messaging-content">
+    <div class="row">
+        <!-- Contacts sidebar -->
+        <div class="col-md-3 border-right contacts-sidebar">
+            <div class="d-flex flex-column">
+                <div class="contacts-header py-3">
+                    <h4 class="mb-0">Messages</h4>
+                    {% if user.is_staff %}
+                    <button class="btn btn-sm btn-primary mt-2" id="createGroupBtn">
+                        <i class="fas fa-users"></i> Create Group
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <ul class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="direct-messages-tab" data-toggle="pill" href="#direct-messages" role="tab" aria-controls="direct-messages" aria-selected="true">
+                            <i class="fas fa-user"></i> Direct Messages
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="group-messages-tab" data-toggle="pill" href="#group-messages" role="tab" aria-controls="group-messages" aria-selected="false">
+                            <i class="fas fa-users"></i> Group Chats
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content flex-grow-1 mt-3" id="v-pills-tabContent">
+                    <!-- Direct message contacts -->
+                    <div class="tab-pane fade show active" id="direct-messages" role="tabpanel" aria-labelledby="direct-messages-tab">
+                        <div class="list-group contact-list">
+                            {% for contact in users %}
+                            <a href="javascript:void(0);" class="list-group-item list-group-item-action contact-item" data-id="{{ contact.id }}">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-user-circle mr-2"></i>
+                                        <span>{{ contact.username }}</span>
+                                    </div>
+                                    <span class="badge badge-primary badge-pill unread-badge d-none" data-user="{{ contact.id }}">0</span>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="text-center text-muted py-3">No contacts available</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Group chats -->
+                    <div class="tab-pane fade" id="group-messages" role="tabpanel" aria-labelledby="group-messages-tab">
+                        <div class="list-group group-list">
+                            {% for group in chat_groups %}
+                            <a href="javascript:void(0);" class="list-group-item list-group-item-action group-item" data-id="{{ group.id }}">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-users mr-2"></i>
+                                        <span>{{ group.name }}</span>
+                                    </div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="text-center text-muted py-3">No group chats available</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat area -->
+        <div class="col-md-9 chat-area">
+            <div class="welcome-screen text-center py-5" id="welcomeScreen">
+                <i class="fas fa-comments mb-3" style="font-size: 4rem; color: #ccc;"></i>
+                <h3>Welcome to Messages</h3>
+                <p class="text-muted">Select a contact or group to start messaging</p>
+            </div>
+            
+            <div class="chat-interface d-none">
+                <div class="chat-header border-bottom p-3">
+                    <h5 id="chatName"></h5>
+                </div>
+                
+                <div class="chat-messages p-3" id="messageContainer">
+                    <!-- Messages will be loaded here -->
+                </div>
+                
+                <div class="chat-input border-top p-3">
+                    <form id="messageForm">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type a message...">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile menu toggle button -->
+<button type="button" id="mobileMenuToggle" class="btn">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Create Group Modal -->
+{% if user.is_staff %}
+<div class="modal fade" id="createGroupModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Group Chat</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createGroupForm">
+                    <div class="form-group">
+                        <label for="groupName">Group Name</label>
+                        <input type="text" class="form-control" id="groupName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Members</label>
+                        <div class="member-list">
+                            {% for user in users %}
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="member-{{ user.id }}" value="{{ user.id }}">
+                                <label class="custom-control-label" for="member-{{ user.id }}">{{ user.username }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveGroupBtn">Create Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Additional CSS to fix message styling -->
+<style>
+    .message-item {
+        margin-bottom: 15px;
+        display: flex;
+    }
+    
+    .message-item.sent {
+        justify-content: flex-end;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        background-color: #f1f0f0;
+    }
+    
+    .message-item.sent .message-bubble {
+        background-color: #dcf8c6;
+    }
+    
+    .message-sender {
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+    }
+    
+    .message-text {
+        word-wrap: break-word;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        color: #777;
+        text-align: right;
+        margin-top: 3px;
+    }
+    
+    #messageContainer {
+        min-height: 300px;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Common Script for All Users -->
+<script>
+// Variables for user type will be initialized in the script
+var userIsStaff, currentUsername;
+var currentChatId = null;
+var currentChatType = null;
+var currentGroupName = null;
+
+// Direct fix to ensure chat interface shows
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Direct fix script loaded');
+    
+    // Set user type based on data attribute (set below in the HTML)
+    userIsStaff = document.body.getAttribute('data-is-staff') === 'true';
+    currentUsername = userIsStaff ? 'Teacher' : 'Parent';
+    
+    console.log('User is staff:', userIsStaff);
+    
+    // Fix tab switching
+    const directMessagesTab = document.getElementById('direct-messages-tab');
+    const groupMessagesTab = document.getElementById('group-messages-tab');
+    const directMessagesPane = document.getElementById('direct-messages');
+    const groupMessagesPane = document.getElementById('group-messages');
+    
+    // Ensure tabs switch correctly
+    if (directMessagesTab && groupMessagesTab) {
+        directMessagesTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Activate direct messages tab
+            directMessagesTab.classList.add('active');
+            groupMessagesTab.classList.remove('active');
+            
+            // Show direct messages content
+            directMessagesPane.classList.add('show', 'active');
+            groupMessagesPane.classList.remove('show', 'active');
+            
+            console.log('Switched to direct messages tab');
+        });
+        
+        groupMessagesTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Activate group messages tab
+            groupMessagesTab.classList.add('active');
+            directMessagesTab.classList.remove('active');
+            
+            // Show group messages content
+            groupMessagesPane.classList.add('show', 'active');
+            directMessagesPane.classList.remove('show', 'active');
+            
+            console.log('Switched to group messages tab');
+        });
+    }
+    
+    // Handle Create Group Button for teachers
+    const createGroupBtn = document.getElementById('createGroupBtn');
+    const createGroupModal = document.getElementById('createGroupModal');
+    
+    if (createGroupBtn && createGroupModal) {
+        createGroupBtn.addEventListener('click', function() {
+            // Check if Bootstrap 4 is available
+            if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                $('#createGroupModal').modal('show');
+            } else {
+                // Fallback if jQuery/Bootstrap is not available
+                createGroupModal.style.display = 'block';
+                createGroupModal.classList.add('show');
+                document.body.classList.add('modal-open');
+                
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+                
+                // Handle close button
+                const closeButtons = createGroupModal.querySelectorAll('[data-dismiss="modal"]');
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        createGroupModal.style.display = 'none';
+                        createGroupModal.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        document.body.removeChild(backdrop);
+                    });
+                });
+            }
+        });
+
+        // Handle save group button
+        const saveGroupBtn = document.getElementById('saveGroupBtn');
+        if (saveGroupBtn) {
+            saveGroupBtn.addEventListener('click', function() {
+                const groupName = document.getElementById('groupName').value.trim();
+                if (!groupName) {
+                    alert('Please enter a group name');
+                    return;
+                }
+                
+                // Get selected members
+                const members = [];
+                document.querySelectorAll('.member-list input[type="checkbox"]:checked').forEach(checkbox => {
+                    members.push(checkbox.value);
+                });
+                
+                if (members.length === 0) {
+                    alert('Please select at least one member');
+                    return;
+                }
+                
+                // Create the group via API
+                createGroup(groupName, members);
+                
+                // Close the modal
+                if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                    $('#createGroupModal').modal('hide');
+                } else {
+                    createGroupModal.style.display = 'none';
+                    createGroupModal.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) document.body.removeChild(backdrop);
+                }
+            });
+        }
+    }
+    
+    // Enhanced direct fix for showing chat interface - now with real-time data
+    const contactItems = document.querySelectorAll('.contact-item');
+    contactItems.forEach(item => {
+        item.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Get user ID
+            const userId = this.getAttribute('data-id');
+            const name = this.querySelector('span').textContent;
+            
+            // Show chat interface
+            showChatInterface(name, userId, 'direct');
+            
+            // Load messages from API
+            loadDirectMessages(userId);
+        });
+    });
+    
+    // Handle group chat clicks
+    const groupItems = document.querySelectorAll('.group-item');
+    groupItems.forEach(item => {
+        item.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Get group ID
+            const groupId = this.getAttribute('data-id');
+            const name = this.querySelector('span').textContent;
+            
+            // Show chat interface
+            showChatInterface(name, groupId, 'group');
+            
+            // Load messages from API
+            loadGroupMessages(groupId);
+        });
+    });
+    
+    // Handle form submission for messages - now with real API connections
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message && currentChatId) {
+                // Send message based on chat type
+                if (currentChatType === 'direct') {
+                    sendDirectMessage(currentChatId, message);
+                } else if (currentChatType === 'group') {
+                    sendGroupMessage(currentChatId, message);
+                }
+                
+                // Clear input
+                messageInput.value = '';
+            }
+        });
+    }
+    
+    // Basic mobile menu toggle functionality
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent event bubbling
+        });
+    }
+    
+    // Functions for real-time messaging
+    
+    // Show chat interface function
+    function showChatInterface(name, id, type) {
+        // Update current chat tracking
+        currentChatId = id;
+        currentChatType = type;
+        if (type === 'group') {
+            currentGroupName = name;
+        }
+            
+            // Show chat interface directly
+            document.querySelector('.welcome-screen').style.display = 'none';
+            const chatInterface = document.querySelector('.chat-interface');
+            chatInterface.style.display = 'flex';
+            chatInterface.style.flexDirection = 'column';
+            chatInterface.classList.remove('d-none');
+            
+        // Set chat header
+        const chatHeader = document.querySelector('.chat-header');
+        if (chatHeader) {
+            if (type === 'group') {
+                // For group chats, include a simple header without the View Members button
+                chatHeader.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <h5 id="chatName" data-id="${id}" data-type="${type}">${name} <span class="badge badge-info">Group</span></h5>
+                    </div>
+                `;
+            } else {
+                // For direct messages, just show the name
+                chatHeader.innerHTML = `<h5 id="chatName" data-id="${id}" data-type="${type}">${name}</h5>`;
+            }
+        }
+        
+        // Show loading in message container
+        const messageContainer = document.getElementById('messageContainer');
+        if (messageContainer) {
+            messageContainer.innerHTML = '<div class="text-center my-4"><p>Loading messages...</p></div>';
+        }
+            
+            // Close sidebar on mobile when selecting a contact
+            const isSmallScreen = window.innerWidth <= 576;
+            if (isSmallScreen) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    const overlay = document.getElementById('sidebarOverlay');
+                if (overlay) overlay.classList.remove('active');
+            }
+        }
+    }
+    
+    // Load direct messages from API
+    function loadDirectMessages(userId) {
+        fetch(`/messaging/get_messages/?user_id=${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayMessages(data.messages);
+            })
+            .catch(error => {
+                console.error('Error loading messages:', error);
+                const messageContainer = document.getElementById('messageContainer');
+                if (messageContainer) {
+                    messageContainer.innerHTML = '<div class="text-center my-4 text-danger"><p>Error loading messages. Please try again.</p></div>';
+                }
+            });
+    }
+    
+    // Load group messages from API
+    function loadGroupMessages(groupId) {
+        fetch(`/messaging/get_group_messages/?group_id=${groupId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayMessages(data.messages);
+            })
+            .catch(error => {
+                console.error('Error loading group messages:', error);
+                const messageContainer = document.getElementById('messageContainer');
+                if (messageContainer) {
+                    messageContainer.innerHTML = '<div class="text-center my-4 text-danger"><p>Error loading group messages. Please try again.</p></div>';
+                }
+            });
+    }
+    
+    // Display messages in the container
+    function displayMessages(messages) {
+        const messageContainer = document.getElementById('messageContainer');
+        if (!messageContainer) return;
+        
+        if (messages.length === 0) {
+            messageContainer.innerHTML = '<div class="text-center my-4"><p>No messages yet. Start a conversation!</p></div>';
+            return;
+        }
+        
+        let html = '';
+        messages.forEach(message => {
+            const messageClass = message.is_mine ? 'sent' : 'received';
+            const senderInfo = message.is_mine ? `You (${currentUsername})` : message.sender;
+            
+            html += `
+                <div class="message-item ${messageClass}">
+                    <div class="message-bubble">
+                        <div class="message-sender">${senderInfo}</div>
+                        <div class="message-text">${message.content}</div>
+                        <div class="message-time">${message.timestamp}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        messageContainer.innerHTML = html;
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+    
+    // Send direct message to API
+    function sendDirectMessage(recipientId, content) {
+        const messageContainer = document.getElementById('messageContainer');
+        
+        // Add message to UI first for responsive feel
+        const tempId = 'temp-' + Date.now();
+        const now = new Date();
+        const hours = now.getHours() % 12 || 12;
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+        const timeString = `${hours}:${minutes} ${ampm}`;
+        
+        const tempMessage = `
+            <div class="message-item sent" id="${tempId}">
+                <div class="message-bubble">
+                    <div class="message-sender">You (${currentUsername})</div>
+                    <div class="message-text">${content}</div>
+                    <div class="message-time">${timeString} (Sending...)</div>
+                </div>
+            </div>
+        `;
+        
+        if (messageContainer) {
+            // If container is empty, clear the "No messages yet" text
+            if (messageContainer.innerHTML.includes('No messages yet')) {
+                messageContainer.innerHTML = '';
+            }
+            
+            messageContainer.innerHTML += tempMessage;
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+        
+        // Send to API
+        fetch('/messaging/send_message/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                type: 'direct',
+                recipient: recipientId,
+                content: content
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update the message with server data
+            const tempElement = document.getElementById(tempId);
+            if (tempElement) {
+                tempElement.querySelector('.message-time').textContent = data.timestamp;
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            // Show error state
+            const tempElement = document.getElementById(tempId);
+            if (tempElement) {
+                tempElement.querySelector('.message-time').textContent = `${timeString} (Failed to send)`;
+                tempElement.querySelector('.message-time').style.color = 'red';
+            }
+        });
+    }
+    
+    // Send group message to API
+    function sendGroupMessage(groupId, content) {
+        const messageContainer = document.getElementById('messageContainer');
+        
+        // Add message to UI first for responsive feel
+        const tempId = 'temp-' + Date.now();
+        const now = new Date();
+        const hours = now.getHours() % 12 || 12;
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+        const timeString = `${hours}:${minutes} ${ampm}`;
+        
+        const tempMessage = `
+            <div class="message-item sent" id="${tempId}">
+                <div class="message-bubble">
+                    <div class="message-sender">You (${currentUsername})</div>
+                    <div class="message-text">${content}</div>
+                    <div class="message-time">${timeString} (Sending...)</div>
+                </div>
+            </div>
+        `;
+        
+        if (messageContainer) {
+            // If container is empty, clear the "No messages yet" text
+            if (messageContainer.innerHTML.includes('No messages yet')) {
+                messageContainer.innerHTML = '';
+            }
+            
+            messageContainer.innerHTML += tempMessage;
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+        
+        // Send to API
+        fetch('/messaging/send_message/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                type: 'group',
+                group: groupId,
+                content: content
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update the message with server data
+            const tempElement = document.getElementById(tempId);
+            if (tempElement) {
+                tempElement.querySelector('.message-time').textContent = data.timestamp;
+            }
+        })
+        .catch(error => {
+            console.error('Error sending group message:', error);
+            // Show error state
+            const tempElement = document.getElementById(tempId);
+            if (tempElement) {
+                tempElement.querySelector('.message-time').textContent = `${timeString} (Failed to send)`;
+                tempElement.querySelector('.message-time').style.color = 'red';
+            }
+        });
+    }
+    
+    // Create a new group
+    function createGroup(name, members) {
+        fetch('/messaging/create_group/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                name: name,
+                members: members
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Add new group to the list
+            const groupList = document.querySelector('.group-list');
+            if (groupList) {
+                // Create new group item
+                const newGroup = document.createElement('a');
+                newGroup.href = 'javascript:void(0);';
+                newGroup.className = 'list-group-item list-group-item-action group-item';
+                newGroup.setAttribute('data-id', data.id);
+                newGroup.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-users mr-2"></i>
+                            <span>${data.name}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click handler to the new group
+                newGroup.addEventListener('click', function() {
+                    showChatInterface(data.name, data.id, 'group');
+                    loadGroupMessages(data.id);
+                });
+                
+                // Add to list
+                groupList.appendChild(newGroup);
+                
+                // Switch to groups tab
+                document.getElementById('group-messages-tab').click();
+                
+                // Clear the form
+                document.getElementById('groupName').value = '';
+                document.querySelectorAll('.member-list input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error creating group:', error);
+            alert('Failed to create group. Please try again.');
+        });
+    }
+    
+    // Helper function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Poll for new messages every 3 seconds if in a chat
+    setInterval(function() {
+        if (currentChatId && currentChatType) {
+            if (currentChatType === 'direct') {
+                loadDirectMessages(currentChatId);
+            } else if (currentChatType === 'group') {
+                loadGroupMessages(currentChatId);
+            }
+        }
+    }, 3000);
+});
+</script>
+
+<!-- Parent User Script -->
+{% if not user.is_staff %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parent sidebar functionality
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    
+    // Function to toggle sidebar
+    function toggleSidebar() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    }
+    
+    // Add click event to mobile menu toggle
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', toggleSidebar);
+    }
+    
+    // Close sidebar when clicking on overlay
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    }
+    
+    // Logout confirmation for parent users
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm("Are you sure you want to logout?")) {
+                window.location.href = this.getAttribute('href');
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+
+<!-- Teacher Sidebar Script -->
+{% if user.is_staff %}
+<script src="{% static 'js/sidebar.js' %}"></script>
+{% endif %}
+
+<!-- Additional CSS to fix message styling -->
+<style>
+    .message-item {
+        margin-bottom: 15px;
+        display: flex;
+    }
+    
+    .message-item.sent {
+        justify-content: flex-end;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        background-color: #f1f0f0;
+    }
+    
+    .message-item.sent .message-bubble {
+        background-color: #dcf8c6;
+    }
+    
+    .message-sender {
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+    }
+    
+    .message-text {
+        word-wrap: break-word;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        color: #777;
+        text-align: right;
+        margin-top: 3px;
+    }
+    
+    #messageContainer {
+        min-height: 300px;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %} 

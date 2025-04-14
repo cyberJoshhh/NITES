@@ -1,0 +1,121 @@
+{% load static %}
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>OB Pagsasarili</h2>
+    </div> 
+    <div class="sidebar-menu">
+        <a href="{% url 'dashboard' %}" class="sidebar-btn {% if request.path == '/dashboard/' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{% url 'comparison_view' %}" class="sidebar-btn {% if request.path == '/comparison/' %}active{% endif %}">
+            <i class="fas fa-chart-line"></i>
+            <span>Performance</span>
+        </a>
+        <a href="{% url 'add_student' %}" class="sidebar-btn {% if request.path == '/add_student/' %}active{% endif %}">
+            <i class="fas fa-user-plus"></i>
+            <span>Add Pupil</span>
+        </a>
+
+        <a href="{% url 'message_home' %}" class="sidebar-btn {% if request.path == '/messaging/' %}active{% endif %}">
+            <i class="fas fa-envelope"></i>
+            <span>Messages</span>
+        </a>
+
+        <a href="{% url 'settings' %}" class="sidebar-btn {% if request.path == '/settings/' %}active{% endif %}">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </div>
+    <div class="sidebar-footer">
+        <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div>
+
+<!-- Script for chat status -->
+<script src="{% static 'js/chat.js' %}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Logout confirmation
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm("Are you sure you want to logout?")) {
+                    window.location.href = this.getAttribute('href');
+                }
+            });
+        }
+
+        // Initialize chat functionality - this only monitors connection status
+        const chatLink = document.getElementById('chat-link');
+        if (chatLink) {
+            // Default room for status monitoring
+            chatLink.setAttribute('data-room', 'general');
+            chatLink.setAttribute('data-username', '{{ request.user.username }}');
+            
+            // Initialize WebSocket for status monitoring only
+            const username = chatLink.getAttribute('data-username');
+            const roomName = chatLink.getAttribute('data-room');
+            
+            console.log('Initializing WebSocket from sidebar for status monitoring...');
+            
+            // Only initialize if not already done
+            if (!window.statusWs) {
+                // We'll use a separate WebSocket just for status monitoring
+                // so it doesn't interfere with the chat app's own WebSocket
+                window.statusWs = new ChatWebSocket(roomName, username);
+                
+                // Modify handleMessage to not process messages - we just want status
+                window.statusWs.handleMessage = function() {};
+            }
+            
+            // Update status in the sidebar
+            function updateStatus() {
+                const chatStatus = document.getElementById('chat-status');
+                if (!chatStatus) return;
+                
+                if (window.statusWs && window.statusWs.socket) {
+                    if (window.statusWs.socket.readyState === WebSocket.OPEN) {
+                        chatStatus.textContent = 'Connected';
+                        chatStatus.style.color = 'green';
+                    } else if (window.statusWs.socket.readyState === WebSocket.CONNECTING) {
+                        chatStatus.textContent = 'Connecting...';
+                        chatStatus.style.color = 'orange';
+                    } else {
+                        chatStatus.textContent = 'Disconnected';
+                        chatStatus.style.color = 'red';
+                    }
+                }
+            }
+            
+            // Update status display every 2 seconds
+            setInterval(updateStatus, 2000);
+            
+            // Also check connection status on hover
+            chatLink.addEventListener('mouseenter', function() {
+                updateStatus();
+                
+                // Try to reconnect if disconnected
+                if (window.statusWs && window.statusWs.socket && 
+                    (window.statusWs.socket.readyState === WebSocket.CLOSED || 
+                     window.statusWs.socket.readyState === WebSocket.CLOSING)) {
+                    window.statusWs.connect();
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    .chat-status {
+        font-size: 0.7rem;
+        margin-left: 5px;
+        color: orange;
+    }
+</style> 

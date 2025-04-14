@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Checklist - Fine Motor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2d6a4f;
+        }
+        .evaluation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .evaluation-table th, 
+        .evaluation-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .evaluation-table th {
+            background-color: #2d6a4f;
+            color: white;
+            font-weight: bold;
+        }
+        .evaluation-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .evaluation-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .italic-text {
+            font-style: italic;
+            color: #666;
+        }
+        .checkbox-cell {
+            text-align: center;
+            width: 80px;
+        }
+        .checkbox-input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .domain-nav {
+            width:1100px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .domain-link {
+            padding: 10px 20px;
+            background-color: white;
+            text-decoration: none;
+            color: #333;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            border: 1px solid #ddd;
+        }
+        .domain-link:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .domain-link.active {
+            background-color: #2d6a4f;
+            color: white;
+            border-color: #2d6a4f;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #2d6a4f;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #1b4332;
+        }
+        #total1, #total2, #total3 {
+            font-weight: bold;
+            color: #2d6a4f;
+            font-size: 1.1em;
+        }
+        @media (max-width: 768px) {
+            .evaluation-table {
+                font-size: 14px;
+            }
+            .domain-nav {
+                flex-direction: column;
+            }
+            .domain-link {
+                text-align: center;
+            }
+            .checkbox-cell {
+                width: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
+        
+        {% include 'evaluation_checklists/nav.html' with domain='fine_motor' %}
+        <div class="student-info" style="margin-bottom: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 8px;">
+            <h2 style="margin: 0; color: #2d6a4f;">Student: <span id="studentName">{{ request.GET.student_name }}</span></h2>
+        </div>
+
+        <h1>Fine Motor Domain</h1>
+
+        <table class="evaluation-table">
+            <tr>
+                <th style="width: 5%"></th>
+                <th style="width: 20%">Fine Motor</th>
+                <th style="width: 35%">Material/Procedure</th>
+                <th style="width: 10%">1st Eval</th>
+                <th style="width: 10%">2nd Eval</th>
+                <th style="width: 10%">3rd Eval</th>
+                <th style="width: 10%">Comments</th>
+            </tr>
+            <tr>
+                <td>1.</td>
+                <td>Uses all 5 fingers to get food/toys placed on a flat surface</td>
+                <td>
+                    MATERIAL: any small toy or food<br>
+                    PROCEDURE:<br>
+                    Seat the child on his/her's lap with his elbows at a level with the table top and his hands on the table or flat surface. Put the small toy in front of him and attract his attention by pointing to the toy or tapping the table/flat surface. <span class="italic-text">Credit if the child picks up the toy, using all five fingers as if raking. Automatically credit if he passes the next item.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2.</td>
+                <td>Picks up object with thumb and index finger</td>
+                <td>
+                    MATERIAL: any small toy or food<br>
+                    PROCEDURE:<br>
+                    Place a toy/food in front of the child and within his reach. Attract his attention by tapping near the toy/food. <span class="italic-text">Credits if the child uses the tips thumb and index or forefinger to pick up the toy/food.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3.</td>
+                <td>Displays a definite hand preference</td>
+                <td>
+                    MATERIAL: toy<br>
+                    PROCEDURE:<br>
+                    Place the toy directly in front of the child midline (not to his left or his right) and ask him to reach for this. <span class="italic-text">Credit if he uses the same hand 2 out of 3 times. Parental report will suffice.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4.</td>
+                <td>Put small objects in/out of containers</td>
+                <td>
+                    MATERIAL: small objects, containers<br>
+                    <span class="italic-text">This must be elicited by the interviewer.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5.</td>
+                <td>Holds crayon with all the fingers of his hand as though making a fist (i.e., palmar grasp)</td>
+                <td>
+                    MATERIAL: crayon<br>
+                    PROCEDURE:<br>
+                    Present the child with a crayon and have him get this. <span class="italic-text">Credits if he holds it by wrapping all five fingers around as if making a fist. Automatically credit if he uses the tips of all five fingers or his thumb, index and middle fingers. This must be elicited by the interviewer.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6.</td>
+                <td>Unscrew the lid of a container or unwraps food</td>
+                <td>
+                    MATERIAL: container with screw on top or wrapped candy. <span class="italic-text">This must be elicited by the interviewer.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>7.</td>
+                <td>Scribbles spontaneously</td>
+                <td>
+                    MATERIAL: paper, pencil/crayon<br>
+                    PROCEDURE:<br>
+                    Place a piece of paper and pencil/crayon on the table and ask the child to draw anything he wants without showing him what to do. <span class="italic-text">Credit if the child uses the tips of his thumb and any of his thumb and any of his other fingers fingertips to grasp the pencil/crayon and purposefully scribbles on the paper (not accidentally).</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8.</td>
+                <td>Scribbles vertical and horizontal lines</td>
+                <td>
+                    MATERIALS: paper, pencil/crayon<br>
+                    PROCEDURE:<br>
+                    Place a piece paper and pencil/crayon on the table or flat surface and ask the child to draw vertical and horizontal lines after you have demonstrated these to him. <span class="italic-text">Credit if the child produces a vertical or horizontal line that is at least 2 inches long and does not deviate or vary from your vertical line by more than 30 degrees. The lines may be wavy but not broken.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9.</td>
+                <td>Draw Circle purposely</td>
+                <td>
+                    MATERIALS: paper, pencil/crayon<br>
+                    PROCEDURE:<br>
+                    Place a paper and pencil/crayon on the table or flat surface and ask the child to draw a circle or a ball after you have demonstrated it to him. <span class="italic-text">Credit if the child produces any curve that is closed or nearly closed. Continuous spiral motions are not credited.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10.</td>
+                <td>Draws a human figure (head, eyes, trunk, arms, hands/fingers)</td>
+                <td>
+                    MATERIAL: paper, pencil<br>
+                    PROCEDURE:<br>
+                    Give the child a pencil and a paper and ask him to draw a picture of a person. <span class="italic-text">Credit if the child has drawn 3 or more body parts. A pair is considered one part (eyes, ears, arms, hands, legs and feet) and must be drawn in pairs to get full credit unless the drawing is in profile.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>11.</td>
+                <td>Draws a house using geometric forms</td>
+                <td>
+                    MATERIALS: Paper, pencil<br>
+                    PROCEDURE:<br>
+                    Give the child a pencil a pencil and paper and ask him to draw a picture of a house. <span class="italic-text">Credit if the child has drawn at least the roof, main frame, and a door or window.</span>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval1" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval2" onchange="calculateScores()">
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="checkbox-input eval3" onchange="calculateScores()">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: right;"><strong>TOTAL SCORE</strong></td>
+                <td class="checkbox-cell"><span id="total1">0</span></td>
+                <td class="checkbox-cell"><span id="total2">0</span></td>
+                <td class="checkbox-cell"><span id="total3">0</span></td>
+                <td></td>
+            </tr>
+        </table>
+        <form id="evaluationForm" method="POST" action="{% url 'submit_fine_evaluation' %}" style="margin-top: 20px; text-align: center;">
+            {% csrf_token %}
+            <input type="hidden" name="student_name" id="studentNameInput">
+            <input type="hidden" name="eval1_score" id="eval1Score">
+            <input type="hidden" name="eval2_score" id="eval2Score">
+            <input type="hidden" name="eval3_score" id="eval3Score">
+            <button type="submit" class="back-btn" style="background-color: #2d6a4f;">Submit Evaluation</button>
+        </form>
+    </div>
+
+    <script>
+        function calculateScores() {
+            const eval1Total = document.querySelectorAll('.eval1:checked').length;
+            const eval2Total = document.querySelectorAll('.eval2:checked').length;
+            const eval3Total = document.querySelectorAll('.eval3:checked').length;
+
+            // Update display
+            document.getElementById('total1').textContent = eval1Total;
+            document.getElementById('total2').textContent = eval2Total;
+            document.getElementById('total3').textContent = eval3Total;
+
+            // Update hidden form inputs
+            document.getElementById('eval1Score').value = eval1Total;
+            document.getElementById('eval2Score').value = eval2Total;
+            document.getElementById('eval3Score').value = eval3Total;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set student name in hidden input
+            const studentName = document.getElementById('studentName').textContent;
+            document.getElementById('studentNameInput').value = studentName;
+
+            // Initial calculation of scores
+            calculateScores();
+        });
+    </script>
+</body>
+</html> 

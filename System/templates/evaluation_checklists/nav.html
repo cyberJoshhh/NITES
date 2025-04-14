@@ -1,0 +1,127 @@
+<style>
+    /* Domain Navigation Styles */
+    .domain-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 25px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .domain-link {
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #2d6a4f;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        flex: 1 1 auto;
+        min-width: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .domain-link:hover {
+        background-color: #e8f5e9;
+        transform: translateY(-2px);
+    }
+    
+    .domain-link.active {
+        background-color: #2d6a4f;
+        color: white;
+    }
+    
+    /* Dropdown for mobile */
+    .domain-dropdown {
+        display: none;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .domain-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: white;
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+        color: #2d6a4f;
+        font-weight: 500;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%232d6a4f' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: calc(100% - 15px) center;
+        padding-right: 40px;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 992px) {
+        .domain-link {
+            min-width: 110px;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .domain-nav {
+            display: none;
+        }
+        
+        .domain-dropdown {
+            display: block;
+        }
+    }
+</style>
+
+<!-- Dropdown for mobile devices -->
+<div class="domain-dropdown">
+    <select class="domain-select" id="domainSelect">
+        <option value="gross_motor" {% if domain == 'gross_motor' %}selected{% endif %}>Gross Motor</option>
+        <option value="fine_motor" {% if domain == 'fine_motor' %}selected{% endif %}>Fine Motor</option>
+        <option value="cognitive" {% if domain == 'cognitive' %}selected{% endif %}>Cognitive</option>
+        <option value="self_help" {% if domain == 'self_help' %}selected{% endif %}>Self Help</option>
+        <option value="receptive_language" {% if domain == 'receptive_language' %}selected{% endif %}>Receptive Language</option>
+        <option value="expressive_language" {% if domain == 'expressive_language' %}selected{% endif %}>Expressive Language</option>
+    </select>
+</div>
+
+<!-- Regular navigation for larger screens -->
+<div class="domain-nav">
+    <a href="{% url 'evaluation_checklist' %}?domain=gross_motor&student_name={{ request.GET.student_name }}" class="domain-link {% if domain == 'gross_motor' %}active{% endif %}">
+        Gross Motor
+    </a>
+    <a href="{% url 'evaluation_checklist' %}?domain=fine_motor&student_name={{ request.GET.student_name }}" class="domain-link {% if domain == 'fine_motor' %}active{% endif %}">
+        Fine Motor
+    </a>
+    <a href="{% url 'evaluation_checklist' %}?domain=cognitive&student_name={{ request.GET.student_name }}" class="domain-link {% if domain == 'cognitive' %}active{% endif %}">
+        Cognitive
+    </a>
+    <a href="{% url 'evaluation_checklist' %}?domain=self_help&student_name={{ request.GET.student_name }}" class="domain-link {% if domain == 'self_help' %}active{% endif %}">
+        Self Help
+    </a>
+    <a href="{% url 'evaluation_checklist' %}?domain=receptive_language&student_name={{ request.GET.student_name }}" class="domain-link {% if domain == 'receptive_language' %}active{% endif %}">
+        Receptive Language
+    </a>
+    <a href="{% url 'evaluation_checklist' %}?domain=expressive_language&student_name={{ request.GET.student_name }}" class="domain-link {% if domain == 'expressive_language' %}active{% endif %}">
+        Expressive Language
+    </a>
+</div>
+
+<script>
+    // Handle domain selection change
+    document.getElementById('domainSelect').addEventListener('change', function() {
+        const selectedDomain = this.value;
+        const studentName = '{{ request.GET.student_name }}';
+        window.location.href = `{% url 'evaluation_checklist' %}?domain=${selectedDomain}&student_name=${studentName}`;
+    });
+</script> 

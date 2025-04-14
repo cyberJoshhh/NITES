@@ -1,0 +1,497 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/performance.css' %}">
+    <style>     
+        @media (max-width: 576px) {
+            .mobile-menu-toggle {
+                display: flex !important;
+                position: fixed !important;
+                top: 15px !important;
+                left: 15px !important;
+                z-index: 1000 !important;
+                background-color: #2d6a4f !important;
+                color: white !important;
+                border: none !important;
+                width: 50px !important;
+                height: 50px !important;
+                border-radius: 50% !important;
+                cursor: pointer !important;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 20px !important;
+            }
+            
+            .sidebar {
+                position: fixed !important;
+                left: -280px !important;
+                top: 0 !important;
+                height: 100% !important;
+                width: 280px !important;
+                background-color: white !important;
+                z-index: 1001 !important;
+                transition: transform 0.3s ease !important;
+                box-shadow: 0 0 20px rgba(0,0,0,0.2) !important;
+                overflow-y: auto !important;
+            }
+            
+            .sidebar.active {
+                transform: translateX(280px) !important;
+            }
+            
+            .sidebar-btn, .logout-btn {
+                pointer-events: auto !important;
+            }
+            
+            #sidebarOverlay {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                background-color: rgba(0,0,0,0.5) !important;
+                z-index: 1000 !important;
+                display: none !important;
+            }
+            
+            #sidebarOverlay.active {
+                display: block !important;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding-top: 80px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay"></div>
+
+    <!-- Include the sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Student Performance</h1>
+        </div>
+        
+        <div class="performance-grid">
+            {% for student in students %}
+            <div class="performance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-graduate"></i> {{ student.child_name }}</h3>
+                    <div class="card-actions">
+                        <span class="badge">{{ student.sex }}</span>
+                    </div>
+                </div>
+                <div class="chart-container" id="chart-{{ forloop.counter }}">
+                    <!-- Chart will be rendered here -->
+                </div>
+                <div class="domains-grid">
+                    {% for eval in gross_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-running" style="color: rgb(255, 99, 132);"></i>
+                                Gross Motor
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/13</span>
+                                <span>{% widthratio eval.eval3_score 13 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-gross" style="width: {% widthratio eval.eval3_score 13 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for eval in fine_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-hand-paper" style="color: rgb(54, 162, 235);"></i>
+                                Fine Motor
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/21</span>
+                                <span>{% widthratio eval.eval3_score 21 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-fine" style="width: {% widthratio eval.eval3_score 21 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for eval in self_help_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-hands-helping" style="color: rgb(75, 192, 192);"></i>
+                                Self Help
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/24</span>
+                                <span>{% widthratio eval.eval3_score 24 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-self" style="width: {% widthratio eval.eval3_score 24 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for eval in receptive_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-ear-listen" style="color: rgb(153, 102, 255);"></i>
+                                Receptive Language
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/5</span>
+                                <span>{% widthratio eval.eval3_score 5 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-receptive" style="width: {% widthratio eval.eval3_score 5 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for eval in expressive_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-comments" style="color: rgb(255, 159, 64);"></i>
+                                Expressive Language
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/8</span>
+                                <span>{% widthratio eval.eval3_score 8 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-expressive" style="width: {% widthratio eval.eval3_score 8 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for eval in cognitive_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-brain" style="color: rgb(255, 205, 86);"></i>
+                                Cognitive
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/21</span>
+                                <span>{% widthratio eval.eval3_score 21 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-cognitive" style="width: {% widthratio eval.eval3_score 21 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for eval in social_evaluations %}
+                        {% if eval.student_name == student.child_name %}
+                        <div class="domain-item">
+                            <div class="domain-name">
+                                <i class="fas fa-users" style="color: rgb(201, 203, 207);"></i>
+                                Social-Emotional
+                            </div>
+                            <div class="score-display">
+                                <span>Score: {{ eval.eval3_score }}/24</span>
+                                <span>{% widthratio eval.eval3_score 24 100 %}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar progress-social" style="width: {% widthratio eval.eval3_score 24 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <p>No student performance data available.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Inline sidebar.js to ensure it works -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded");
+            
+            // Mobile menu toggle functionality
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            console.log("Mobile toggle:", mobileMenuToggle);
+            console.log("Sidebar:", sidebar);
+            console.log("Overlay:", sidebarOverlay);
+            
+            // Function to toggle sidebar
+            function toggleSidebar(event) {
+                console.log("Toggle sidebar called");
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                if (sidebar) {
+                    sidebar.classList.toggle('active');
+                    console.log("Sidebar active:", sidebar.classList.contains('active'));
+                }
+                
+                // Toggle overlay
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.toggle('active');
+                    console.log("Overlay active:", sidebarOverlay.classList.contains('active'));
+                }
+            }
+            
+            // Add click event to mobile menu toggle
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    console.log("Mobile menu toggle clicked");
+                    toggleSidebar(e);
+                });
+            }
+            
+            // Close sidebar when clicking on overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function(e) {
+                    console.log("Overlay clicked");
+                    toggleSidebar(e);
+                });
+            }
+            
+            // Ensure sidebar links are clickable
+            const sidebarLinks = document.querySelectorAll('.sidebar-btn, .logout-btn');
+            sidebarLinks.forEach(link => {
+                link.style.pointerEvents = 'auto';
+                console.log("Made link clickable:", link.textContent.trim());
+            });
+            
+            // Filter students functionality
+            window.filterStudents = function() {
+                const input = document.getElementById('searchInput');
+                const filter = input.value.toUpperCase();
+                const cards = document.querySelectorAll('.performance-card');
+                
+                cards.forEach(card => {
+                    const name = card.querySelector('h3').textContent;
+                    if (name.toUpperCase().indexOf(filter) > -1) {
+                        card.style.display = "";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+            }
+            
+            // Initialize charts for each student
+            {% for student in students %}
+                {% for eval in gross_evaluations %}
+                    {% if eval.student_name == student.child_name %}
+                        const ctx{{ forloop.parentloop.counter }} = document.getElementById('chart-{{ forloop.parentloop.counter }}').getContext('2d');
+                        
+                        // Define domain colors
+                        const domainColors = {
+                            'Gross Motor': 'rgb(255, 99, 132)',
+                            'Fine Motor': 'rgb(54, 162, 235)',
+                            'Self Help': 'rgb(75, 192, 192)',
+                            'Receptive Language': 'rgb(153, 102, 255)',
+                            'Expressive Language': 'rgb(255, 159, 64)',
+                            'Cognitive': 'rgb(255, 205, 86)',
+                            'Social-Emotional': 'rgb(201, 203, 207)'
+                        };
+                        
+                        // Create datasets
+                        const datasets{{ forloop.parentloop.counter }} = [];
+                        
+                        {% for eval in gross_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Gross Motor',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Gross Motor'],
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Gross Motor'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for eval in fine_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Fine Motor',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Fine Motor'],
+                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Fine Motor'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for eval in self_help_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Self Help',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Self Help'],
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Self Help'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for eval in receptive_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Receptive Language',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Receptive Language'],
+                                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Receptive Language'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for eval in expressive_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Expressive Language',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Expressive Language'],
+                                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Expressive Language'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for eval in cognitive_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Cognitive',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Cognitive'],
+                                    backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Cognitive'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for eval in social_evaluations %}
+                            {% if eval.student_name == student.child_name %}
+                                datasets{{ forloop.parentloop.parentloop.counter }}.push({
+                                    label: 'Social-Emotional',
+                                    data: [{{ eval.eval1_score }}, {{ eval.eval2_score }}, {{ eval.eval3_score }}],
+                                    borderColor: domainColors['Social-Emotional'],
+                                    backgroundColor: 'rgba(201, 203, 207, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: domainColors['Social-Emotional'],
+                                    pointBorderColor: '#fff',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                });
+                            {% endif %}
+                        {% endfor %}
+                        
+                        // Create the chart
+                        new Chart(ctx{{ forloop.parentloop.counter }}, {
+                            type: 'line',
+                            data: {
+                                labels: ['1st Evaluation', '2nd Evaluation', '3rd Evaluation'],
+                                datasets: datasets{{ forloop.parentloop.counter }}
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: {
+                                            color: 'rgba(0, 0, 0, 0.05)'
+                                        },
+                                        ticks: {
+                                            font: {
+                                                family: 'Poppins',
+                                                size: 12
+                                            }
+                                        }
+                                    },
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: 'Evaluation'
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        });
+    </script>
+</body>
+</html>

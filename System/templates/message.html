@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="mb-4">Redirecting to Chat...</h2>
+                    <div class="spinner-border text-primary mb-4" role="status">
+                        <span class="visually-hidden">Redirecting...</span>
+                    </div>
+                    <p class="lead">You will be redirected to the chat application...</p>
+                    <a href="/chat/" class="btn btn-primary mt-3">Continue to Chat</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Redirect to chat app after a short delay
+    setTimeout(function() {
+        window.location.href = '/chat/';
+    }, 1500);
+</script>
+{% endblock %}

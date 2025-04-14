@@ -17,16 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
-from chat import views as chat_views
+from Messaging import views as messaging_views
 
-def redirect_to_chat(request):
-    return redirect('chat:index')
+def redirect_to_system(request):
+    return redirect('login')
 
 urlpatterns = [
-    path('', redirect_to_chat, name='home'),
+    path('', redirect_to_system, name='home'),
     path('admin/', admin.site.urls),
-    path('chat/', include('chat.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('register/', chat_views.register, name='register'),
-    path('logout/', chat_views.logout_view, name='logout'),
+    path('system/', include('System.urls')),
+    # Include all Messaging URLs
+    path('messaging/', include('Messaging.urls')),
 ]
