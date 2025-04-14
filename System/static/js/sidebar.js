@@ -2,9 +2,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Sidebar.js loaded");
     
+    // Force sidebar to consistent state on page load
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        // Reset any styles that might have been affected by other pages
+        ensureSidebarConsistency();
+    }
+    
     // Mobile menu toggle functionality
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    const sidebar = document.getElementById('sidebar');
     
     if (mobileMenuToggle && sidebar) {
         console.log("Found mobile toggle and sidebar elements");
@@ -32,6 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Close sidebar when window is resized to larger than mobile breakpoint
     window.addEventListener('resize', function() {
+        ensureSidebarConsistency();
+        
         if (window.innerWidth > 576) {
             if (sidebar && sidebar.classList.contains('active')) {
                 sidebar.classList.remove('active');
@@ -39,6 +47,62 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Function to ensure sidebar maintains consistent dimensions and position
+    function ensureSidebarConsistency() {
+        if (!sidebar) return;
+        
+        // Ensure core sidebar properties
+        if (window.innerWidth <= 576) {
+            // Mobile view
+            sidebar.style.position = 'fixed';
+            sidebar.style.height = '100vh';
+            sidebar.style.width = '280px';
+            
+            if (!sidebar.classList.contains('active')) {
+                sidebar.style.left = '-280px';
+            }
+        } else if (window.innerWidth <= 992) {
+            // Tablet view
+            sidebar.style.position = 'fixed';
+            sidebar.style.left = '0';
+            sidebar.style.top = '0';
+            sidebar.style.height = '100vh';
+            
+            if (sidebar.classList.contains('active')) {
+                sidebar.style.width = '250px';
+            } else {
+                sidebar.style.width = '80px';
+            }
+        } else {
+            // Desktop view
+            sidebar.style.position = 'fixed';
+            sidebar.style.left = '0';
+            sidebar.style.top = '0';
+            sidebar.style.height = '100vh';
+            sidebar.style.width = '250px';
+        }
+        
+        // Ensure the main content is properly positioned
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            if (window.innerWidth <= 576) {
+                mainContent.style.marginLeft = '0';
+                mainContent.style.width = '100%';
+            } else if (window.innerWidth <= 992) {
+                if (sidebar.classList.contains('active')) {
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                } else {
+                    mainContent.style.marginLeft = '80px';
+                    mainContent.style.width = 'calc(100% - 80px)';
+                }
+            } else {
+                mainContent.style.marginLeft = '250px';
+                mainContent.style.width = 'calc(100% - 250px)';
+            }
+        }
+    }
     
     // Function to create sidebar overlay
     function createSidebarOverlay() {
@@ -105,6 +169,9 @@ document.addEventListener('DOMContentLoaded', function() {
             window.filterStudents();
         });
     }
+    
+    // Run consistency check whenever page changes might affect the sidebar
+    document.addEventListener('visibilitychange', ensureSidebarConsistency);
 });
 
 // Add Student Modal functionality

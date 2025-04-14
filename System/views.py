@@ -366,7 +366,9 @@ def settings_view(request):
     """
     View function for the settings page.
     """
-    return render(request, 'settings.html')
+    from .models import PDFFile
+    pdf_files = PDFFile.objects.all().order_by('-uploaded_at')
+    return render(request, 'settings.html', {'pdf_files': pdf_files})
 
 def evaluation_gross(request):
     # Get username
@@ -1489,4 +1491,45 @@ def get_student_performance_data(request):
             'status': 'error',
             'message': f"An error occurred: {str(e)}"
         }, status=500)
+
+@login_required
+def upload_pdf(request):
+    """
+    Handle the PDF file upload.
+    """
+    if request.method == 'POST' and request.FILES.get('pdf_file'):
+        pdf_files = request.FILES.getlist('pdf_file')
+        
+        for pdf_file in pdf_files:
+            # Create a new PDFFile instance
+            from .models import PDFFile
+            pdf = PDFFile(
+                name=pdf_file.name,
+                file=pdf_file,
+                size=pdf_file.size
+            )
+            pdf.save()
+        
+        messages.success(request, f'{len(pdf_files)} PDF file(s) uploaded successfully.')
+        return redirect('settings')
+    
+    messages.error(request, 'No PDF files were uploaded.')
+    return redirect('settings')
+
+@login_required
+def delete_pdf(request, pdf_id):
+    """
+    Delete a PDF file.
+    """
+    from .models import PDFFile
+    
+    try:
+        pdf = PDFFile.objects.get(id=pdf_id)
+        pdf.file.delete()  # Delete the actual file
+        pdf.delete()       # Delete the database record
+        messages.success(request, f'File "{pdf.name}" deleted successfully.')
+    except PDFFile.DoesNotExist:
+        messages.error(request, 'File not found.')
+    
+    return redirect('settings')
 

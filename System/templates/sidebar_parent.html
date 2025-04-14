@@ -1,0 +1,74 @@
+{% load static %}
+<!-- Add sidebar overlay -->
+<div id="sidebarOverlay"></div>
+
+<!-- Mobile menu toggle button -->
+<button class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Create the sidebar structure -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>OB Pagsasarili</h3>
+    </div>
+    <div class="sidebar-content">
+        <a href="{% url 'dashboard' %}" class="sidebar-btn {% if request.path == '/dashboard/' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{% url 'student_profile' %}" class="sidebar-btn {% if request.path == '/student_profile/' %}active{% endif %}">
+            <i class="fas fa-user"></i>
+            <span>Pupil's Profile</span>
+        </a>
+        <a href="{% url 'student_performance' %}" class="sidebar-btn {% if request.path == '/student_performance/' %}active{% endif %}">
+            <i class="fas fa-chart-line"></i>
+            <span>Performance Report</span>
+        </a>
+        <a href="{% url 'message_home' %}" class="sidebar-btn {% if request.path == '/messaging/' %}active{% endif %}">
+            <i class="fas fa-envelope"></i>
+            <span>Messages</span>
+            <span class="notification-badge"></span>
+        </a>
+        <a href="{% url 'evaluation_gross' %}" class="sidebar-btn {% if request.path == '/evaluation/gross/' %}active{% endif %}">
+            <i class="fas fa-chart-bar"></i>
+            <span>Evaluation</span>
+        </a>
+        <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mobile menu toggle functionality
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+        
+        // Add click event to mobile menu toggle
+        mobileMenuToggle.addEventListener('click', toggleSidebar);
+        
+        // Close sidebar when clicking on overlay
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+        
+        // Logout confirmation
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm("Are you sure you want to logout?")) {
+                    window.location.href = this.getAttribute('href');
+                }
+            });
+        }
+    });
+</script> 

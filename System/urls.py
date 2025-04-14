@@ -27,6 +27,8 @@ from .views import (
     student_profile,
     messages_view,
     get_student_performance_data,
+    upload_pdf,
+    delete_pdf,
 )
 
 urlpatterns = [
@@ -64,4 +66,6 @@ urlpatterns = [
     path('student-performance/', views.student_performance, name='student_performance'),
     path('student-profile/', student_profile, name='student_profile'),
     path('api/student-performance-data/', get_student_performance_data, name='get_student_performance_data'),
+    path('upload-pdf/', upload_pdf, name='upload_pdf'),
+    path('delete-pdf/<int:pdf_id>/', delete_pdf, name='delete_pdf'),
 ]

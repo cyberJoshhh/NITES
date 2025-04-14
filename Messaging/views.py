@@ -5,7 +5,9 @@ from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from .models import Message, ChatGroup
+from System.models import PDFFile
 import json
+import os
 
 @login_required
 def message_home(request):
@@ -58,13 +60,23 @@ def get_messages(request):
         # Format messages for JSON response
         message_list = []
         for msg in messages:
-            message_list.append({
+            message_data = {
                 'id': msg.id,
                 'sender': msg.sender.username,
                 'content': msg.content,
                 'timestamp': msg.timestamp.strftime('%b %d, %Y, %I:%M %p'),
                 'is_mine': msg.sender == request.user
-            })
+            }
+            
+            # Add attachment info if present
+            if msg.attachment:
+                message_data['attachment'] = {
+                    'id': msg.attachment.id,
+                    'name': msg.attachment.name,
+                    'url': msg.attachment.file.url
+                }
+            
+            message_list.append(message_data)
         
         return JsonResponse({'messages': message_list, 'other_user': other_user.username})
     
@@ -84,17 +96,50 @@ def get_group_messages(request):
         # Format messages for JSON response
         message_list = []
         for msg in messages:
-            message_list.append({
+            message_data = {
                 'id': msg.id,
                 'sender': msg.sender.username,
                 'content': msg.content,
                 'timestamp': msg.timestamp.strftime('%b %d, %Y, %I:%M %p'),
                 'is_mine': msg.sender == request.user
-            })
+            }
+            
+            # Add attachment info if present
+            if msg.attachment:
+                message_data['attachment'] = {
+                    'id': msg.attachment.id,
+                    'name': msg.attachment.name,
+                    'url': msg.attachment.file.url
+                }
+            
+            message_list.append(message_data)
         
         return JsonResponse({'messages': message_list, 'group_name': group.name})
     
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@login_required
+def get_documents(request):
+    """AJAX endpoint to get documents for the PDF attachment modal"""
+    # Only teachers can retrieve documents
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Only teachers can access documents'}, status=403)
+    
+    # Get all PDF files, ordered by most recent first
+    pdfs = PDFFile.objects.all().order_by('-uploaded_at')
+    
+    # Format documents for JSON response
+    document_list = []
+    for pdf in pdfs:
+        document_list.append({
+            'id': pdf.id,
+            'name': pdf.name,
+            'url': pdf.file.url,
+            'uploaded_at': pdf.uploaded_at.strftime('%b %d, %Y'),
+            'size': pdf.size
+        })
+    
+    return JsonResponse({'documents': document_list})
 
 @csrf_exempt
 @login_required
@@ -104,10 +149,20 @@ def send_message(request):
         data = json.loads(request.body)
         
         message_type = data.get('type', 'direct')
-        content = data.get('content')
+        content = data.get('content', '')
+        attachment_id = data.get('attachment')
         
-        if not content:
-            return JsonResponse({'error': 'Message content is required'}, status=400)
+        # Get attachment if provided
+        attachment = None
+        if attachment_id:
+            try:
+                attachment = PDFFile.objects.get(id=attachment_id)
+            except PDFFile.DoesNotExist:
+                return JsonResponse({'error': 'Attachment not found'}, status=400)
+        
+        # Require either content or attachment
+        if not content and not attachment:
+            return JsonResponse({'error': 'Message content or attachment is required'}, status=400)
         
         # For direct messages
         if message_type == 'direct':
@@ -123,16 +178,28 @@ def send_message(request):
                 sender=request.user,
                 recipient=recipient,
                 content=content,
+                attachment=attachment,
                 message_type='direct'
             )
             
-            return JsonResponse({
+            # Prepare response data
+            response_data = {
                 'id': message.id,
                 'sender': message.sender.username,
                 'content': message.content,
                 'timestamp': message.timestamp.strftime('%b %d, %Y, %I:%M %p'),
                 'is_mine': True
-            })
+            }
+            
+            # Add attachment info if present
+            if message.attachment:
+                response_data['attachment'] = {
+                    'id': message.attachment.id,
+                    'name': message.attachment.name,
+                    'url': message.attachment.file.url
+                }
+            
+            return JsonResponse(response_data)
         
         # For group messages
         elif message_type == 'group':
@@ -148,16 +215,28 @@ def send_message(request):
                 sender=request.user,
                 group=group,
                 content=content,
+                attachment=attachment,
                 message_type='group'
             )
             
-            return JsonResponse({
+            # Prepare response data
+            response_data = {
                 'id': message.id,
                 'sender': message.sender.username,
                 'content': message.content,
                 'timestamp': message.timestamp.strftime('%b %d, %Y, %I:%M %p'),
                 'is_mine': True
-            })
+            }
+            
+            # Add attachment info if present
+            if message.attachment:
+                response_data['attachment'] = {
+                    'id': message.attachment.id,
+                    'name': message.attachment.name,
+                    'url': message.attachment.file.url
+                }
+            
+            return JsonResponse(response_data)
     
     return JsonResponse({'error': 'Invalid request'}, status=400)
 

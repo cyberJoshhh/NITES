@@ -9,7 +9,7 @@ class ChatGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('sender', 'recipient', 'group', 'content', 'timestamp', 'is_read', 'message_type')
+    list_display = ('sender', 'recipient', 'group', 'content', 'attachment', 'timestamp', 'is_read', 'message_type')
     list_filter = ('message_type', 'is_read', 'timestamp')
     search_fields = ('content',)
     date_hierarchy = 'timestamp'

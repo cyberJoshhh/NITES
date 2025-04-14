@@ -9,4 +9,5 @@ urlpatterns = [
     path('create_group/', views.create_group, name='create_group'),
     path('get_unread_count/', views.get_unread_count, name='get_unread_count'),
     path('get_group_members/', views.get_group_members, name='get_group_members'),
+    path('get_documents/', views.get_documents, name='get_documents'),
 ] 

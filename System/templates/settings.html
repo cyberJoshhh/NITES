@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings | OB Pagsasarili</title>
+    <title>PDF Manager | OB Pagsasarili</title>
     <!-- Add Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Add Google Fonts -->
@@ -12,8 +12,7 @@
     
     <!-- Include CSS files -->
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
-    <link rel="stylesheet" href="{% static 'css/performance.css' %}">
-
+    
     <style>
         :root {
             --primary: #2d6a4f;
@@ -28,32 +27,47 @@
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             --transition: all 0.3s ease;
         }
-
-        /* Settings specific styles */
-        .settings-container {
-            padding: 20px;
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Override main content styles to work with sidebar */
+        .main-content {
+            margin-left: 300px !important;
+            width: calc(100% - 250px) !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        /* PDF List styles */
+        .pdf-container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 0 10px;
         }
-
-        .settings-card {
+        
+        .pdf-card {
             background-color: white;
             border-radius: 15px;
-            box-shadow: var(--shadow);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             margin-bottom: 25px;
             overflow: hidden;
         }
-
-        .settings-header {
+        
+        .pdf-header {
             background: linear-gradient(135deg, var(--primary-light), var(--primary));
             color: white;
             padding: 15px 20px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
         }
-
-        .settings-header h3 {
+        
+        .pdf-header h3 {
             margin: 0;
             font-size: 1.2rem;
             font-weight: 600;
@@ -61,522 +75,349 @@
             align-items: center;
             gap: 10px;
         }
-
-        .settings-body {
+        
+        .pdf-body {
             padding: 20px;
         }
-
-        .settings-section {
-            margin-bottom: 25px;
-        }
-
-        .settings-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .settings-section h4 {
-            color: var(--dark);
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
+        
+        .upload-area {
+            border: 2px dashed #ccc;
             border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 14px;
-            transition: var(--transition);
-        }
-
-        .form-control:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
-            outline: none;
-        }
-
-        .form-check {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .form-check-input {
-            margin-right: 10px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition);
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--dark);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background-color: #e9ecef;
-            color: #495057;
-        }
-
-        .btn-secondary:hover {
-            background-color: #dde2e6;
-        }
-
-        .btn-danger {
-            background-color: var(--danger);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #c82333;
-        }
-
-        .settings-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .color-picker {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .color-option {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: var(--transition);
-        }
-
-        .color-option.active {
-            border-color: #333;
-            transform: scale(1.1);
-        }
-
-        .color-option:hover {
-            transform: scale(1.1);
-        }
-
-        .toggle-switch {
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #f9f9f9;
             position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
         }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .toggle-slider {
-            background-color: var(--primary);
-        }
-
-        input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        
+        .upload-icon {
+            font-size: 60px;
+            color: var(--primary);
             margin-bottom: 15px;
         }
-
-        .toggle-label {
+        
+        .upload-text {
+            margin-bottom: 15px;
+            color: #555;
+            font-size: 16px;
+        }
+        
+        .upload-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .upload-button:hover {
+            background-color: var(--dark);
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        /* PDF List Table */
+        .pdf-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+        }
+        
+        .pdf-list-header {
+            background-color: #f2f2f2;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            overflow: hidden;
+            text-align: left;
+        }
+        
+        .pdf-list-header th {
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #333;
+            font-size: 15px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .pdf-item {
+            border-bottom: 1px solid #eee;
+        }
+        
+        .pdf-item:last-child {
+            border-bottom: none;
+        }
+        
+        .pdf-item td {
+            padding: 15px;
+            vertical-align: middle;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .pdf-icon {
+            color: #e74c3c;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .pdf-name {
             font-weight: 500;
             color: #333;
         }
-
-        /* Critical mobile sidebar styles - these will override any external CSS */
+        
+        .pdf-date, .pdf-size {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .pdf-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+        
+        .action-button {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #555;
+        }
+        
+        .view-btn:hover {
+            color: var(--info);
+        }
+        
+        .download-btn:hover {
+            color: var(--success);
+        }
+        
+        .delete-btn:hover {
+            color: var(--danger);
+        }
+        
+        .empty-list {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        
+        /* Page header styles */
+        .page-header {
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            font-size: 1.75rem;
+            color: var(--dark);
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+        
+        /* Tablet view */
+        @media (max-width: 992px) {
+            .main-content {
+                margin-left: 80px !important;
+                width: calc(100% - 80px) !important;
+            }
+        }
+        
+        /* Mobile view */
         @media (max-width: 576px) {
-            .mobile-menu-toggle {
-                display: flex !important;
-                position: fixed !important;
-                top: 15px !important;
-                left: 15px !important;
-                z-index: 1000 !important;
-                background-color: #2d6a4f !important;
-                color: white !important;
-                border: none !important;
-                width: 50px !important;
-                height: 50px !important;
-                border-radius: 50% !important;
-                cursor: pointer !important;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 20px !important;
-            }
-            
-            .sidebar {
-                position: fixed !important;
-                left: -280px !important;
-                top: 0 !important;
-                height: 100% !important;
-                width: 280px !important;
-                background-color: white !important;
-                z-index: 1001 !important;
-                transition: transform 0.3s ease !important;
-                box-shadow: 0 0 20px rgba(0,0,0,0.2) !important;
-                overflow-y: auto !important;
-            }
-            
-            .sidebar.active {
-                transform: translateX(280px) !important;
-            }
-            
-            .sidebar-btn, .logout-btn {
-                pointer-events: auto !important;
-            }
-            
-            #sidebarOverlay {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                background-color: rgba(0,0,0,0.5) !important;
-                z-index: 1000 !important;
-                display: none !important;
-            }
-            
-            #sidebarOverlay.active {
-                display: block !important;
-            }
-            
             .main-content {
                 margin-left: 0 !important;
                 width: 100% !important;
-                padding-top: 80px !important;
+                padding: 15px !important;
+                padding-top: 70px !important;
+            }
+            
+            .pdf-list {
+                table-layout: fixed;
+            }
+            
+            .pdf-list-header th:nth-child(3) {
+                display: none;
+            }
+            
+            .pdf-item td:nth-child(3) {
+                display: none;
+            }
+            
+            .pdf-actions {
+                gap: 10px;
+            }
+            
+            .pdf-body {
+                padding: 15px;
+            }
+            
+            .pdf-container {
+                padding: 0;
+            }
+            
+            .upload-area {
+                padding: 30px 15px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
+    <!-- Include the sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Mobile menu toggle button for small screens -->
     <button class="mobile-menu-toggle" id="mobileMenuToggle">
         <i class="fas fa-bars"></i>
     </button>
 
-    <!-- Sidebar Overlay -->
-    <div id="sidebarOverlay"></div>
-
-    <!-- Include the sidebar -->
-    {% include 'sidebar.html' %}
-
     <!-- Main Content -->
     <div class="main-content">
         <div class="page-header">
-            <h1 class="page-title">Settings</h1>
+            <h1 class="page-title">PDF Manager</h1>
         </div>
         
-        <div class="settings-container">
-            <!-- Account Settings -->
-            <div class="settings-card">
-                <div class="settings-header">
-                    <h3><i class="fas fa-user-circle"></i> Account Settings</h3>
+        <div class="pdf-container">
+            <div class="pdf-card">
+                <div class="pdf-header">
+                    <h3><i class="fas fa-file-pdf"></i> PDF Files</h3>
                 </div>
-                <div class="settings-body">
-                    <form id="accountSettingsForm">
-                        <div class="settings-section">
-                            <h4>Personal Information</h4>
-                            <div class="form-group">
-                                <label for="fullName">Full Name</label>
-                                <input type="text" id="fullName" class="form-control" value="John Doe">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" class="form-control" value="john.doe@example.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" class="form-control" value="+63 912 345 6789">
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h4>Change Password</h4>
-                            <div class="form-group">
-                                <label for="currentPassword">Current Password</label>
-                                <input type="password" id="currentPassword" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="newPassword">New Password</label>
-                                <input type="password" id="newPassword" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label for="confirmPassword">Confirm New Password</label>
-                                <input type="password" id="confirmPassword" class="form-control">
-                            </div>
-                        </div>
-                        
-                        <div class="settings-actions">
-                            <button type="button" class="btn btn-secondary">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                <div class="pdf-body">
+                    <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'upload_pdf' %}">
+                        {% csrf_token %}
+                        <div class="upload-area" id="drop-area">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <p class="upload-text">Drag & drop your PDF files here or click to browse</p>
+                            <input type="file" id="file-input" name="pdf_file" accept=".pdf" multiple>
+                            <button type="button" class="upload-button" id="browse-button">Browse Files</button>
                         </div>
                     </form>
-                </div>
-            </div>
-            
-            <!-- Appearance Settings -->
-            <div class="settings-card">
-                <div class="settings-header">
-                    <h3><i class="fas fa-palette"></i> Appearance Settings</h3>
-                </div>
-                <div class="settings-body">
-                    <div class="settings-section">
-                        <h4>Theme</h4>
-                        <div class="form-check">
-                            <input type="radio" id="lightTheme" name="theme" class="form-check-input" checked>
-                            <label for="lightTheme">Light Theme</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" id="darkTheme" name="theme" class="form-check-input">
-                            <label for="darkTheme">Dark Theme</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" id="systemTheme" name="theme" class="form-check-input">
-                            <label for="systemTheme">Use System Theme</label>
-                        </div>
-                    </div>
                     
-                    <div class="settings-section">
-                        <h4>Accent Color</h4>
-                        <div class="color-picker">
-                            <div class="color-option active" style="background-color: #2d6a4f;" data-color="#2d6a4f"></div>
-                            <div class="color-option" style="background-color: #1e88e5;" data-color="#1e88e5"></div>
-                            <div class="color-option" style="background-color: #d81b60;" data-color="#d81b60"></div>
-                            <div class="color-option" style="background-color: #8e24aa;" data-color="#8e24aa"></div>
-                            <div class="color-option" style="background-color: #f4511e;" data-color="#f4511e"></div>
-                            <div class="color-option" style="background-color: #546e7a;" data-color="#546e7a"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h4>Font Size</h4>
-                        <div class="form-check">
-                            <input type="radio" id="smallFont" name="fontSize" class="form-check-input">
-                            <label for="smallFont">Small</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" id="mediumFont" name="fontSize" class="form-check-input" checked>
-                            <label for="mediumFont">Medium</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" id="largeFont" name="fontSize" class="form-check-input">
-                            <label for="largeFont">Large</label>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-actions">
-                        <button type="button" class="btn btn-secondary">Reset to Default</button>
-                        <button type="button" class="btn btn-primary">Apply Changes</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- System Settings -->
-            <div class="settings-card">
-                <div class="settings-header">
-                    <h3><i class="fas fa-cogs"></i> System Settings</h3>
-                </div>
-                <div class="settings-body">
-                    <div class="settings-section">
-                        <h4>Data Management</h4>
-                        <div class="form-group">
-                            <label for="backupFrequency">Automatic Backup Frequency</label>
-                            <select id="backupFrequency" class="form-control">
-                                <option value="daily">Daily</option>
-                                <option value="weekly" selected>Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="never">Never</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-primary">Backup Now</button>
-                            <button type="button" class="btn btn-secondary">Restore from Backup</button>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h4>Privacy</h4>
-                        <div class="toggle-container">
-                            <span class="toggle-label">Allow Data Collection for Improvements</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <span class="toggle-label">Share Anonymous Usage Statistics</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h4>Danger Zone</h4>
-                        <p>These actions are irreversible. Please proceed with caution.</p>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-danger">Clear All Data</button>
-                        </div>
-                    </div>
+                    <!-- PDF List Table -->
+                    <table class="pdf-list">
+                        <thead class="pdf-list-header">
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th style="width: 40%;">File Name</th>
+                                <th style="width: 20%;">Upload Date</th>
+                                <th style="width: 15%;">Size</th>
+                                <th style="width: 120px; text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if pdf_files %}
+                                {% for pdf in pdf_files %}
+                                <tr class="pdf-item">
+                                    <td>
+                                        <div class="pdf-icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </div>
+                                    </td>
+                                    <td class="pdf-name">{{ pdf.name }}</td>
+                                    <td class="pdf-date">{{ pdf.uploaded_at|date:"M d, Y" }}</td>
+                                    <td class="pdf-size">{{ pdf.size_display }}</td>
+                                    <td>
+                                        <div class="pdf-actions">
+                                            <a href="{{ pdf.file.url }}" target="_blank" class="action-button view-btn" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ pdf.file.url }}" download class="action-button download-btn" title="Download">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('Are you sure you want to delete this file?')" class="action-button delete-btn" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="empty-list">
+                                        <p>No PDF files uploaded yet.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Include necessary scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Inline sidebar.js to ensure it works -->
+    <!-- JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM fully loaded");
+            // PDF upload functionality
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file-input');
+            const browseButton = document.getElementById('browse-button');
+            const uploadForm = document.getElementById('uploadForm');
             
-            // Mobile menu toggle functionality
-            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            
-            console.log("Mobile toggle:", mobileMenuToggle);
-            console.log("Sidebar:", sidebar);
-            console.log("Overlay:", sidebarOverlay);
-            
-            // Function to toggle sidebar
-            function toggleSidebar(event) {
-                console.log("Toggle sidebar called");
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                
-                if (sidebar) {
-                    sidebar.classList.toggle('active');
-                    console.log("Sidebar active:", sidebar.classList.contains('active'));
-                }
-                
-                // Toggle overlay
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.toggle('active');
-                    console.log("Overlay active:", sidebarOverlay.classList.contains('active'));
-                }
-            }
-            
-            // Add click event to mobile menu toggle
-            if (mobileMenuToggle) {
-                mobileMenuToggle.addEventListener('click', function(e) {
-                    console.log("Mobile menu toggle clicked");
-                    toggleSidebar(e);
-                });
-            }
-            
-            // Close sidebar when clicking on overlay
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', function(e) {
-                    console.log("Overlay clicked");
-                    toggleSidebar(e);
-                });
-            }
-            
-            // Ensure sidebar links are clickable
-            const sidebarLinks = document.querySelectorAll('.sidebar-btn, .logout-btn');
-            sidebarLinks.forEach(link => {
-                link.style.pointerEvents = 'auto';
-                console.log("Made link clickable:", link.textContent.trim());
+            // Browse button click
+            browseButton.addEventListener('click', function() {
+                fileInput.click();
             });
             
-            // Color picker functionality
-            const colorOptions = document.querySelectorAll('.color-option');
-            colorOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    // Remove active class from all options
-                    colorOptions.forEach(opt => opt.classList.remove('active'));
-                    // Add active class to clicked option
-                    this.classList.add('active');
-                    // Get the selected color
-                    const selectedColor = this.getAttribute('data-color');
-                    console.log("Selected color:", selectedColor);
-                    // Here you would apply the color to your CSS variables
-                    // document.documentElement.style.setProperty('--primary', selectedColor);
-                });
+            // File input change
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    uploadForm.submit();
+                }
             });
             
-            // Form submission handling
-            const accountForm = document.getElementById('accountSettingsForm');
-            if (accountForm) {
-                accountForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    console.log("Account settings form submitted");
-                    // Here you would handle the form submission, e.g., via AJAX
-                    alert("Account settings updated successfully!");
-                });
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.style.borderColor = '#2d6a4f';
+                dropArea.style.backgroundColor = '#f0f9f5';
+            }
+            
+            function unhighlight() {
+                dropArea.style.borderColor = '#ccc';
+                dropArea.style.backgroundColor = '#f9f9f9';
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    uploadForm.submit();
+                }
             }
         });
     </script>
-
-    <!-- Include sidebar JavaScript -->
+    
+    <!-- Include sidebar.js for sidebar functionality -->
     <script src="{% static 'js/sidebar.js' %}"></script>
 </body>
-</html> 
+</html>

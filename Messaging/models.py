@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from System.models import PDFFile
 
 class ChatGroup(models.Model):
     name = models.CharField(max_length=100)
@@ -20,7 +21,8 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages', null=True, blank=True)
     group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
-    content = models.TextField()
+    content = models.TextField(blank=True)  # Allow empty content when there's an attachment
+    attachment = models.ForeignKey(PDFFile, on_delete=models.SET_NULL, null=True, blank=True, related_name='messages')
     timestamp = models.DateTimeField(default=timezone.now)
     is_read = models.BooleanField(default=False)
     message_type = models.CharField(max_length=10, choices=MESSAGE_TYPES)

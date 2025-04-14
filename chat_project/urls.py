@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
+from django.conf import settings
+from django.conf.urls.static import static
 from Messaging import views as messaging_views
 
 def redirect_to_system(request):
@@ -30,3 +32,7 @@ urlpatterns = [
     # Include all Messaging URLs
     path('messaging/', include('Messaging.urls')),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -4,14 +4,59 @@
 {% block title %}Messages{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/messaging/style.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+{% if not user.is_staff %}
+<link rel="stylesheet" href="{% static 'css/pdash.css' %}">
+{% endif %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+
 <style>
-    /* Add additional styles to ensure visibility */
+    :root {
+        --primary-color: #2d6a4f;
+        --secondary-color: #1b4332;
+        --light-color: #f8f9fa;
+        --dark-color: #212529;
+        --sent-msg-color: #dcf8c6;
+        --received-msg-color: #f0f0f0;
+        --sidebar-bg: linear-gradient(135deg, #2d6a4f, #1b4332);
+        --accent-color: #52b788;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8f9fa;
+    }
+    
+    /* Chat interface layout */
     .chat-interface {
         display: flex;
         flex-direction: column;
         height: 100%;
+        border-radius: var(--border-radius);
+        background-color: white;
+        box-shadow: var(--box-shadow);
+        overflow: hidden;
+    }
+    
+    /* Parent sidebar customization styles */
+    body[data-is-staff="false"] a[href*="comparison_view"], 
+    body[data-is-staff="false"] a[href*="add_student"] {
+        display: none !important;
+    }
+    
+    /* Chat interface layout */
+    .chat-interface {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border-radius: var(--border-radius);
+        background-color: white;
+        box-shadow: var(--box-shadow);
+        overflow: hidden;
     }
     
     .d-none {
@@ -26,18 +71,19 @@
         display: flex !important;
     }
     
-    /* Add styles to accommodate sidebar */
+    /* Content layout */
     .messaging-content {
         margin-left: 250px;
         width: calc(100% - 250px);
         transition: margin-left 0.3s ease;
         position: relative;
-        z-index: 1; /* Ensure content is above any overlays */
+        z-index: 1;
+        padding: 20px;
     }
     
-    /* Fix sidebar visibility - use !important for overriding */
-    #sidebar {
-        background: linear-gradient(135deg, #2d6a4f, #1b4332) !important;
+    /* Sidebar styling for teachers */
+    body[data-is-staff="true"] #sidebar {
+        background: var(--sidebar-bg) !important;
         color: white !important;
         z-index: 1000 !important;
         position: fixed !important;
@@ -47,11 +93,16 @@
         height: 100vh !important;
         width: 250px !important;
         padding: 20px !important;
-        box-shadow: 0 0 15px rgba(0,0,0,0.2) !important;
+        box-shadow: var(--box-shadow) !important;
         transition: transform 0.3s ease !important;
         transform: translateX(0) !important;
         will-change: transform;
-        pointer-events: auto !important; /* Ensure sidebar can be interacted with */
+        pointer-events: auto !important;
+    }
+    
+    /* Ensure parent sidebar doesn't get overridden */
+    body[data-is-staff="false"] #sidebar {
+        z-index: 1001 !important;
     }
     
     .sidebar-header h2, .sidebar-header h3 {
@@ -60,20 +111,36 @@
     
     .sidebar-btn, .logout-btn {
         color: white !important;
-        pointer-events: auto !important; /* Ensure buttons can be clicked */
+        pointer-events: auto !important;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        padding: 10px 15px;
     }
     
-    /* Ensure tabs are visible and working properly */
+    .sidebar-btn:hover, .logout-btn:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateX(5px);
+    }
+    
+    /* Tabs styling */
     .nav-pills .nav-link {
         cursor: pointer;
-        color: #2d6a4f;
+        color: var(--primary-color);
         font-weight: 500;
-        pointer-events: auto !important; /* Ensure tabs can be clicked */
+        pointer-events: auto !important;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-pills .nav-link:hover {
+        background-color: rgba(67, 97, 238, 0.1);
     }
     
     .nav-pills .nav-link.active {
-        background-color: #2d6a4f;
+        background-color: var(--primary-color);
         color: white;
+        box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
     }
     
     .tab-content {
@@ -95,67 +162,221 @@
         overflow: visible;
     }
     
-    /* Fix group list display */
+    /* Contact and group list */
     .group-list, .contact-list {
         max-height: 60vh;
         overflow-y: auto;
-        pointer-events: auto !important; /* Ensure lists can be interacted with */
+        pointer-events: auto !important;
+        border-radius: var(--border-radius);
+        padding: 0;
+        margin-top: 10px;
     }
     
-    /* Make sure contact items are clickable */
     .contact-item, .group-item {
         cursor: pointer !important;
         pointer-events: auto !important;
+        border: none !important;
+        margin-bottom: 8px !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+        background-color: white !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }
     
-    /* Mobile menu toggle button */
+    .contact-item:hover, .group-item:hover {
+        background-color: #f8f9fa !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Mobile menu toggle */
     #mobileMenuToggle {
         display: none;
         position: fixed;
         top: 10px;
         left: 10px;
         z-index: 1100;
-        background-color: #2d6a4f;
+        background-color: var(--primary-color);
         color: white;
         border: none;
-        border-radius: 4px;
-        padding: 8px 12px;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
         font-size: 1.2rem;
         cursor: pointer;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        pointer-events: auto !important; /* Ensure button can be clicked */
-    }
-    
-    /* Make sure message input and buttons are clickable */
-    .chat-input, .input-group, .form-control, .input-group-append, .btn {
+        box-shadow: var(--box-shadow);
         pointer-events: auto !important;
     }
     
-    /* Remove any overlay that might be blocking interactions */
-    #sidebarOverlay {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        background-color: rgba(0,0,0,0.5) !important;
-        z-index: 999 !important;
-        display: none !important; /* Hide by default */
-        pointer-events: auto !important; /* Ensure it can be clicked */
+    /* Chat area */
+    .chat-area {
+        padding: 0 !important;
     }
     
-    #sidebarOverlay.active {
-        display: block !important;
+    .welcome-screen {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 40px !important;
     }
     
-    /* Tablet responsive adjustments */
+    .welcome-screen i {
+        color: var(--primary-color) !important;
+        font-size: 5rem !important;
+    }
+    
+    .chat-header {
+        background-color: white;
+        padding: 15px 20px !important;
+        border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .chat-header h5 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+    
+    .chat-messages {
+        background-color: #f8f9fa;
+        padding: 20px !important;
+        min-height: calc(70vh - 130px) !important;
+        max-height: calc(70vh - 130px) !important;
+        overflow-y: auto;
+    }
+    
+    .chat-input {
+        background-color: white;
+        padding: 15px 20px !important;
+        border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .chat-input .form-control {
+        border-radius: 24px;
+        padding: 12px 20px;
+        box-shadow: none;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .chat-input .btn {
+        border-radius: 24px;
+        padding: 8px 20px;
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 5px rgba(67, 97, 238, 0.3);
+    }
+    
+    .chat-input .btn:hover {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(67, 97, 238, 0.4);
+    }
+    
+    /* Messages styling */
+    .message-item {
+        margin-bottom: 20px;
+        display: flex;
+        position: relative;
+    }
+    
+    .message-item.sent {
+        justify-content: flex-end;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 12px 18px;
+        border-radius: 18px;
+        background-color: var(--received-msg-color);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        position: relative;
+    }
+    
+    .message-item.received .message-bubble {
+        border-bottom-left-radius: 5px;
+    }
+    
+    .message-item.sent .message-bubble {
+        background-color: var(--sent-msg-color);
+        border-bottom-right-radius: 5px;
+        box-shadow: 0 1px 3px rgba(67, 97, 238, 0.2);
+    }
+    
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+        color: var(--primary-color);
+    }
+    
+    .message-text {
+        word-wrap: break-word;
+        font-size: 0.95rem;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        color: #777;
+        text-align: right;
+        margin-top: 5px;
+    }
+    
+    /* Modal styling */
+    .modal-content {
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+    }
+    
+    .modal-header {
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: calc(var(--border-radius) - 1px) calc(var(--border-radius) - 1px) 0 0;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+    }
+    
+    .modal-header .close {
+        color: white;
+    }
+    
+    .form-group label {
+        font-weight: 500;
+    }
+    
+    .custom-control-label {
+        cursor: pointer;
+    }
+    
+    .member-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+    }
+    
+    /* Responsive styling */
     @media (max-width: 992px) {
         .messaging-content {
             margin-left: 80px;
             width: calc(100% - 80px);
         }
         
-        #sidebar {
+        body[data-is-staff="true"] #sidebar {
             width: 80px !important;
             padding: 15px 10px !important;
         }
@@ -168,9 +389,12 @@
             font-size: 1.5rem !important;
             margin-right: 0 !important;
         }
+        
+        .contacts-sidebar {
+            padding: 0 10px;
+        }
     }
     
-    /* Mobile specific styles */
     @media (max-width: 576px) {
         .messaging-content {
             margin-left: 0;
@@ -179,14 +403,14 @@
             transition: margin-left 0.3s ease;
         }
         
-        #sidebar {
+        body[data-is-staff="true"] #sidebar {
             transform: translateX(-100%) !important;
             width: 250px !important;
             transition: transform 0.3s ease !important;
             left: 0 !important;
         }
         
-        #sidebar.active {
+        body[data-is-staff="true"] #sidebar.active {
             transform: translateX(0) !important;
         }
         
@@ -197,6 +421,153 @@
         .sidebar-header h2, .sidebar-header h3, .sidebar-btn span {
             display: inline-block !important;
         }
+        
+        .row {
+            margin: 0;
+        }
+        
+        .contacts-sidebar {
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        .col-md-3, .col-md-9 {
+            padding: 0;
+        }
+    }
+    
+    /* File attachment and display styles */
+    .attachment-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--primary-color);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 8px 10px;
+        transition: all 0.2s ease;
+    }
+    
+    .attachment-btn:hover {
+        color: var(--secondary-color);
+        transform: scale(1.1);
+    }
+    
+    .pdf-attachment {
+        display: flex;
+        align-items: center;
+        background-color: rgba(45, 106, 79, 0.1);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-top: 8px;
+        max-width: 250px;
+    }
+    
+    .pdf-attachment i {
+        color: #e74c3c;
+        font-size: 1.5rem;
+        margin-right: 10px;
+    }
+    
+    .pdf-attachment-name {
+        font-size: 0.9rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-grow: 1;
+    }
+    
+    .pdf-attachment-download {
+        color: var(--primary-color);
+        margin-left: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .document-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .document-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .document-item:hover {
+        background-color: rgba(45, 106, 79, 0.1);
+    }
+    
+    .document-item i {
+        font-size: 1.5rem;
+        margin-right: 10px;
+        color: #e74c3c;
+    }
+    
+    .document-info {
+        flex-grow: 1;
+    }
+    
+    .document-name {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+    
+    .document-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .selected-document {
+        background-color: rgba(45, 106, 79, 0.2);
+    }
+    
+    #selectedFileDisplay {
+        display: none;
+        align-items: center;
+        background-color: rgba(45, 106, 79, 0.1);
+        border-radius: 8px;
+        padding: 5px 10px;
+        margin-bottom: 10px;
+        width: 100%;
+    }
+    
+    #selectedFileName {
+        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-left: 8px;
+    }
+    
+    #removeSelectedFile {
+        color: #e74c3c;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0 5px;
+    }
+    
+    /* Hide teacher-specific sidebar items from parents */
+    body:not([data-is-staff="true"]) .teacher-only {
+        display: none !important;
+    }
+    
+    /* Ensure parent-specific items are only shown to parents */
+    body:not([data-is-staff="false"]) .parent-only {
+        display: none !important;
+    }
+    
+    /* Additional styling for parent sidebar */
+    body[data-is-staff="false"] #sidebar {
+        background: linear-gradient(135deg, #2d6a4f, #1b4332) !important;
+    }
+    
+    body[data-is-staff="false"] .sidebar-btn:hover {
+        background: rgba(255,255,255,0.15);
     }
 </style>
 {% endblock %}
@@ -208,70 +579,36 @@
     document.body.setAttribute('data-user-id', '{{ user.id }}');
 </script>
 
-<!-- Add user-specific sidebar based on user type -->
+<!-- Include the appropriate sidebar based on user role -->
 {% if user.is_staff %}
-{% include 'sidebar.html' %}
+    {% include 'sidebar.html' %}
 {% else %}
-    <!-- Parent User Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3>OB Pagsasarili</h3>
-        </div>
-        <div class="sidebar-content">
-            <a href="{% url 'dashboard' %}" class="sidebar-btn">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="{% url 'student_profile' %}" class="sidebar-btn">
-                <i class="fas fa-user"></i>
-                <span>Pupil's Profile</span>
-            </a>
-            <a href="{% url 'student_performance' %}" class="sidebar-btn">
-                <i class="fas fa-chart-line"></i>
-                <span>Performance Report</span>
-            </a>
-            <a href="{% url 'message_home' %}" class="sidebar-btn active">
-                <i class="fas fa-envelope"></i>
-                <span>Messages</span>
-                <span class="notification-badge"></span>
-            </a>
-            <a href="{% url 'evaluation_gross' %}" class="sidebar-btn">
-                <i class="fas fa-chart-bar"></i>
-                <span>Evaluation</span>
-            </a>
-            <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </a>
-        </div>
-    </div>
-    <!-- Add this for the sidebar overlay -->
-    <div id="sidebarOverlay"></div>
+    {% include 'sidebar_parent.html' %}
 {% endif %}
 
 <div class="container-fluid messaging-content">
     <div class="row">
         <!-- Contacts sidebar -->
         <div class="col-md-3 border-right contacts-sidebar">
-            <div class="d-flex flex-column">
+            <div class="d-flex flex-column h-100 bg-white p-3 rounded shadow-sm">
                 <div class="contacts-header py-3">
-                    <h4 class="mb-0">Messages</h4>
+                    <h4 class="mb-0 font-weight-bold">Messages</h4>
                     {% if user.is_staff %}
-                    <button class="btn btn-sm btn-primary mt-2" id="createGroupBtn">
-                        <i class="fas fa-users"></i> Create Group
+                    <button class="btn btn-sm btn-primary mt-3" id="createGroupBtn">
+                        <i class="fas fa-users mr-1"></i> Create Group
                     </button>
                     {% endif %}
                 </div>
                 
-                <ul class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                <ul class="nav flex-column nav-pills mt-3" id="v-pills-tab" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="direct-messages-tab" data-toggle="pill" href="#direct-messages" role="tab" aria-controls="direct-messages" aria-selected="true">
-                            <i class="fas fa-user"></i> Direct Messages
+                        <a class="nav-link active d-flex align-items-center" id="direct-messages-tab" data-toggle="pill" href="#direct-messages" role="tab" aria-controls="direct-messages" aria-selected="true">
+                            <i class="fas fa-user mr-2"></i> Direct Messages
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="group-messages-tab" data-toggle="pill" href="#group-messages" role="tab" aria-controls="group-messages" aria-selected="false">
-                            <i class="fas fa-users"></i> Group Chats
+                        <a class="nav-link d-flex align-items-center" id="group-messages-tab" data-toggle="pill" href="#group-messages" role="tab" aria-controls="group-messages" aria-selected="false">
+                            <i class="fas fa-users mr-2"></i> Group Chats
                         </a>
                     </li>
                 </ul>
@@ -284,14 +621,17 @@
                             <a href="javascript:void(0);" class="list-group-item list-group-item-action contact-item" data-id="{{ contact.id }}">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
                                     <div>
-                                        <i class="fas fa-user-circle mr-2"></i>
+                                        <i class="fas fa-user-circle mr-2 text-primary"></i>
                                         <span>{{ contact.username }}</span>
                                     </div>
                                     <span class="badge badge-primary badge-pill unread-badge d-none" data-user="{{ contact.id }}">0</span>
                                 </div>
                             </a>
                             {% empty %}
-                            <div class="text-center text-muted py-3">No contacts available</div>
+                            <div class="text-center text-muted py-4 bg-light rounded">
+                                <i class="fas fa-user-slash mb-2" style="font-size: 2rem;"></i>
+                                <p>No contacts available</p>
+                            </div>
                             {% endfor %}
                         </div>
                     </div>
@@ -303,13 +643,16 @@
                             <a href="javascript:void(0);" class="list-group-item list-group-item-action group-item" data-id="{{ group.id }}">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
                                     <div>
-                                        <i class="fas fa-users mr-2"></i>
+                                        <i class="fas fa-users mr-2 text-primary"></i>
                                         <span>{{ group.name }}</span>
                                     </div>
                                 </div>
                             </a>
                             {% empty %}
-                            <div class="text-center text-muted py-3">No group chats available</div>
+                            <div class="text-center text-muted py-4 bg-light rounded">
+                                <i class="fas fa-users-slash mb-2" style="font-size: 2rem;"></i>
+                                <p>No group chats available</p>
+                            </div>
                             {% endfor %}
                         </div>
                     </div>
@@ -320,9 +663,23 @@
         <!-- Chat area -->
         <div class="col-md-9 chat-area">
             <div class="welcome-screen text-center py-5" id="welcomeScreen">
-                <i class="fas fa-comments mb-3" style="font-size: 4rem; color: #ccc;"></i>
-                <h3>Welcome to Messages</h3>
+                <div class="welcome-icon mb-4">
+                    <i class="fas fa-comments" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="font-weight-bold">Welcome to Messages</h3>
                 <p class="text-muted">Select a contact or group to start messaging</p>
+                <div class="welcome-hint mt-4">
+                    <div class="d-flex justify-content-center">
+                        <div class="hint-item mx-3 text-center">
+                            <i class="fas fa-user-circle mb-2" style="font-size: 2rem; color: var(--primary-color);"></i>
+                            <p>Direct Messages</p>
+                        </div>
+                        <div class="hint-item mx-3 text-center">
+                            <i class="fas fa-users mb-2" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                            <p>Group Chats</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="chat-interface d-none">
@@ -335,8 +692,16 @@
                 </div>
                 
                 <div class="chat-input border-top p-3">
+                    <div id="selectedFileDisplay">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        <span id="selectedFileName"></span>
+                        <button id="removeSelectedFile"><i class="fas fa-times"></i></button>
+                    </div>
                     <form id="messageForm">
                         <div class="input-group">
+                            <button type="button" class="attachment-btn" id="attachmentBtn" title="Attach PDF">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
                             <input type="text" class="form-control" id="messageInput" placeholder="Type a message...">
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="submit">
@@ -350,11 +715,6 @@
         </div>
     </div>
 </div>
-
-<!-- Mobile menu toggle button -->
-<button type="button" id="mobileMenuToggle" class="btn">
-    <i class="fas fa-bars"></i>
-</button>
 
 <!-- Create Group Modal -->
 {% if user.is_staff %}
@@ -395,62 +755,47 @@
 </div>
 {% endif %}
 
-<!-- Additional CSS to fix message styling -->
-<style>
-    .message-item {
-        margin-bottom: 15px;
-        display: flex;
-    }
-    
-    .message-item.sent {
-        justify-content: flex-end;
-    }
-    
-    .message-bubble {
-        max-width: 70%;
-        padding: 10px 15px;
-        border-radius: 18px;
-        background-color: #f1f0f0;
-    }
-    
-    .message-item.sent .message-bubble {
-        background-color: #dcf8c6;
-    }
-    
-    .message-sender {
-        font-weight: bold;
-        font-size: 0.8rem;
-        margin-bottom: 3px;
-    }
-    
-    .message-text {
-        word-wrap: break-word;
-    }
-    
-    .message-time {
-        font-size: 0.7rem;
-        color: #777;
-        text-align: right;
-        margin-top: 3px;
-    }
-    
-    #messageContainer {
-        min-height: 300px;
-        max-height: 50vh;
-        overflow-y: auto;
-    }
-</style>
+<!-- Add PDF Attachment Modal -->
+<div class="modal fade" id="pdfAttachmentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select PDF to Attach</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="pdfSearchInput" placeholder="Search PDFs...">
+                </div>
+                <div class="document-list" id="pdfList">
+                    <!-- Documents will be loaded here -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading documents...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="selectPdfBtn" disabled>Attach Selected PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-{% endblock %}
-
-{% block extra_js %}
-<!-- Common Script for All Users -->
+<!-- Messaging-specific JavaScript -->
 <script>
 // Variables for user type will be initialized in the script
 var userIsStaff, currentUsername;
 var currentChatId = null;
 var currentChatType = null;
 var currentGroupName = null;
+var selectedPdfId = null;
+var selectedPdfName = null;
 
 // Direct fix to ensure chat interface shows
 document.addEventListener('DOMContentLoaded', function() {
@@ -604,7 +949,110 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Handle form submission for messages - now with real API connections
+    // PDF attachment functionality
+    const attachmentBtn = document.getElementById('attachmentBtn');
+    const pdfAttachmentModal = document.getElementById('pdfAttachmentModal');
+    const selectPdfBtn = document.getElementById('selectPdfBtn');
+    const selectedFileDisplay = document.getElementById('selectedFileDisplay');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const removeSelectedFile = document.getElementById('removeSelectedFile');
+    const pdfSearchInput = document.getElementById('pdfSearchInput');
+    
+    // Open PDF attachment modal
+    if (attachmentBtn && pdfAttachmentModal) {
+        attachmentBtn.addEventListener('click', function() {
+            // Only teachers can attach files
+            if (!userIsStaff) {
+                alert('Only teachers can attach files');
+                return;
+            }
+            
+            console.log('Opening PDF attachment modal');
+            
+            // Open the modal
+            if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                $('#pdfAttachmentModal').modal('show');
+                // Load PDFs when modal opens
+                loadPdfsFromDatabase();
+            } else {
+                // Fallback
+                console.log('jQuery not available, using fallback modal opening');
+                pdfAttachmentModal.style.display = 'block';
+                pdfAttachmentModal.classList.add('show');
+                document.body.classList.add('modal-open');
+                
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+                
+                // Load PDFs
+                loadPdfsFromDatabase();
+                
+                // Handle close buttons
+                const closeButtons = pdfAttachmentModal.querySelectorAll('[data-dismiss="modal"]');
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        pdfAttachmentModal.style.display = 'none';
+                        pdfAttachmentModal.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        document.body.removeChild(backdrop);
+                    });
+                });
+            }
+        });
+    }
+    
+    // Search PDFs
+    if (pdfSearchInput) {
+        pdfSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const documentItems = document.querySelectorAll('.document-item');
+            
+            documentItems.forEach(item => {
+                const documentName = item.querySelector('.document-name').textContent.toLowerCase();
+                if (documentName.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Handle PDF selection
+    if (selectPdfBtn) {
+        selectPdfBtn.addEventListener('click', function() {
+            if (selectedPdfId) {
+                // Display selected file
+                selectedFileDisplay.style.display = 'flex';
+                selectedFileName.textContent = selectedPdfName;
+                
+                // Close modal
+                if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                    $('#pdfAttachmentModal').modal('hide');
+                } else {
+                    pdfAttachmentModal.style.display = 'none';
+                    pdfAttachmentModal.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) document.body.removeChild(backdrop);
+                }
+            }
+        });
+    }
+    
+    // Remove selected file
+    if (removeSelectedFile) {
+        removeSelectedFile.addEventListener('click', function() {
+            selectedPdfId = null;
+            selectedPdfName = null;
+            selectedFileDisplay.style.display = 'none';
+            selectedFileName.textContent = '';
+        });
+    }
+    
+    // Handle form submission for messages - now with PDF attachment support
     const messageForm = document.getElementById('messageForm');
     if (messageForm) {
         messageForm.addEventListener('submit', function(e) {
@@ -612,16 +1060,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const messageInput = document.getElementById('messageInput');
             const message = messageInput.value.trim();
             
-            if (message && currentChatId) {
+            if ((message || selectedPdfId) && currentChatId) {
                 // Send message based on chat type
                 if (currentChatType === 'direct') {
-                    sendDirectMessage(currentChatId, message);
+                    sendDirectMessage(currentChatId, message, selectedPdfId);
                 } else if (currentChatType === 'group') {
-                    sendGroupMessage(currentChatId, message);
+                    sendGroupMessage(currentChatId, message, selectedPdfId);
                 }
                 
-                // Clear input
+                // Clear input and attachment
                 messageInput.value = '';
+                selectedPdfId = null;
+                selectedPdfName = null;
+                selectedFileDisplay.style.display = 'none';
+                selectedFileName.textContent = '';
             }
         });
     }
@@ -631,7 +1083,126 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mobileMenuToggle) {
         mobileMenuToggle.addEventListener('click', function(e) {
             e.stopPropagation(); // Prevent event bubbling
+            // Since PDash sidebar handling is included in sidebar_parent.html, 
+            // we only need to handle toggle for teacher users here
+            if (userIsStaff) {
+                const sidebar = document.getElementById('sidebar');
+                const sidebarOverlay = document.getElementById('sidebarOverlay');
+                if (sidebar) {
+                    sidebar.classList.toggle('active');
+                }
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.toggle('active');
+                }
+            }
         });
+    }
+    
+    // Functions for PDF attachments
+    
+    // Load PDFs from database
+    function loadPdfsFromDatabase() {
+        console.log('Loading PDFs from database');
+        const pdfList = document.getElementById('pdfList');
+        
+        // Show loading
+        if (pdfList) {
+            pdfList.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading documents...</p>
+                </div>
+            `;
+        }
+        
+        // Call API to get PDFs
+        fetch('/messaging/get_documents/')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`Loaded ${data.documents ? data.documents.length : 0} PDF documents`);
+                console.log('Sample document data:', data.documents && data.documents.length > 0 ? data.documents[0] : 'No documents');
+                // Render PDFs
+                renderPdfList(data.documents);
+            })
+            .catch(error => {
+                console.error('Error loading PDFs:', error);
+                if (pdfList) {
+                    pdfList.innerHTML = `
+                        <div class="text-center py-4 text-danger">
+                            <i class="fas fa-exclamation-circle mb-2" style="font-size: 2rem;"></i>
+                            <p>Error loading documents: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            });
+    }
+    
+    // Render PDF list
+    function renderPdfList(documents) {
+        const pdfList = document.getElementById('pdfList');
+        
+        if (!pdfList) return;
+        
+        if (!documents || documents.length === 0) {
+            pdfList.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-file-pdf mb-2" style="font-size: 2rem; color: #ccc;"></i>
+                    <p>No documents available</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        documents.forEach(document => {
+            const date = new Date(document.uploaded_at).toLocaleDateString();
+            html += `
+                <div class="document-item" data-id="${document.id}" data-name="${document.name}">
+                    <i class="fas fa-file-pdf"></i>
+                    <div class="document-info">
+                        <div class="document-name">${document.name}</div>
+                        <div class="document-meta">Uploaded: ${date} | Size: ${formatFileSize(document.size)}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        pdfList.innerHTML = html;
+        
+        // Add click event to select document
+        document.querySelectorAll('.document-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove selected class from all items
+                document.querySelectorAll('.document-item').forEach(i => {
+                    i.classList.remove('selected-document');
+                });
+                
+                // Add selected class to clicked item
+                this.classList.add('selected-document');
+                
+                // Store selected PDF ID and name
+                selectedPdfId = this.getAttribute('data-id');
+                selectedPdfName = this.getAttribute('data-name');
+                
+                // Enable select button
+                document.getElementById('selectPdfBtn').disabled = false;
+            });
+        });
+    }
+    
+    // Format file size
+    function formatFileSize(bytes) {
+        if (!bytes || isNaN(bytes)) return '0 B';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
     
     // Functions for real-time messaging
@@ -645,12 +1216,12 @@ document.addEventListener('DOMContentLoaded', function() {
             currentGroupName = name;
         }
             
-            // Show chat interface directly
-            document.querySelector('.welcome-screen').style.display = 'none';
-            const chatInterface = document.querySelector('.chat-interface');
-            chatInterface.style.display = 'flex';
-            chatInterface.style.flexDirection = 'column';
-            chatInterface.classList.remove('d-none');
+        // Show chat interface directly
+        document.querySelector('.welcome-screen').style.display = 'none';
+        const chatInterface = document.querySelector('.chat-interface');
+        chatInterface.style.display = 'flex';
+        chatInterface.style.flexDirection = 'column';
+        chatInterface.classList.remove('d-none');
             
         // Set chat header
         const chatHeader = document.querySelector('.chat-header');
@@ -674,13 +1245,13 @@ document.addEventListener('DOMContentLoaded', function() {
             messageContainer.innerHTML = '<div class="text-center my-4"><p>Loading messages...</p></div>';
         }
             
-            // Close sidebar on mobile when selecting a contact
-            const isSmallScreen = window.innerWidth <= 576;
-            if (isSmallScreen) {
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar && sidebar.classList.contains('active')) {
-                    sidebar.classList.remove('active');
-                    const overlay = document.getElementById('sidebarOverlay');
+        // Close sidebar on mobile when selecting a contact
+        const isSmallScreen = window.innerWidth <= 576;
+        if (isSmallScreen) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                const overlay = document.getElementById('sidebarOverlay');
                 if (overlay) overlay.classList.remove('active');
             }
         }
@@ -688,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load direct messages from API
     function loadDirectMessages(userId) {
+        console.log(`Loading direct messages with user ID: ${userId}`);
         fetch(`/messaging/get_messages/?user_id=${userId}`)
             .then(response => {
                 if (!response.ok) {
@@ -696,6 +1268,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
+                console.log(`Received ${data.messages ? data.messages.length : 0} messages`);
                 displayMessages(data.messages);
             })
             .catch(error => {
@@ -709,6 +1282,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load group messages from API
     function loadGroupMessages(groupId) {
+        console.log(`Loading group messages for group ID: ${groupId}`);
         fetch(`/messaging/get_group_messages/?group_id=${groupId}`)
             .then(response => {
                 if (!response.ok) {
@@ -717,6 +1291,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
+                console.log(`Received ${data.messages ? data.messages.length : 0} group messages`);
                 displayMessages(data.messages);
             })
             .catch(error => {
@@ -728,38 +1303,85 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // Display messages in the container
+    // Display messages in the container with PDF support
     function displayMessages(messages) {
+        console.log('Displaying messages:', messages);
         const messageContainer = document.getElementById('messageContainer');
-        if (!messageContainer) return;
+        if (!messageContainer) {
+            console.error('Message container not found in DOM');
+            return;
+        }
         
-        if (messages.length === 0) {
+        if (!messages || messages.length === 0) {
             messageContainer.innerHTML = '<div class="text-center my-4"><p>No messages yet. Start a conversation!</p></div>';
             return;
         }
         
         let html = '';
         messages.forEach(message => {
-            const messageClass = message.is_mine ? 'sent' : 'received';
-            const senderInfo = message.is_mine ? `You (${currentUsername})` : message.sender;
-            
-            html += `
-                <div class="message-item ${messageClass}">
-                    <div class="message-bubble">
-                        <div class="message-sender">${senderInfo}</div>
-                        <div class="message-text">${message.content}</div>
-                        <div class="message-time">${message.timestamp}</div>
+            try {
+                const messageClass = message.is_mine ? 'sent' : 'received';
+                const senderInfo = message.is_mine ? `You (${currentUsername})` : message.sender;
+                
+                let attachmentHtml = '';
+                if (message.attachment) {
+                    console.log('Message has attachment:', message.attachment);
+                    try {
+                        // Make sure we have all required data for the attachment
+                        if (message.attachment.name && message.attachment.url) {
+                            attachmentHtml = `
+                                <div class="pdf-attachment">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <div class="pdf-attachment-name">${message.attachment.name}</div>
+                                    <a href="${message.attachment.url}" class="pdf-attachment-download" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            `;
+                        } else {
+                            console.warn('Attachment missing name or URL:', message.attachment);
+                            attachmentHtml = `
+                                <div class="pdf-attachment">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <div class="pdf-attachment-name">PDF Document</div>
+                                    <span class="pdf-attachment-download text-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </span>
+                                </div>
+                            `;
+                        }
+                    } catch (attachError) {
+                        console.error('Error processing attachment:', attachError);
+                        attachmentHtml = '';
+                    }
+                }
+                
+                html += `
+                    <div class="message-item ${messageClass}">
+                        <div class="message-bubble">
+                            <div class="message-sender">${senderInfo}</div>
+                            <div class="message-text">${message.content || ''}</div>
+                            ${attachmentHtml}
+                            <div class="message-time">${message.timestamp || new Date().toLocaleString()}</div>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } catch (messageError) {
+                console.error('Error processing message:', messageError, message);
+                // Skip this message
+            }
         });
         
-        messageContainer.innerHTML = html;
-        messageContainer.scrollTop = messageContainer.scrollHeight;
+        if (html) {
+            messageContainer.innerHTML = html;
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        } else {
+            messageContainer.innerHTML = '<div class="text-center my-4 text-danger"><p>Error displaying messages. Please try refreshing.</p></div>';
+        }
     }
     
-    // Send direct message to API
-    function sendDirectMessage(recipientId, content) {
+    // Send direct message to API with attachment support
+    function sendDirectMessage(recipientId, content, attachmentId) {
         const messageContainer = document.getElementById('messageContainer');
         
         // Add message to UI first for responsive feel
@@ -770,11 +1392,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
         const timeString = `${hours}:${minutes} ${ampm}`;
         
+        let attachmentHtml = '';
+        if (attachmentId && selectedPdfName) {
+            attachmentHtml = `
+                <div class="pdf-attachment">
+                    <i class="fas fa-file-pdf"></i>
+                    <div class="pdf-attachment-name">${selectedPdfName}</div>
+                    <span class="pdf-attachment-download">
+                        <i class="fas fa-clock"></i>
+                    </span>
+                </div>
+            `;
+        }
+        
         const tempMessage = `
             <div class="message-item sent" id="${tempId}">
                 <div class="message-bubble">
                     <div class="message-sender">You (${currentUsername})</div>
                     <div class="message-text">${content}</div>
+                    ${attachmentHtml}
                     <div class="message-time">${timeString} (Sending...)</div>
                 </div>
             </div>
@@ -790,6 +1426,18 @@ document.addEventListener('DOMContentLoaded', function() {
             messageContainer.scrollTop = messageContainer.scrollHeight;
         }
         
+        // Create request data
+        const requestData = {
+            type: 'direct',
+            recipient: recipientId,
+            content: content
+        };
+        
+        // Add attachment if present
+        if (attachmentId) {
+            requestData.attachment = attachmentId;
+        }
+        
         // Send to API
         fetch('/messaging/send_message/', {
             method: 'POST',
@@ -797,11 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify({
-                type: 'direct',
-                recipient: recipientId,
-                content: content
-            })
+            body: JSON.stringify(requestData)
         })
         .then(response => {
             if (!response.ok) {
@@ -810,10 +1454,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
+            console.log('Message sent successfully:', data);
             // Update the message with server data
             const tempElement = document.getElementById(tempId);
             if (tempElement) {
                 tempElement.querySelector('.message-time').textContent = data.timestamp;
+                
+                // Update attachment if present
+                if (data.attachment) {
+                    const attachmentSection = tempElement.querySelector('.pdf-attachment');
+                    if (attachmentSection) {
+                        const downloadLink = attachmentSection.querySelector('.pdf-attachment-download');
+                        if (downloadLink) {
+                            downloadLink.innerHTML = '<i class="fas fa-download"></i>';
+                            downloadLink.href = data.attachment.url;
+                            downloadLink.target = '_blank';
+                        }
+                    }
+                }
             }
         })
         .catch(error => {
@@ -827,8 +1485,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Send group message to API
-    function sendGroupMessage(groupId, content) {
+    // Send group message to API with attachment support
+    function sendGroupMessage(groupId, content, attachmentId) {
         const messageContainer = document.getElementById('messageContainer');
         
         // Add message to UI first for responsive feel
@@ -839,11 +1497,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
         const timeString = `${hours}:${minutes} ${ampm}`;
         
+        let attachmentHtml = '';
+        if (attachmentId && selectedPdfName) {
+            attachmentHtml = `
+                <div class="pdf-attachment">
+                    <i class="fas fa-file-pdf"></i>
+                    <div class="pdf-attachment-name">${selectedPdfName}</div>
+                    <span class="pdf-attachment-download">
+                        <i class="fas fa-clock"></i>
+                    </span>
+                </div>
+            `;
+        }
+        
         const tempMessage = `
             <div class="message-item sent" id="${tempId}">
                 <div class="message-bubble">
                     <div class="message-sender">You (${currentUsername})</div>
                     <div class="message-text">${content}</div>
+                    ${attachmentHtml}
                     <div class="message-time">${timeString} (Sending...)</div>
                 </div>
             </div>
@@ -859,6 +1531,18 @@ document.addEventListener('DOMContentLoaded', function() {
             messageContainer.scrollTop = messageContainer.scrollHeight;
         }
         
+        // Create request data
+        const requestData = {
+            type: 'group',
+            group: groupId,
+            content: content
+        };
+        
+        // Add attachment if present
+        if (attachmentId) {
+            requestData.attachment = attachmentId;
+        }
+        
         // Send to API
         fetch('/messaging/send_message/', {
             method: 'POST',
@@ -866,11 +1550,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify({
-                type: 'group',
-                group: groupId,
-                content: content
-            })
+            body: JSON.stringify(requestData)
         })
         .then(response => {
             if (!response.ok) {
@@ -879,10 +1559,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
+            console.log('Group message sent successfully:', data);
             // Update the message with server data
             const tempElement = document.getElementById(tempId);
             if (tempElement) {
                 tempElement.querySelector('.message-time').textContent = data.timestamp;
+                
+                // Update attachment if present
+                if (data.attachment) {
+                    const attachmentSection = tempElement.querySelector('.pdf-attachment');
+                    if (attachmentSection) {
+                        const downloadLink = attachmentSection.querySelector('.pdf-attachment-download');
+                        if (downloadLink) {
+                            downloadLink.innerHTML = '<i class="fas fa-download"></i>';
+                            downloadLink.href = data.attachment.url;
+                            downloadLink.target = '_blank';
+                        }
+                    }
+                }
             }
         })
         .catch(error => {
@@ -927,7 +1621,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 newGroup.innerHTML = `
                     <div class="d-flex w-100 justify-content-between align-items-center">
                         <div>
-                            <i class="fas fa-users mr-2"></i>
+                            <i class="fas fa-users mr-2 text-primary"></i>
                             <span>${data.name}</span>
                         </div>
                     </div>
@@ -986,94 +1680,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 3000);
 });
 </script>
-
-<!-- Parent User Script -->
-{% if not user.is_staff %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Parent sidebar functionality
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    
-    // Function to toggle sidebar
-    function toggleSidebar() {
-        sidebar.classList.toggle('active');
-        sidebarOverlay.classList.toggle('active');
-    }
-    
-    // Add click event to mobile menu toggle
-    if (mobileMenuToggle) {
-        mobileMenuToggle.addEventListener('click', toggleSidebar);
-    }
-    
-    // Close sidebar when clicking on overlay
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-    }
-    
-    // Logout confirmation for parent users
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (confirm("Are you sure you want to logout?")) {
-                window.location.href = this.getAttribute('href');
-            }
-        });
-    }
-});
-</script>
-{% endif %}
-
-<!-- Teacher Sidebar Script -->
-{% if user.is_staff %}
-<script src="{% static 'js/sidebar.js' %}"></script>
-{% endif %}
-
-<!-- Additional CSS to fix message styling -->
-<style>
-    .message-item {
-        margin-bottom: 15px;
-        display: flex;
-    }
-    
-    .message-item.sent {
-        justify-content: flex-end;
-    }
-    
-    .message-bubble {
-        max-width: 70%;
-        padding: 10px 15px;
-        border-radius: 18px;
-        background-color: #f1f0f0;
-    }
-    
-    .message-item.sent .message-bubble {
-        background-color: #dcf8c6;
-    }
-    
-    .message-sender {
-        font-weight: bold;
-        font-size: 0.8rem;
-        margin-bottom: 3px;
-    }
-    
-    .message-text {
-        word-wrap: break-word;
-    }
-    
-    .message-time {
-        font-size: 0.7rem;
-        color: #777;
-        text-align: right;
-        margin-top: 3px;
-    }
-    
-    #messageContainer {
-        min-height: 300px;
-        max-height: 50vh;
-        overflow-y: auto;
-    }
-</style>
 {% endblock %} 

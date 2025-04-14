@@ -1,8 +1,14 @@
 {% load static %}
+<!-- Mobile menu toggle button -->
+<button class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+</button>
+
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h2>OB Pagsasarili</h2>
+        <h3>{% if request.user.is_staff %}Teacher Portal{% else %}Parent Portal{% endif %}</h3>
     </div> 
     <div class="sidebar-menu">
         <a href="{% url 'dashboard' %}" class="sidebar-btn {% if request.path == '/dashboard/' %}active{% endif %}">
@@ -24,8 +30,8 @@
         </a>
 
         <a href="{% url 'settings' %}" class="sidebar-btn {% if request.path == '/settings/' %}active{% endif %}">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
+            <i class="fas fa-file-pdf"></i>
+            <span>PDF Files</span>
         </a>
     </div>
     <div class="sidebar-footer">
@@ -35,6 +41,9 @@
         </a>
     </div>
 </div>
+
+<!-- Load sidebar script -->
+<script src="{% static 'js/sidebar.js' %}"></script>
 
 <!-- Script for chat status -->
 <script src="{% static 'js/chat.js' %}"></script>

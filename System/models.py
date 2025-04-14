@@ -202,6 +202,24 @@ class TotalScores(models.Model):
     eval2_total = models.IntegerField()
     eval3_total = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     def __str__(self):
         return f"{self.student_name} - {self.created_at}"
+
+class PDFFile(models.Model):
+    name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='pdfs/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    size = models.PositiveIntegerField()  # File size in bytes
+    
+    @property
+    def size_display(self):
+        """Convert size in bytes to human-readable format"""
+        size = self.size
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024 or unit == 'GB':
+                return f"{size:.2f} {unit}"
+            size /= 1024
+    
+    def __str__(self):
+        return self.name
