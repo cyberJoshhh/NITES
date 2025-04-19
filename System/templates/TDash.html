@@ -15,11 +15,6 @@
     <link rel="stylesheet" href="{% static 'css/tdash.css' %}">
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" id="mobileMenuToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-
     <!-- Include the sidebar -->
     {% include 'sidebar.html' %}
 
@@ -57,11 +52,11 @@
                     <i class="fas fa-comments"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>#Under Development#</Under></h3>
-                    <p>New Messages</p>
+                    <h3>WIIIIIH</Under></h3>
+                    <p>Announcements</p>
                 </div>
             </div>
-        </div>
+        </div>  
         
         <div class="page-header">
             <h2 class="page-title">List of Pupils</h2>
@@ -74,23 +69,35 @@
                 <input type="text" id="studentSearch" placeholder="Search students by name..." class="search-input">
                 <button id="clearSearch" class="clear-search" style="display: none;"><i class="fas fa-times"></i></button>
             </div>
+            
+            <!-- Session filter dropdown -->
+            <div class="filter-box">
+                <i class="fas fa-filter filter-icon"></i>
+                <select id="sessionFilter" class="session-filter">
+                    <option value="all">All Sessions</option>
+                    <option value="1">1st Session</option>
+                    <option value="2">2nd Session</option>
+                    <option value="3">3rd Session</option>
+                </select>
+            </div>
         </div>
         
         <div class="students-grid">
             {% for student in students %}
-            <div class="student-card">
+            <div class="student-card" data-session="{{ student.session_no }}" onclick="openStudentModal('{{ student.child_name }}', '{{ student.sex }}', '{{ student.dob }}', '{{ student.address }}', '{{ student.barangay }}', '{{ student.municipality }}', '{{ student.province }}', '{{ student.region }}', '{{ student.handedness }}', '{{ student.studying }}', '{{ student.father_name }}', '{{ student.father_age }}', '{{ student.father_occupation }}', '{{ student.father_education }}', '{{ student.mother_name }}', '{{ student.mother_age }}', '{{ student.mother_occupation }}', '{{ student.mother_education }}', '{{ student.num_siblings }}', '{{ student.birth_order }}', '{{ student.session_no }}')">
                 <div class="student-name">{{ student.child_name }}</div>
                 <div class="student-info">
                     <p><i class="fas fa-venus-mars"></i> <strong>Sex:</strong> {{ student.sex }}</p>
                     <p><i class="fas fa-birthday-cake"></i> <strong>Date of Birth:</strong> {{ student.dob }}</p>
                     <p data-parent="father"><i class="fas fa-male"></i> <strong>Father:</strong> {{ student.father_name }}</p>
                     <p data-parent="mother"><i class="fas fa-female"></i> <strong>Mother:</strong> {{ student.mother_name }}</p>
+                    <p><i class="fas fa-chalkboard-teacher"></i> <strong>Session:</strong> {{ student.session_no }}</p>
                 </div>
                 <div class="card-actions">
-                    <a href="{% url 'evaluation_checklist' %}?student_name={{ student.child_name }}" class="btn btn-update">
+                    <a href="{% url 'evaluation_checklist' %}?student_name={{ student.child_name }}" class="btn btn-update" onclick="event.stopPropagation();">
                         <i class="fas fa-clipboard-list"></i> Evaluate
                     </a>
-                    <a href="#" class="btn btn-update" onclick="openPerformanceModal('{{ student.child_name }}')">
+                    <a href="#" class="btn btn-update" onclick="event.stopPropagation(); openPerformanceModal('{{ student.child_name }}')">
                         <i class="fas fa-chart-bar"></i> Performance
                     </a>
                 </div>
@@ -370,94 +377,201 @@
         </div>
     </div>
 
+    <!-- Add Student Details Modal -->
+    <div id="studentDetailsModal" class="modal">
+        <div class="modal-content student-details-modal">
+            <span class="close" onclick="closeStudentModal()">&times;</span>
+            <h2 class="modal-title"><i class="fas fa-user-graduate"></i> <span id="modal-student-name"></span></h2>
+            
+            <div class="student-details-container">
+                <!-- Personal Information -->
+                <div class="detail-section">
+                    <h3><i class="fas fa-id-card"></i> Personal Information</h3>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Sex:</span>
+                            <span id="modal-sex" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Date of Birth:</span>
+                            <span id="modal-dob" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Handedness:</span>
+                            <span id="modal-handedness" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Currently Studying:</span>
+                            <span id="modal-studying" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Birth Order:</span>
+                            <span id="modal-birth-order" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Number of Siblings:</span>
+                            <span id="modal-siblings" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Session:</span>
+                            <span id="modal-session" class="detail-value"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Address Information -->
+                <div class="detail-section">
+                    <h3><i class="fas fa-map-marker-alt"></i> Address</h3>
+                    <div class="details-grid">
+                        <div class="detail-item full-width">
+                            <span class="detail-label">Street Address:</span>
+                            <span id="modal-address" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Barangay:</span>
+                            <span id="modal-barangay" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Municipality:</span>
+                            <span id="modal-municipality" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Province:</span>
+                            <span id="modal-province" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Region:</span>
+                            <span id="modal-region" class="detail-value"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Father's Information -->
+                <div class="detail-section">
+                    <h3><i class="fas fa-male"></i> Father's Information</h3>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Name:</span>
+                            <span id="modal-father-name" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Age:</span>
+                            <span id="modal-father-age" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Occupation:</span>
+                            <span id="modal-father-occupation" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Education:</span>
+                            <span id="modal-father-education" class="detail-value"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mother's Information -->
+                <div class="detail-section">
+                    <h3><i class="fas fa-female"></i> Mother's Information</h3>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Name:</span>
+                            <span id="modal-mother-name" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Age:</span>
+                            <span id="modal-mother-age" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Occupation:</span>
+                            <span id="modal-mother-occupation" class="detail-value"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Education:</span>
+                            <span id="modal-mother-education" class="detail-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeStudentModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Include sidebar JavaScript -->
     <script src="{% static 'js/sidebar.js' %}"></script>
     
     <!-- Add Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Hidden chat container for WebSocket initialization -->
-    <div id="chat-container" data-room="general" data-username="{{ request.user.username }}" style="display: none;"></div>
-    
-    <!-- WebSocket diagnostics -->
-    <div id="ws-diagnostics" style="position: fixed; bottom: 20px; right: 20px; display: none; background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 9999; max-width: 350px;">
-        <h4>WebSocket Diagnostics</h4>
-        <div id="ws-status-details">Loading...</div>
-        <button id="force-reconnect" class="btn btn-sm btn-primary mt-2">Force Reconnect</button>
-        <button id="close-diagnostics" class="btn btn-sm btn-secondary mt-2 ms-2">Close</button>
-    </div>
-    
     <script>
-        // Diagnostics buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add toggle diagnostics to chat status
-            const chatStatus = document.getElementById('chat-status');
-            if (chatStatus) {
-                chatStatus.style.cursor = 'pointer';
-                chatStatus.title = 'Click to show WebSocket diagnostics';
-                chatStatus.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    document.getElementById('ws-diagnostics').style.display = 'block';
-                    updateDiagnostics();
-                });
-            }
-            
-            // Close diagnostics
-            document.getElementById('close-diagnostics').addEventListener('click', function() {
-                document.getElementById('ws-diagnostics').style.display = 'none';
-            });
-            
-            // Force reconnect
-            document.getElementById('force-reconnect').addEventListener('click', function() {
-                if (window.chatWs) {
-                    if (window.chatWs.socket) {
-                        window.chatWs.socket.close();
-                    }
-                    window.chatWs.connect();
-                    updateDiagnostics();
-                }
-            });
-            
-            function updateDiagnostics() {
-                const statusDetails = document.getElementById('ws-status-details');
-                let html = '';
-                
-                if (window.chatWs) {
-                    const state = window.chatWs.socket ? 
-                        ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][window.chatWs.socket.readyState] : 
-                        'Not initialized';
-                    
-                    html += `<div><strong>Socket State:</strong> ${state}</div>`;
-                    html += `<div><strong>Connection Attempts:</strong> ${window.chatWs.connectionAttempts}</div>`;
-                    html += `<div><strong>Room:</strong> ${window.chatWs.roomName}</div>`;
-                    html += `<div><strong>Username:</strong> ${window.chatWs.username}</div>`;
-                    html += `<div><strong>URL:</strong> ${window.location.href}</div>`;
-                } else {
-                    html = '<div class="text-danger">WebSocket not initialized</div>';
-                }
-                
-                statusDetails.innerHTML = html;
-            }
-        });
-        
         // Get the performance modal
         var performanceModal = document.getElementById("performanceModal");
+        var studentDetailsModal = document.getElementById("studentDetailsModal");
+        
+        // Open student details modal
+        function openStudentModal(name, sex, dob, address, barangay, municipality, province, region, handedness, studying, fatherName, fatherAge, fatherOccupation, fatherEducation, motherName, motherAge, motherOccupation, motherEducation, siblings, birthOrder, session) {
+            // Set student details in the modal
+            document.getElementById("modal-student-name").textContent = name;
+            document.getElementById("modal-sex").textContent = sex;
+            document.getElementById("modal-dob").textContent = dob;
+            document.getElementById("modal-handedness").textContent = handedness;
+            document.getElementById("modal-studying").textContent = studying;
+            document.getElementById("modal-birth-order").textContent = birthOrder;
+            document.getElementById("modal-siblings").textContent = siblings;
+            document.getElementById("modal-session").textContent = session;
+            
+            // Address information
+            document.getElementById("modal-address").textContent = address;
+            document.getElementById("modal-barangay").textContent = barangay;
+            document.getElementById("modal-municipality").textContent = municipality;
+            document.getElementById("modal-province").textContent = province;
+            document.getElementById("modal-region").textContent = region;
+            
+            // Father's information
+            document.getElementById("modal-father-name").textContent = fatherName;
+            document.getElementById("modal-father-age").textContent = fatherAge;
+            document.getElementById("modal-father-occupation").textContent = fatherOccupation;
+            document.getElementById("modal-father-education").textContent = fatherEducation;
+            
+            // Mother's information
+            document.getElementById("modal-mother-name").textContent = motherName;
+            document.getElementById("modal-mother-age").textContent = motherAge;
+            document.getElementById("modal-mother-occupation").textContent = motherOccupation;
+            document.getElementById("modal-mother-education").textContent = motherEducation;
+            
+            // Display the modal
+            studentDetailsModal.style.display = "block";
+        }
+        
+        // Close student details modal
+        function closeStudentModal() {
+            studentDetailsModal.style.display = "none";
+        }
         
         // Student search functionality
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('studentSearch');
             const clearButton = document.getElementById('clearSearch');
+            const sessionFilter = document.getElementById('sessionFilter');
             const studentCards = document.querySelectorAll('.student-card');
             
-            // Function to filter students based on search input
+            // Function to filter students based on search input and session
             function filterStudents() {
                 const searchTerm = searchInput.value.toLowerCase().trim();
+                const sessionValue = sessionFilter.value;
                 let hasResults = false;
                 
                 studentCards.forEach(card => {
                     const studentName = card.querySelector('.student-name').textContent.toLowerCase();
-                    if (studentName.includes(searchTerm)) {
+                    const studentSession = card.dataset.session;
+                    
+                    // Check if student matches both filters
+                    const matchesSearch = studentName.includes(searchTerm);
+                    const matchesSession = sessionValue === 'all' || studentSession === sessionValue;
+                    
+                    if (matchesSearch && matchesSession) {
                         card.style.display = '';
                         hasResults = true;
                     } else {
@@ -475,9 +589,16 @@
                 // Show empty state if no results
                 const emptyState = document.querySelector('.empty-state');
                 if (emptyState) {
-                    if (!hasResults && searchTerm.length > 0) {
+                    if (!hasResults && (searchTerm.length > 0 || sessionValue !== 'all')) {
                         emptyState.style.display = 'flex';
-                        emptyState.innerHTML = '<i class="fas fa-search"></i><p>No students found matching "' + searchInput.value + '"</p>';
+                        let message = 'No students found';
+                        if (searchTerm.length > 0) {
+                            message += ` matching "${searchInput.value}"`;
+                        }
+                        if (sessionValue !== 'all') {
+                            message += ` in ${sessionFilter.options[sessionFilter.selectedIndex].text}`;
+                        }
+                        emptyState.innerHTML = '<i class="fas fa-search"></i><p>' + message + '</p>';
                     } else if (studentCards.length === 0) {
                         emptyState.style.display = 'flex';
                         emptyState.innerHTML = '<i class="fas fa-users-slash"></i><p>No students found. Add your first student!</p>';
@@ -489,6 +610,7 @@
             
             // Event listeners
             searchInput.addEventListener('input', filterStudents);
+            sessionFilter.addEventListener('change', filterStudents);
             
             // Clear search
             clearButton.addEventListener('click', function() {
@@ -729,10 +851,13 @@
             });
         }
         
-        // When the user clicks anywhere outside of the modal, close it
+        // When the user clicks anywhere outside of the modals, close them
         window.onclick = function(event) {
             if (event.target == performanceModal) {
                 performanceModal.style.display = "none";
+            }
+            if (event.target == studentDetailsModal) {
+                studentDetailsModal.style.display = "none";
             }
         }
     </script>
@@ -744,12 +869,50 @@
         .search-container {
             margin-bottom: 20px;
             width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
         }
         
         .search-box {
             position: relative;
             max-width: 500px;
-            margin: 0 auto;
+            width: 70%;
+        }
+        
+        .filter-box {
+            position: relative;
+            width: 200px;
+        }
+        
+        .filter-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+        
+        .session-filter {
+            width: 100%;
+            padding: 12px 40px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            outline: none;
+            transition: all 0.3s;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 1em;
+        }
+        
+        .session-filter:focus {
+            border-color: var(--primary, #52b788);
+            box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.25);
         }
         
         .search-input {
@@ -952,6 +1115,80 @@
 
         .error-message i {
             margin-right: 8px;
+        }
+
+        /* Student Details Modal styles */
+        .student-details-modal {
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .student-details-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .detail-section {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .detail-section h3 {
+            color: var(--primary, #52b788);
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1rem;
+        }
+        
+        .student-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .student-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </body>

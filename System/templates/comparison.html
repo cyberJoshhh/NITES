@@ -4,13 +4,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
-
-<!-- Mobile menu toggle button -->
-<button class="mobile-menu-toggle" id="mobileMenuToggle">
-    <i class="fas fa-bars"></i>
-</button>
-
-<!-- Include the sidebar -->
 {% include 'sidebar.html' %}
 
 <div class="comparison-container main-content">
@@ -190,7 +183,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'js/sidebar.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     {% if has_data %}
@@ -342,26 +334,15 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-    /* Fix sidebar background and positioning */
-    .sidebar {
-        background: linear-gradient(135deg, #2d6a4f, #1b4332);
-        z-index: 1000;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    }
-    
     body {
         overflow-x: hidden;
         background-color: #f5f5f5;
     }
     
-    /* Ensure main content doesn't overlap sidebar and is centered */
+    /* Main content styles */
     .main-content {
-        margin-left: 250px;
         padding: 30px;
-        transition: margin-left 0.3s ease;
-        width: calc(100% - 250px);
-        /* Remove float: right to allow centering */
-        /* clear: both; - Not needed anymore */
+        width: 100%;
     }
     
     .comparison-container {
@@ -432,23 +413,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /* Improved responsive design */
-    @media (max-width: 992px) {
-        .main-content {
-            margin-left: 80px;
-            width: calc(100% - 80px);
-        }
-    }
-    
     @media (max-width: 576px) {
         .main-content {
-            margin-left: 0;
-            width: 100%;
             padding: 20px;
-            padding-top: 70px; /* Space for mobile menu button */
-        }
-        
-        .mobile-menu-toggle {
-            display: flex !important;
         }
     }
     

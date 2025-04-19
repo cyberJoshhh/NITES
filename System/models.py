@@ -26,9 +26,9 @@ class Student(models.Model):
     birth_order = models.CharField(max_length=50)
     username = models.CharField(max_length=100, unique=True, null=True, blank=True)
     password = models.CharField(max_length=128, null=True, blank=True)
+    session_no = models.IntegerField(default=1)
     
     
-
     def __str__(self):
         return self.child_name
 
@@ -223,3 +223,4 @@ class PDFFile(models.Model):
     
     def __str__(self):
         return self.name
+    

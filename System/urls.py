@@ -9,7 +9,6 @@ from .views import (
 
     
     performance_view,
-    settings_view,
 
     
     evaluation_gross,
@@ -25,10 +24,12 @@ from .views import (
     ParentEvaluationExpressive,
     ParentEvaluationCognitive,
     student_profile,
-    messages_view,
     get_student_performance_data,
     upload_pdf,
     delete_pdf,
+    pdf_view,
+    manage_account,
+    manage_student_session,
 )
 
 urlpatterns = [
@@ -45,8 +46,7 @@ urlpatterns = [
     path('submit-receptive-evaluation/', submit_receptive_evaluation, name='submit_receptive_evaluation'),
     path('submit-selfhelp-evaluation/', submit_selfhelp_evaluation, name='submit_selfhelp_evaluation'),
     path('performance/', performance_view, name='performance'),
-    path('settings/', settings_view, name='settings'),
-    path('messages/', messages_view, name='messages_view'),
+    path('pdf_view/', pdf_view, name='pdf_view'),
     path('evaluation-gross/', evaluation_gross, name='evaluation_gross'),
     path('evaluation-self/', evaluation_self, name='evaluation_self'),
     path('evaluation-expressive/', evaluation_expressive, name='evaluation_expressive'),
@@ -68,4 +68,6 @@ urlpatterns = [
     path('api/student-performance-data/', get_student_performance_data, name='get_student_performance_data'),
     path('upload-pdf/', upload_pdf, name='upload_pdf'),
     path('delete-pdf/<int:pdf_id>/', delete_pdf, name='delete_pdf'),
+    path('manage-account/', manage_account, name='manage_account'),
+    path('manage-student-session/', manage_student_session, name='manage_student_session'),
 ]

@@ -114,10 +114,6 @@ def add_student(request):
                 password=password  # Consider removing this field as it's now in auth_user
             )
             student.save()
-            
-            messages.success(request, f'Student {request.POST.get("child_name")} has been successfully registered!')
-            return redirect('performance')
-            
         except Exception as e:
             messages.error(request, f'Error registering student: {str(e)}')
             return render(request, 'add_student.html')
@@ -362,13 +358,13 @@ def performance_view(request):
     return render(request, "performance.html", context)
 
 
-def settings_view(request):
+def pdf_view(request):
     """
     View function for the settings page.
     """
     from .models import PDFFile
     pdf_files = PDFFile.objects.all().order_by('-uploaded_at')
-    return render(request, 'settings.html', {'pdf_files': pdf_files})
+    return render(request, 'PDFFiles.html', {'pdf_files': pdf_files})
 
 def evaluation_gross(request):
     # Get username
@@ -1251,11 +1247,70 @@ def student_profile(request):
     return render(request, 'student_profile.html', context)
 
 @login_required
-def messages_view(request):
+def manage_account(request):
     """
-    View function for the messages page.
+    View function to allow users to manage their account settings.
+    Users can change their username and password.
     """
-    return render(request, 'message.html')
+    user = request.user
+    success_message = None
+    error_message = None
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'change_username':
+            new_username = request.POST.get('new_username')
+            
+            # Check if username already exists
+            if User.objects.filter(username=new_username).exists():
+                error_message = "Username already exists. Please choose another one."
+            else:
+                # If the user is a student, update both User and Student models
+                student = Student.objects.filter(username=user.username).first()
+                if student:
+                    student.username = new_username
+                    student.save()
+                
+                # Update auth user
+                user.username = new_username
+                user.save()
+                success_message = "Username updated successfully!"
+                
+        elif action == 'change_password':
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            # Verify current password
+            if not user.check_password(current_password):
+                error_message = "Current password is incorrect."
+            elif new_password != confirm_password:
+                error_message = "New passwords do not match."
+            elif len(new_password) < 8:
+                error_message = "Password must be at least 8 characters long."
+            else:
+                # Set new password
+                user.set_password(new_password)
+                user.save()
+                
+                # If user is a student, update Student model too
+                student = Student.objects.filter(username=user.username).first()
+                if student:
+                    student.password = new_password
+                    student.save()
+                
+                success_message = "Password updated successfully! Please log in again."
+                logout(request)
+                return redirect('login')
+    
+    context = {
+        'user': user,
+        'success_message': success_message,
+        'error_message': error_message,
+    }
+    
+    return render(request, 'manage_account.html', context)
 
 @login_required
 def get_student_performance_data(request):
@@ -1511,10 +1566,10 @@ def upload_pdf(request):
             pdf.save()
         
         messages.success(request, f'{len(pdf_files)} PDF file(s) uploaded successfully.')
-        return redirect('settings')
+        return redirect('pdf_view')
     
     messages.error(request, 'No PDF files were uploaded.')
-    return redirect('settings')
+    return redirect('pdf_view')
 
 @login_required
 def delete_pdf(request, pdf_id):
@@ -1531,5 +1586,65 @@ def delete_pdf(request, pdf_id):
     except PDFFile.DoesNotExist:
         messages.error(request, 'File not found.')
     
-    return redirect('settings')
+    return redirect('pdf_view')
+
+@login_required
+def manage_student_session(request):
+    """
+    View function to allow users to manage student session numbers.
+    Parents can update their child's session number.
+    Teachers can update any student's session number.
+    """
+    user = request.user
+    success_message = None
+    error_message = None
+    student = None
+    all_students = None
+    
+    # Check if user is a student
+    student = Student.objects.filter(username=user.username).first()
+    
+    # If user is staff, get all students for management
+    if user.is_staff:
+        all_students = Student.objects.all().order_by('child_name')
+    
+    if request.method == 'POST':
+        # Check if we're updating a specific student (teacher view)
+        student_id = request.POST.get('student_id')
+        session_no = int(request.POST.get('session_no', 1))
+        
+        if session_no < 1 or session_no > 3:
+            error_message = "Session number must be between 1 and 3."
+        else:
+            if student_id:
+                # Update a specific student (teacher only)
+                if user.is_staff:
+                    try:
+                        target_student = Student.objects.get(id=student_id)
+                        target_student.session_no = session_no
+                        target_student.save()
+                        success_message = f"Session updated for {target_student.child_name}."
+                    except Student.DoesNotExist:
+                        error_message = "Student not found."
+                else:
+                    error_message = "You do not have permission to update other students."
+            else:
+                # Update the logged-in user's student record
+                if student:
+                    student.session_no = session_no
+                    student.save()
+                    success_message = "Your session has been updated successfully."
+                else:
+                    error_message = "No student profile found for your account."
+    
+    context = {
+        'user': user,
+        'student': student,
+        'all_students': all_students,
+        'is_staff': user.is_staff,
+        'success_message': success_message,
+        'error_message': error_message,
+    }
+    
+    return render(request, 'manage_student_session.html', context)
 

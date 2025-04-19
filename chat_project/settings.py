@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'chat_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'chatting',
+        'NAME': 'capstone',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',

@@ -2,199 +2,253 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Sidebar.js loaded");
     
-    // Force sidebar to consistent state on page load
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        // Reset any styles that might have been affected by other pages
-        ensureSidebarConsistency();
-    }
+    initializeSidebar();
     
-    // Mobile menu toggle functionality
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    
-    if (mobileMenuToggle && sidebar) {
-        console.log("Found mobile toggle and sidebar elements");
-        
-        mobileMenuToggle.addEventListener('click', function(e) {
-            console.log("Mobile toggle clicked");
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Toggle sidebar visibility
-            sidebar.classList.toggle('active');
-            
-            // Create or remove overlay
-            if (sidebar.classList.contains('active')) {
-                createSidebarOverlay();
-            } else {
-                removeSidebarOverlay();
-            }
-        });
-    } else {
-        console.error("Mobile toggle or sidebar not found");
-        if (!mobileMenuToggle) console.error("Mobile toggle not found");
-        if (!sidebar) console.error("Sidebar not found");
-    }
-    
-    // Close sidebar when window is resized to larger than mobile breakpoint
-    window.addEventListener('resize', function() {
-        ensureSidebarConsistency();
-        
-        if (window.innerWidth > 576) {
-            if (sidebar && sidebar.classList.contains('active')) {
-                sidebar.classList.remove('active');
-                removeSidebarOverlay();
-            }
+    // Add global click handler for mobile toggle to ensure it works across interface changes
+    document.addEventListener('click', function(event) {
+        if (event.target.closest('#mobileMenuToggle')) {
+            toggleSidebar();
         }
+    }, true);
+});
+
+// Initialize sidebar and toggle functionality - make these available globally
+function initializeSidebar() {
+    // Get sidebar element
+    const sidebar = document.getElementById('sidebar');
+    
+    // Get existing mobile toggle button
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    
+    if (!sidebar || !mobileToggle) {
+        console.warn("Sidebar or toggle button not found");
+        return;
+    }
+    
+    console.log("Initializing sidebar and toggle button");
+    
+    // Handle mobile toggle visibility
+    updateMobileToggleVisibility();
+    
+    // Update visibility on resize
+    window.addEventListener('resize', updateMobileToggleVisibility);
+    
+    // Add click event to mobile toggle
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleSidebar);
+        
+        // Make sure the toggle button is above other elements
+        mobileToggle.style.zIndex = "2000";
+        mobileToggle.style.pointerEvents = "auto";
+    }
+    
+    // Set initial sidebar state
+    initializeSidebarState();
+    
+    // Fix main content margin
+    updateMainContentMargin();
+    
+    // Update main content margin on resize
+    window.addEventListener('resize', updateMainContentMargin);
+}
+
+// Toggle sidebar function - make it globally available
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    
+    if (!sidebar || !mobileToggle) {
+        console.warn("Cannot toggle sidebar - elements not found");
+        return;
+    }
+    
+    console.log("Toggle clicked, sidebar:", sidebar);
+    
+    // Toggle sidebar visibility
+    if (sidebar.classList.contains('active')) {
+        sidebar.classList.remove('active');
+        sidebar.style.left = '-280px';
+        mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+        removeOverlay();
+    } else {
+        sidebar.classList.add('active');
+        sidebar.style.left = '0px';
+        mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
+        createOverlay();
+    }
+}
+
+function updateMobileToggleVisibility() {
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    if (!mobileToggle) return;
+    
+    if (window.innerWidth <= 768) {
+        mobileToggle.style.display = 'flex';
+    } else {
+        mobileToggle.style.display = 'none';
+    }
+}
+
+// Create overlay for mobile view
+function createOverlay() {
+    removeOverlay(); // Remove any existing overlay
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'sidebarOverlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    overlay.style.zIndex = '99';
+    overlay.addEventListener('click', function() {
+        toggleSidebar();
     });
     
-    // Function to ensure sidebar maintains consistent dimensions and position
-    function ensureSidebarConsistency() {
+    document.body.appendChild(overlay);
+}
+
+// Remove overlay
+function removeOverlay() {
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) overlay.remove();
+}
+
+// Set initial sidebar state
+function initializeSidebarState() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    // Make sure sidebar has basic styles
+    sidebar.style.position = 'fixed';
+    sidebar.style.height = '100%';
+    sidebar.style.top = '0';
+    sidebar.style.zIndex = '100';
+    sidebar.style.transition = 'left 0.3s ease';
+    
+    // Set initial position based on screen size
+    if (window.innerWidth <= 768) {
+        sidebar.style.left = '-280px';
+        sidebar.style.width = '250px';
+    } else {
+        sidebar.style.left = '0';
+        sidebar.style.width = '250px';
+    }
+    
+    // Update sidebar on window resize
+    window.addEventListener('resize', function() {
         if (!sidebar) return;
         
-        // Ensure core sidebar properties
-        if (window.innerWidth <= 576) {
-            // Mobile view
-            sidebar.style.position = 'fixed';
-            sidebar.style.height = '100vh';
-            sidebar.style.width = '280px';
-            
+        if (window.innerWidth <= 768) {
+            // Only move sidebar offscreen if it's not actively toggled
             if (!sidebar.classList.contains('active')) {
                 sidebar.style.left = '-280px';
             }
-        } else if (window.innerWidth <= 992) {
-            // Tablet view
-            sidebar.style.position = 'fixed';
-            sidebar.style.left = '0';
-            sidebar.style.top = '0';
-            sidebar.style.height = '100vh';
-            
-            if (sidebar.classList.contains('active')) {
-                sidebar.style.width = '250px';
-            } else {
-                sidebar.style.width = '80px';
-            }
         } else {
-            // Desktop view
-            sidebar.style.position = 'fixed';
+            // Always show sidebar on larger screens
             sidebar.style.left = '0';
-            sidebar.style.top = '0';
-            sidebar.style.height = '100vh';
-            sidebar.style.width = '250px';
+            removeOverlay();
         }
-        
-        // Ensure the main content is properly positioned
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            if (window.innerWidth <= 576) {
-                mainContent.style.marginLeft = '0';
-                mainContent.style.width = '100%';
-            } else if (window.innerWidth <= 992) {
-                if (sidebar.classList.contains('active')) {
-                    mainContent.style.marginLeft = '250px';
-                    mainContent.style.width = 'calc(100% - 250px)';
-                } else {
-                    mainContent.style.marginLeft = '80px';
-                    mainContent.style.width = 'calc(100% - 80px)';
-                }
-            } else {
-                mainContent.style.marginLeft = '250px';
-                mainContent.style.width = 'calc(100% - 250px)';
-            }
-        }
-    }
+    });
+}
+
+// Fix main content margin
+function updateMainContentMargin() {
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent) return;
     
-    // Function to create sidebar overlay
-    function createSidebarOverlay() {
-        // Remove any existing overlay first
-        removeSidebarOverlay();
-        
-        // Create new overlay
-        const overlay = document.createElement('div');
-        overlay.id = 'sidebarOverlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        overlay.style.zIndex = '99';
-        
-        // Close sidebar when overlay is clicked
-        overlay.addEventListener('click', function() {
-            if (sidebar) {
-                sidebar.classList.remove('active');
-                removeSidebarOverlay();
-            }
+    if (window.innerWidth <= 768) {
+        mainContent.style.marginLeft = '0';
+        mainContent.style.width = '100%';
+    } else {
+        mainContent.style.marginLeft = '250px';
+        mainContent.style.width = 'calc(100% - 250px)';
+    }
+}
+
+// Function to create a debug sidebar if none exists
+function createDebugSidebar() {
+    console.log("Creating emergency debug sidebar");
+    // Remove existing emergency sidebar if any
+    const existingSidebar = document.getElementById('sidebar');
+    if (existingSidebar) return existingSidebar;
+    
+    const debugSidebar = document.createElement('div');
+    debugSidebar.id = 'sidebar';
+    debugSidebar.style.position = 'fixed';
+    debugSidebar.style.top = '0';
+    debugSidebar.style.left = '-280px';
+    debugSidebar.style.height = '100%';
+    debugSidebar.style.width = '250px';
+    debugSidebar.style.backgroundColor = '#fff';
+    debugSidebar.style.zIndex = '1500';
+    debugSidebar.style.transition = 'left 0.3s ease';
+    debugSidebar.style.padding = '20px';
+    debugSidebar.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+    debugSidebar.style.overflowY = 'auto';
+    
+    // Add some basic content
+    debugSidebar.innerHTML = `
+        <h2 style="color: #52b788;">Emergency Sidebar</h2>
+        <p>This is a fallback sidebar created because the original sidebar was not found.</p>
+        <div style="margin-top: 20px;">
+            <a href="/" style="display: block; padding: 10px; background: #f1f1f1; margin-bottom: 5px; text-decoration: none; color: #333;">Dashboard</a>
+            <a href="/students" style="display: block; padding: 10px; background: #f1f1f1; margin-bottom: 5px; text-decoration: none; color: #333;">Students</a>
+            <a href="/settings" style="display: block; padding: 10px; background: #f1f1f1; margin-bottom: 5px; text-decoration: none; color: #333;">Settings</a>
+        </div>
+    `;
+    
+    document.body.appendChild(debugSidebar);
+    return debugSidebar;
+}
+
+// Re-initialize sidebar when document becomes visible again
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        initializeSidebar();
+    }
+});
+
+// Ensure mobile toggle works when navigating to new pages
+window.addEventListener('pageshow', function() {
+    console.log("Page shown - reinitializing sidebar");
+    setTimeout(initializeSidebar, 100);
+});
+
+// Add Student Modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const addStudentBtn = document.querySelector('.btn-add');
+    const addStudentModal = document.getElementById('addStudentModal');
+
+    if (addStudentBtn && addStudentModal) {
+        addStudentBtn.addEventListener('click', function() {
+            addStudentModal.style.display = 'block';
         });
         
-        document.body.appendChild(overlay);
-        
-        // Ensure sidebar is above the overlay
-        if (sidebar) {
-            sidebar.style.zIndex = '100';
-            sidebar.style.position = 'relative';
+        // Close modal when clicking on X
+        const closeBtn = addStudentModal.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                addStudentModal.style.display = 'none';
+            });
         }
-    }
-    
-    // Function to remove sidebar overlay
-    function removeSidebarOverlay() {
-        const existingOverlay = document.getElementById('sidebarOverlay');
-        if (existingOverlay) {
-            existingOverlay.remove();
-        }
-    }
-    
-    // Fix sidebar links to ensure they're clickable
-    function fixSidebarLinks() {
-        // Target all possible link elements in the sidebar
-        const allSidebarElements = document.querySelectorAll('#sidebar a, #sidebar .sidebar-btn, #sidebar .logout-btn');
         
-        allSidebarElements.forEach(element => {
-            // Apply styles directly to ensure clickability
-            element.style.pointerEvents = 'auto';
-            element.style.cursor = 'pointer';
-            element.style.position = 'relative';
-            element.style.zIndex = '1010';
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === addStudentModal) {
+                addStudentModal.style.display = 'none';
+            }
         });
     }
-    
-    // Call the fix function
-    fixSidebarLinks();
     
     // Filter students functionality (if search input exists)
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
-            window.filterStudents();
+            if (window.filterStudents) {
+                window.filterStudents();
+            }
         });
     }
-    
-    // Run consistency check whenever page changes might affect the sidebar
-    document.addEventListener('visibilitychange', ensureSidebarConsistency);
-});
-
-// Add Student Modal functionality
-const addStudentBtn = document.querySelector('.btn-add');
-const addStudentModal = document.getElementById('addStudentModal');
-
-if (addStudentBtn && addStudentModal) {
-    addStudentBtn.addEventListener('click', function() {
-        addStudentModal.style.display = 'block';
-    });
-    
-    // Close modal when clicking on X
-    const closeBtn = addStudentModal.querySelector('.close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            addStudentModal.style.display = 'none';
-        });
-    }
-    
-    // Close modal when clicking outside
-    window.addEventListener('click', function(event) {
-        if (event.target === addStudentModal) {
-            addStudentModal.style.display = 'none';
-        }
-    });
-} 
+}); 

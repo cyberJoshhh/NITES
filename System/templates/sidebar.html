@@ -1,6 +1,6 @@
 {% load static %}
 <!-- Mobile menu toggle button -->
-<button class="mobile-menu-toggle" id="mobileMenuToggle">
+<button class="mobile-menu-toggle" id="mobileMenuToggle" type="button">
     <i class="fas fa-bars"></i>
 </button>
 
@@ -15,10 +15,7 @@
             <i class="fas fa-home"></i>
             <span>Dashboard</span>
         </a>
-        <a href="{% url 'comparison_view' %}" class="sidebar-btn {% if request.path == '/comparison/' %}active{% endif %}">
-            <i class="fas fa-chart-line"></i>
-            <span>Performance</span>
-        </a>
+
         <a href="{% url 'add_student' %}" class="sidebar-btn {% if request.path == '/add_student/' %}active{% endif %}">
             <i class="fas fa-user-plus"></i>
             <span>Add Pupil</span>
@@ -29,10 +26,28 @@
             <span>Messages</span>
         </a>
 
-        <a href="{% url 'settings' %}" class="sidebar-btn {% if request.path == '/settings/' %}active{% endif %}">
+        <a href="{% url 'pdf_view' %}" class="sidebar-btn {% if request.path == '/pdf_view/' %}active{% endif %}">
             <i class="fas fa-file-pdf"></i>
             <span>PDF Files</span>
         </a>
+        <div class="dropdown">
+            <a href="#" class="sidebar-btn dropdown-toggle" id="managementDropdown">
+                <i class="fas fa-cogs"></i>
+                <span>Management</span>
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+            </a>
+            <div class="dropdown-menu">
+                <a href="{% url 'manage_account' %}" class="dropdown-item">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Manage account</span>
+                </a>
+                <a href="{% url 'manage_student_session' %}" class="dropdown-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Manage student session</span>
+                </a>
+            </div>
+        </div>
+        
     </div>
     <div class="sidebar-footer">
         <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
@@ -118,6 +133,24 @@
                 }
             });
         }
+
+        // Dropdown toggle functionality
+        const dropdownToggle = document.getElementById('managementDropdown');
+        if (dropdownToggle) {
+            dropdownToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                this.closest('.dropdown').classList.toggle('active');
+            });
+        }
+        
+        // Check if current page is in dropdown menu and open it
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
+        dropdownItems.forEach(item => {
+            if (item.getAttribute('href') === window.location.pathname) {
+                item.classList.add('active');
+                item.closest('.dropdown').classList.add('active');
+            }
+        });
     });
 </script>
 
@@ -126,5 +159,56 @@
         font-size: 0.7rem;
         margin-left: 5px;
         color: orange;
+    }
+    
+    /* Dropdown styles */
+    .dropdown {
+        position: relative;
+    }
+    
+    .dropdown-toggle {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .dropdown-icon {
+        font-size: 0.8rem;
+        margin-left: 5px;
+        transition: transform 0.3s;
+    }
+    
+    .dropdown-menu {
+        display: none;
+        padding-left: 15px;
+        overflow: hidden;
+    }
+    
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        color: #f0f0f0;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+    
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dropdown-item i {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .dropdown.active .dropdown-menu {
+        display: block;
+    }
+    
+    .dropdown.active .dropdown-icon {
+        transform: rotate(180deg);
     }
 </style> 

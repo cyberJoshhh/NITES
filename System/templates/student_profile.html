@@ -183,13 +183,6 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Print button at the bottom -->
-        <div class="print-container">
-            <button id="printProfileBtn" class="print-btn">
-                <i class="fas fa-print"></i> Print Student Profile
-            </button>
-        </div>
     </div>
 </div>
 
@@ -506,70 +499,6 @@
             grid-template-columns: 1fr;
         }
     }
-    
-    /* Print button styles */
-    .print-container {
-        text-align: center;
-        margin-bottom: 40px;
-    }
-
-    .print-btn {
-        background-color: var(--primary);
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 30px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .print-btn:hover {
-        background-color: var(--primary-light);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .print-btn i {
-        font-size: 1.2rem;
-    }
-
-    /* Print styles */
-    @media print {
-        .sidebar, .mobile-menu-toggle, #sidebarOverlay, 
-        .welcome-header, .print-container {
-            display: none !important;
-        }
-        
-        .main-content {
-            margin-left: 0 !important;
-            padding: 0 !important;
-        }
-        
-        .profile-card {
-            box-shadow: none !important;
-        }
-        
-        .profile-header {
-            background: #2d6a4f !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-        
-        body {
-            font-size: 12pt;
-        }
-        
-        .info-item:hover {
-            transform: none !important;
-            background-color: #f8f9fa !important;
-        }
-    }
 </style>
 
 <script>
@@ -590,14 +519,6 @@
         
         // Close sidebar when clicking on overlay
         sidebarOverlay.addEventListener('click', toggleSidebar);
-        
-        // Print functionality
-        const printButton = document.getElementById('printProfileBtn');
-        if (printButton) {
-            printButton.addEventListener('click', function() {
-                window.print();
-            });
-        }
         
         // Logout confirmation
         const logoutBtn = document.getElementById('logoutBtn');
