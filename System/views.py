@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Student, StudentScore, EvaluationRecord, CognitiveEvaluation, ExpressiveEvaluation, FineEvaluation, GrossEvaluation, ReceptiveEvaluation, SelfHelpEvaluation, ParentSelfHelpEvaluation, ParentGrossEvaluation, ParentSocialEvaluation, ParentExpressiveEvaluation, ParentCognitiveEvaluation
+from .models import Student, EvaluationRecord, CognitiveEvaluation, ExpressiveEvaluation, FineEvaluation, GrossEvaluation, ReceptiveEvaluation, SelfHelpEvaluation, ParentSelfHelpEvaluation, ParentGrossEvaluation, ParentSocialEvaluation, ParentExpressiveEvaluation, ParentCognitiveEvaluation, Announcement
 from .forms import StudentForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -29,19 +29,18 @@ def dashboard(request):
     
     if student:
         # This is a student account
-        try:
-            scores = student.scores
-        except StudentScore.DoesNotExist:
-            scores = None
+        # Get recent announcements for notifications
+        recent_announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')[:3]
+        
         context = {
             'student': student,
-            'scores': scores,
             'gross_evaluations': GrossEvaluation.objects.all(),
             'fine_evaluations': FineEvaluation.objects.all(),
             'self_help_evaluations': SelfHelpEvaluation.objects.all(),
             'expressive_evaluations': ExpressiveEvaluation.objects.all(),
             'receptive_evaluations': ReceptiveEvaluation.objects.all(),
-            'cognitive_evaluations': CognitiveEvaluation.objects.all()
+            'cognitive_evaluations': CognitiveEvaluation.objects.all(),
+            'recent_announcements': recent_announcements
         }
         context['debug'] = True
         return render(request, "PDash.html", context)
@@ -58,11 +57,15 @@ def dashboard(request):
                             ReceptiveEvaluation.objects.count() + 
                             CognitiveEvaluation.objects.count())
         
+        # Get recent announcements for teacher dashboard
+        recent_announcements = Announcement.objects.all().order_by('-created_at')[:5]
+        
         return render(request, "TDash.html", {
             "students": students,
             "users_count": users_count,
             "evaluations_count": evaluations_count,
-            "messages_count": 0  # You can replace this with actual message count if you have a message model
+            "messages_count": 0,  # You can replace this with actual message count if you have a message model
+            "recent_announcements": recent_announcements
         })
 
 
@@ -134,24 +137,31 @@ def login_view(request):
             student = Student.objects.filter(username=username, password=password).first()
             
             if student:
-                # Create Django user if it doesn't exist
-                user, created = User.objects.get_or_create(
-                    username=username,
-                    defaults={'password': password}
-                )
-                
-                # If user was retrieved but not created, update password
-                if not created:
+                # Create or update Django user for this student account
+                try:
+                    # Get the user if it exists
+                    user = User.objects.get(username=username)
+                    # Update password to match Student model for consistent authentication
                     user.set_password(password)
                     user.save()
+                except User.DoesNotExist:
+                    # Create a new user if doesn't exist
+                    user = User.objects.create_user(
+                        username=username,
+                        password=password
+                    )
                 
-                # Login the user
-                login(request, user)
-                return redirect('dashboard')  # Redirect to dashboard
-            else:
-                messages.error(request, 'Invalid username or password')
-                return render(request, 'Login.html', {'error': 'Invalid username or password'})
+                # Login the user through Django's auth system
+                user = authenticate(request, username=username, password=password)
+                if user is not None:
+                    login(request, user)
+                    return redirect('dashboard')  # Redirect to dashboard
+            
+            # If all attempts fail, show error
+            messages.error(request, 'Invalid username or password')
+            return render(request, 'Login.html', {'error': 'Invalid username or password'})
     
+    # Display messages from redirects (like from password reset)
     return render(request, 'Login.html')
 def logout_view(request):
     logout(request)
@@ -1713,4 +1723,118 @@ def account_settings(request):
     }
     
     return render(request, 'account_settings.html', context)
+
+def forgot_password(request):
+    """
+    View function to handle forgotten password requests.
+    Users can reset their password by providing their username.
+    """
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        # Validate inputs
+        if not username:
+            return render(request, 'forgot_password.html', {'error': 'Please enter your username'})
+        
+        if not new_password or not confirm_password:
+            return render(request, 'forgot_password.html', 
+                         {'error': 'Please enter and confirm your new password',
+                          'username': username})
+        
+        if new_password != confirm_password:
+            return render(request, 'forgot_password.html', 
+                         {'error': 'Passwords do not match',
+                          'username': username})
+        
+        if len(new_password) < 8:
+            return render(request, 'forgot_password.html', 
+                         {'error': 'Password must be at least 8 characters long',
+                          'username': username})
+        
+        # Check if user exists
+        user = User.objects.filter(username=username).first()
+        if not user:
+            return render(request, 'forgot_password.html', 
+                         {'error': 'No account found with that username'})
+        
+        # Update the password in the Django User model
+        user.set_password(new_password)
+        user.save()
+        
+        # If user is a student, update Student model too
+        student = Student.objects.filter(username=username).first()
+        if student:
+            # Store the plaintext password in Student model for direct login
+            student.password = new_password
+            student.save()
+        
+        # Redirect to login page with success message
+        messages.success(request, 'Password has been reset successfully. Please log in with your new password.')
+        return redirect('login')
+    
+    return render(request, 'forgot_password.html')
+
+@login_required
+def create_announcement(request):
+    """
+    View function for creating announcements.
+    If method is GET, displays the announcement form.
+    If method is POST, processes the announcement submission.
+    """
+    # Check if user has permission to create announcements (staff only)
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to create announcements.")
+        return redirect('dashboard')
+    
+    # Get all announcements for display
+    announcements = Announcement.objects.all().order_by('-created_at')[:10]  # Show 10 most recent
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        
+        # Validate form data
+        if not title or not content:
+            messages.error(request, "Please fill in both title and content fields.")
+            return render(request, 'create_announcement.html', {'announcements': announcements})
+        
+        # Create new announcement
+        announcement = Announcement(
+            title=title,
+            content=content,
+            created_by=request.user
+        )
+        announcement.save()
+        
+        messages.success(request, "Announcement created successfully!")
+        return redirect('create_announcement')
+    
+    # GET request - display the form
+    return render(request, 'create_announcement.html', {'announcements': announcements})
+
+@login_required
+def view_announcements(request):
+    """
+    View function to display all active announcements.
+    """
+    announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')
+    return render(request, 'view_announcements.html', {'announcements': announcements})
+
+@login_required
+def delete_announcement(request, announcement_id):
+    """
+    View function to delete an announcement.
+    Only staff members can delete announcements.
+    """
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to delete announcements.")
+        return redirect('view_announcements')
+    
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    announcement.delete()
+    
+    messages.success(request, "Announcement deleted successfully!")
+    return redirect('create_announcement')
 

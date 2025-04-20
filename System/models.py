@@ -32,20 +32,6 @@ class Student(models.Model):
     def __str__(self):
         return self.child_name
 
-class StudentScore(models.Model):
-    student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='scores')
-    gross_motor = models.FloatField(null=True, blank=True)
-    fine_motor = models.FloatField(null=True, blank=True)
-    self_help = models.FloatField(null=True, blank=True)
-    receptive_language = models.FloatField(null=True, blank=True)
-    expressive_language = models.FloatField(null=True, blank=True)
-    cognitive = models.FloatField(null=True, blank=True)
-    social_emotional = models.FloatField(null=True, blank=True)
-    date_assessed = models.DateField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.student.child_name}'s Scores"
-
 @receiver(post_save, sender=Student)
 def create_user_for_student(sender, instance, created, **kwargs):
     if created:
@@ -223,4 +209,17 @@ class PDFFile(models.Model):
     
     def __str__(self):
         return self.name
+    
+class Announcement(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.title
     

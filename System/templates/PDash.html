@@ -106,27 +106,35 @@
                     </div>
                     <div class="card-body">
                         <div class="notification-list">
-                            <div class="notification-item">
-                                <div class="notification-icon">
-                                    <i class="fas fa-clipboard-check"></i>
+                            {% if recent_announcements %}
+                                {% for announcement in recent_announcements %}
+                                <div class="notification-item">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-bullhorn"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">{{ announcement.title }}</div>
+                                        <div class="notification-text">{{ announcement.content|truncatechars:100 }}</div>
+                                        <div class="notification-time">{{ announcement.created_at|timesince }} ago</div>
+                                    </div>
                                 </div>
-                                <div class="notification-content">
-                                    <div class="notification-title">Evaluation Reminder</div>
-                                    <div class="notification-text">Please complete the Gross Motor evaluation by October 15.</div>
-                                    <div class="notification-time">2 days ago</div>
+                                {% endfor %}
+                                {% if recent_announcements.count > 0 %}
+                                <div class="view-more-btn">
+                                    <a href="{% url 'view_announcements' %}">View All Announcements</a>
                                 </div>
-                            </div>
-                            
-                            <div class="notification-item">
-                                <div class="notification-icon">
-                                    <i class="fas fa-chart-pie"></i>
+                                {% endif %}
+                            {% else %}
+                                <div class="notification-item">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">No announcements</div>
+                                        <div class="notification-text">There are no recent announcements at this time.</div>
+                                    </div>
                                 </div>
-                                <div class="notification-content">
-                                    <div class="notification-title">Performance Report</div>
-                                    <div class="notification-text">September performance report is now available.</div>
-                                    <div class="notification-time">1 week ago</div>
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

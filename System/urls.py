@@ -30,11 +30,16 @@ from .views import (
     pdf_view,
     manage_account,
     manage_student_session,
+    forgot_password,
+    create_announcement,
+    view_announcements,
+    delete_announcement,
 )
 
 urlpatterns = [
     path('', login_view, name='login'),
     path('login/', login_view, name='login_page'),
+    path('forgot-password/', forgot_password, name='forgot_password'),
     path('dashboard/', dashboard, name='dashboard'),
     path('add_student/', add_student, name='add_student'),
     path('logout/', logout_view, name='logout'),
@@ -71,4 +76,9 @@ urlpatterns = [
     path('manage-account/', manage_account, name='manage_account'),
     path('manage-student-session/', manage_student_session, name='manage_student_session'),
     path('account_settings/', views.account_settings, name='account_settings'),
+    
+    # Announcement URLs
+    path('create-announcement/', create_announcement, name='create_announcement'),
+    path('announcements/', view_announcements, name='view_announcements'),
+    path('delete-announcement/<int:announcement_id>/', delete_announcement, name='delete_announcement'),
 ]
