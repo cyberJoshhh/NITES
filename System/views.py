@@ -1648,3 +1648,69 @@ def manage_student_session(request):
     
     return render(request, 'manage_student_session.html', context)
 
+@login_required
+def account_settings(request):
+    """
+    Enhanced view function for account settings with a modern interface.
+    Allows users to change their username and password with real-time validation.
+    """
+    user = request.user
+    success_message = None
+    error_message = None
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'change_username':
+            new_username = request.POST.get('new_username')
+            
+            # Check if username already exists
+            if User.objects.filter(username=new_username).exists():
+                error_message = "Username already exists. Please choose another one."
+            else:
+                # If the user is a student, update both User and Student models
+                student = Student.objects.filter(username=user.username).first()
+                if student:
+                    student.username = new_username
+                    student.save()
+                
+                # Update auth user
+                user.username = new_username
+                user.save()
+                success_message = "Username updated successfully!"
+                
+        elif action == 'change_password':
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            # Verify current password
+            if not user.check_password(current_password):
+                error_message = "Current password is incorrect."
+            elif new_password != confirm_password:
+                error_message = "New passwords do not match."
+            elif len(new_password) < 8:
+                error_message = "Password must be at least 8 characters long."
+            else:
+                # Set new password
+                user.set_password(new_password)
+                user.save()
+                
+                # If user is a student, update Student model too
+                student = Student.objects.filter(username=user.username).first()
+                if student:
+                    student.password = new_password
+                    student.save()
+                
+                success_message = "Password updated successfully! Please log in again."
+                logout(request)
+                return redirect('login')
+    
+    context = {
+        'user': user,
+        'success_message': success_message,
+        'error_message': error_message,
+    }
+    
+    return render(request, 'account_settings.html', context)
+

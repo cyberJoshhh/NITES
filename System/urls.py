@@ -70,4 +70,5 @@ urlpatterns = [
     path('delete-pdf/<int:pdf_id>/', delete_pdf, name='delete_pdf'),
     path('manage-account/', manage_account, name='manage_account'),
     path('manage-student-session/', manage_student_session, name='manage_student_session'),
+    path('account_settings/', views.account_settings, name='account_settings'),
 ]
