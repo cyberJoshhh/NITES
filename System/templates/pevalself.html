@@ -470,17 +470,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            submitButton.disabled = false;
             if (response.ok) {
                 return response.json().then(data => {
                     submitButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
-                    setTimeout(() => {
-                        alert('Self-Help evaluation saved successfully!');
-                        window.location.href = '{% url "dashboard" %}';
-                    }, 500);
+                    
+                    // Now generate PDF automatically
+                    generatePDF(studentName, eval1Score, eval2Score, eval3Score);
                 });
             } else {
                 submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
                 return response.json().then(data => {
                     throw new Error(data.message || 'Error saving evaluation');
                 });
@@ -493,6 +492,85 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(error.message || 'Error saving evaluation. Please try again.');
         });
     });
+    
+    // Function to generate PDF
+    function generatePDF(studentName, eval1Score, eval2Score, eval3Score) {
+        // Create checkbox data array
+        const checkboxData = [];
+        const rows = document.querySelectorAll('tbody tr:not(:last-child)');
+        rows.forEach((row, index) => {
+            const checkboxes = [
+                row.querySelector('td:nth-child(3) input[type="checkbox"]').checked,
+                row.querySelector('td:nth-child(4) input[type="checkbox"]').checked,
+                row.querySelector('td:nth-child(5) input[type="checkbox"]').checked
+            ];
+            checkboxData.push({ item: index + 1, checked: checkboxes });
+        });
+        
+        // Create comments array
+        const comments = [];
+        const commentInputs = document.querySelectorAll('.comment-input');
+        commentInputs.forEach((input, index) => {
+            if (input.value.trim() !== '') {
+                comments.push({
+                    number: index + 1,
+                    text: input.value.trim()
+                });
+            }
+        });
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('student_name', studentName);
+        formData.append('eval1_score', eval1Score);
+        formData.append('eval2_score', eval2Score);
+        formData.append('eval3_score', eval3Score);
+        formData.append('comments', JSON.stringify(comments));
+        formData.append('checkbox_data', JSON.stringify(checkboxData));
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Get submit button for feedback
+        const submitButton = document.querySelector('.submit-button');
+        submitButton.innerHTML = '<i class="fas fa-file-pdf"></i> Generating PDF...';
+        
+        // Send request to generate PDF
+        fetch('{% url "generate_self_help_pdf" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json().then(data => {
+                    submitButton.innerHTML = '<i class="fas fa-check"></i> PDF Generated!';
+                    
+                    // Remove automatic download and just show a success message with link
+                    if (data.pdf_url) {
+                        setTimeout(() => {
+                            alert('Self-Help evaluation saved and PDF generated successfully! You can view/download PDFs from the dashboard.');
+                            window.location.href = '{% url "dashboard" %}';
+                        }, 1000);
+                    }
+                });
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Error generating PDF');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            submitButton.innerHTML = '<i class="fas fa-check"></i> Saved, but PDF failed';
+            setTimeout(() => {
+                alert('Evaluation saved, but PDF generation failed: ' + error.message);
+                window.location.href = '{% url "dashboard" %}';
+            }, 1000);
+        });
+    }
 });
 </script>
 
@@ -507,5 +585,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <input type="hidden" id="student-id" value="">
 <input type="hidden" id="student-name" value="Unknown Student">
 {% endif %}
+
+<!-- Add hidden input for PDF generation URL -->
+<input type="hidden" id="generatePdfUrl" value="{% url 'generate_self_help_pdf' %}">
 
 {% endblock %} 

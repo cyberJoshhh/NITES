@@ -84,10 +84,19 @@
                 <button type="button" class="submit-button">
                     <i class="fas fa-save"></i> Save Evaluation
                 </button>
+                <div id="loading-spinner" class="loading-spinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Generating PDF...
+                </div>
             </div>
+            
+            <!-- Hidden fields for JavaScript -->
+            <input type="hidden" id="studentName" value="{% if student and student.child_name %}{{ student.child_name }}{% else %}Unknown{% endif %}">
+            <input type="hidden" id="generatePdfUrl" value="{% url 'generate_gross_motor_pdf' %}">
         </div>
     </div>
 </div>
+
+
 
 <style>
 /* Main Content Styles */
@@ -382,6 +391,99 @@ input[type="checkbox"] {
 .submit-button i {
     margin-right: 0.5rem;
 }
+
+.loading-spinner {
+    margin-top: 1rem;
+    text-align: center;
+    color: #2d6a4f;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.loading-spinner i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    width: 80%;
+    max-width: 700px;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover {
+    color: #333;
+}
+
+.modal h2 {
+    color: #2d6a4f;
+    margin-bottom: 1rem;
+    font-size: 1.6rem;
+}
+
+#dbStatusContent {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#dbStatusContent p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+.modal-actions button {
+    padding: 0.6rem 1.2rem;
+    margin: 0 5px;
+    flex: 1;
+}
+
+.success-message {
+    color: #2d6a4f;
+    font-weight: bold;
+}
+
+.error-message {
+    color: #d32f2f;
+    font-weight: bold;
+}
 </style>
 
 <script>
@@ -411,6 +513,33 @@ document.addEventListener('DOMContentLoaded', function() {
             link.style.cursor = 'pointer';
             link.style.position = 'relative';
             link.style.zIndex = '1002';
+        });
+    }
+
+    // Modal functionality
+    const modal = document.getElementById('dbStatusModal');
+    const closeButton = document.querySelector('.close-button');
+    const viewPdfBtn = document.getElementById('viewPdfBtn');
+    const returnToDashboardBtn = document.getElementById('returnToDashboardBtn');
+    
+    // Close modal when clicking the close button
+    if (closeButton) {
+        closeButton.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+    }
+    
+    // Close modal when clicking outside the modal content
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Return to dashboard button
+    if (returnToDashboardBtn) {
+        returnToDashboardBtn.addEventListener('click', function() {
+            window.location.href = "{% url 'dashboard' %}";
         });
     }
 
@@ -468,17 +597,47 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.comment-input').forEach((input, index) => {
                 if (input.value) {
                     comments.push({ number: index + 1, text: input.value });
+                } else {
+                    comments.push({ number: index + 1, text: '' });
                 }
+            });
+            
+            // Also collect checkbox states for the PDF generation
+            const checkboxData = [];
+            const rows = document.querySelectorAll('tbody tr:not(:last-child)');
+            rows.forEach((row, rowIndex) => {
+                const rowNumber = rowIndex + 1;
+                const checkboxes = [
+                    row.querySelector('td:nth-child(3) input[type="checkbox"]').checked,
+                    row.querySelector('td:nth-child(4) input[type="checkbox"]').checked,
+                    row.querySelector('td:nth-child(5) input[type="checkbox"]').checked
+                ];
+                checkboxData.push({ number: rowNumber, checked: checkboxes });
             });
             
             // Get student name or use "Unknown" if not available
             let studentName = "Unknown";
-            {% if student and student.child_name %}
-                studentName = "{{ student.child_name }}";
-            {% endif %}
+            // Using a JavaScript approach to get Django template variables
+            const studentNameElement = document.getElementById('studentName');
+            if (studentNameElement) {
+                studentName = studentNameElement.value;
+            }
+            
+            // Show loading state
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            document.getElementById('loading-spinner').style.display = 'block';
             
             // Send data via AJAX
-            fetch("{% url 'parent_evaluation_gross' %}", {
+            console.log("Preparing to send evaluation data to server");
+            console.log("Student name:", studentName);
+            console.log("Scores:", eval1Score, eval2Score, eval3Score);
+            console.log("Comments:", comments);
+            console.log("Checkbox data:", checkboxData);
+            
+            let pdfUrl = ''; // Store PDF URL for later use
+            
+            fetch(document.getElementById('generatePdfUrl').value, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -489,13 +648,67 @@ document.addEventListener('DOMContentLoaded', function() {
                     'eval1_score': eval1Score,
                     'eval2_score': eval2Score,
                     'eval3_score': eval3Score,
-                    'comments': JSON.stringify(comments)
+                    'comments': JSON.stringify(comments),
+                    'checkbox_data': JSON.stringify(checkboxData)
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log("Received response from server:", response.status);
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log("Received data from server:", data);
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Evaluation';
+                document.getElementById('loading-spinner').style.display = 'none';
+                
                 if (data.status === 'success') {
-                    alert('Evaluation saved successfully!');
+                    // Save PDF URL for View PDF button
+                    pdfUrl = data.pdf_url;
+                    
+                    // Show database operation details in modal
+                    const dbStatusContent = document.getElementById('dbStatusContent');
+                    if (dbStatusContent) {
+                        let htmlContent = `<p class="success-message">${data.database_status}</p>`;
+                        htmlContent += '<p><strong>Database Operations:</strong></p>';
+                        
+                        if (data.db_operations && data.db_operations.length > 0) {
+                            htmlContent += '<ul>';
+                            data.db_operations.forEach(op => {
+                                htmlContent += `<li>${op}</li>`;
+                            });
+                            htmlContent += '</ul>';
+                        } else {
+                            htmlContent += '<p>No database operations reported.</p>';
+                        }
+                        
+                        dbStatusContent.innerHTML = htmlContent;
+                    }
+                    
+                    // Set the View PDF button URL
+                    if (viewPdfBtn) {
+                        viewPdfBtn.addEventListener('click', function() {
+                            window.open(pdfUrl, '_blank');
+                        });
+                    }
+                    
+                    // Show the modal
+                    if (modal) {
+                        modal.style.display = 'block';
+                    } else {
+                        // Fallback if modal not found
+                        alert('Evaluation saved and PDF generated successfully!');
+                        if (confirm('Do you want to view the generated PDF?')) {
+                            window.open(pdfUrl, '_blank');
+                        }
+                        window.location.href = "{% url 'dashboard' %}";
+                    }
+                } else if (data.status === 'partial_success') {
+                    // Evaluation was saved but PDF generation failed
+                    alert('Evaluation data was saved, but the PDF could not be generated: ' + data.message);
                     window.location.href = "{% url 'dashboard' %}";
                 } else {
                     alert('Error: ' + data.message);
@@ -503,7 +716,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while saving the evaluation.');
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Evaluation';
+                document.getElementById('loading-spinner').style.display = 'none';
+                alert('An error occurred while saving the evaluation: ' + error.message);
             });
         });
     }

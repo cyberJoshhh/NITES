@@ -1,16 +1,33 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Student, EvaluationRecord, CognitiveEvaluation, ExpressiveEvaluation, FineEvaluation, GrossEvaluation, ReceptiveEvaluation, SelfHelpEvaluation, ParentSelfHelpEvaluation, ParentGrossEvaluation, ParentSocialEvaluation, ParentExpressiveEvaluation, ParentCognitiveEvaluation, Announcement
+from .models import (
+    Student, EvaluationRecord, CognitiveEvaluation, ExpressiveEvaluation, 
+    FineEvaluation, GrossEvaluation, ReceptiveEvaluation, SelfHelpEvaluation, 
+    ParentSelfHelpEvaluation, ParentGrossEvaluation, ParentSocialEvaluation, 
+    ParentExpressiveEvaluation, ParentCognitiveEvaluation, Announcement, 
+    EvaluationPDF, PDFFile, GrossMotorPDF, SelfHelpPDF, SocialPDF, ExpressivePDF,
+    CognitivePDF
+)
 from .forms import StudentForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 import json
 from django.db.models import Q
 from django.utils import timezone
 from datetime import date
+import os
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from django.core.files.base import ContentFile
+from datetime import datetime
+from django.urls import reverse
 
 
 
@@ -252,8 +269,6 @@ def submit_expressive_evaluation(request):
 
         messages.success(request, 'Evaluation submitted successfully!')
         return redirect('dashboard')
-
-    return redirect('dashboard')
 
 def submit_fine_evaluation(request):
     if request.method == 'POST':
@@ -1837,4 +1852,2012 @@ def delete_announcement(request, announcement_id):
     
     messages.success(request, "Announcement deleted successfully!")
     return redirect('create_announcement')
+
+@login_required
+def generate_gross_motor_pdf(request):
+    """
+    Generate a PDF for the Gross Motor evaluation and save it to the database.
+    Uses the dedicated GrossMotorPDF model to store the PDF directly.
+    """
+    if request.method == 'POST':
+        try:
+            # Extract form data
+            student_name = request.POST.get('student_name', '')
+            eval1_score = int(request.POST.get('eval1_score', 0))
+            eval2_score = int(request.POST.get('eval2_score', 0))
+            eval3_score = int(request.POST.get('eval3_score', 0))
+            comments_json = request.POST.get('comments', '[]')
+            comments = json.loads(comments_json)
+            
+            # Print debug info
+            print(f"Starting PDF generation for {student_name}")
+            print(f"Scores: {eval1_score}, {eval2_score}, {eval3_score}")
+            print(f"Comments: {comments}")
+            
+            # Get checkbox data if provided
+            checkbox_data_json = request.POST.get('checkbox_data', '[]')
+            checkbox_data = json.loads(checkbox_data_json)
+            print(f"Checkbox data: {checkbox_data}")
+            
+            # Create BytesIO buffer to receive PDF data
+            buffer = BytesIO()
+            print("Created BytesIO buffer")
+            
+            try:
+                # Create a simple PDF instead of the complex table
+                try:
+                    from django.conf import settings
+                    os.makedirs(os.path.join(settings.MEDIA_ROOT, 'gross_motor_pdfs'), exist_ok=True)
+                    
+                    # Create a PDF using ReportLab
+                    # Use landscape orientation for more space
+                    doc = SimpleDocTemplate(
+                        buffer, 
+                        pagesize=landscape(letter),
+                        topMargin=30,
+                        leftMargin=30,
+                        rightMargin=30,
+                        bottomMargin=30
+                    )
+                    elements = []
+                    
+                    # Define styles with enhanced formatting
+                    styles = getSampleStyleSheet()
+                    title_style = ParagraphStyle(
+                        'Title',
+                        parent=styles['Heading1'],
+                        fontSize=18,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=10
+                    )
+                    subtitle_style = ParagraphStyle(
+                        'Subtitle',
+                        parent=styles['Heading2'],
+                        fontSize=14,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=6
+                    )
+                    normal_style = ParagraphStyle(
+                        'Normal',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        leading=14,  # Line spacing
+                        spaceBefore=6,
+                        spaceAfter=6
+                    )
+                    header_style = ParagraphStyle(
+                        'TableHeader',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        textColor=colors.white,
+                        alignment=1,  # Center
+                        fontName='Helvetica-Bold'
+                    )
+                    cell_style = ParagraphStyle(
+                        'TableCell',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        leading=14,
+                        wordWrap='CJK'  # Better word wrapping
+                    )
+                    
+                    # Add title
+                    elements.append(Paragraph(f"Gross Motor Evaluation", title_style))
+                    elements.append(Spacer(1, 5))
+                    elements.append(Paragraph(f"Student: {student_name}", subtitle_style))
+                    elements.append(Paragraph(f"Date: {datetime.now().strftime('%B %d, %Y')}", normal_style))
+                    elements.append(Spacer(1, 15))
+                    
+                    # Helper function to create paragraphs for table cells
+                    def create_cell_paragraph(text, style=cell_style):
+                        return Paragraph(text, style)
+                    
+                    # Process checkbox data
+                    def get_checkbox_status(checkbox_data, row_idx, col_idx):
+                        if checkbox_data and len(checkbox_data) > row_idx and checkbox_data[row_idx]['checked'][col_idx]:
+                            return "✓"
+                        return ""
+                    
+                    # Get comments text
+                    def get_comment(comments, number):
+                        comment = next((c['text'] for c in comments if c['number'] == number), '')
+                        if comment:
+                            return comment
+                        return "No comment"
+                    
+                    # Create table data with Paragraph objects for proper text wrapping
+                    data = [
+                        [
+                            create_cell_paragraph("Gross Motor", header_style),
+                            create_cell_paragraph("Material / Procedure", header_style),
+                            create_cell_paragraph("1st Eval", header_style),
+                            create_cell_paragraph("2nd Eval", header_style),
+                            create_cell_paragraph("3rd Eval", header_style),
+                            create_cell_paragraph("Comments", header_style)
+                        ],
+                        [
+                            create_cell_paragraph("1. Climbs on the chair or other elevated furniture like a bed without a help"),
+                            create_cell_paragraph("Parental report will suffice."),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 0, 0)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 0, 1)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 0, 2)),
+                            create_cell_paragraph(get_comment(comments, 1))
+                        ],
+                        [
+                            create_cell_paragraph("2. Walks downstairs, 2 feet on each step, with one handheld"),
+                            create_cell_paragraph("MATERIAL: toy\nPROCEDURE: Ask the child to walk backwards by demonstrating this. Credit if the child is able to walk backwards without falling and holding anything. Parental report will suffice."),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 1, 0)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 1, 1)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 1, 2)),
+                            create_cell_paragraph(get_comment(comments, 2))
+                        ],
+                        [
+                            create_cell_paragraph("3. Dances patterns/joins group movement activities"),
+                            create_cell_paragraph("MATERIAL: ball\nPROCEDURE: Encourage the child to run by rolling a ball across the floor. Credit if the child can run past and without tripping or falling."),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 2, 0)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 2, 1)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, 2, 2)),
+                            create_cell_paragraph(get_comment(comments, 3))
+                        ],
+                        [
+                            create_cell_paragraph("TOTAL SCORE", ParagraphStyle('Total', parent=cell_style, fontName='Helvetica-Bold')),
+                            create_cell_paragraph(""),
+                            create_cell_paragraph(str(eval1_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                            create_cell_paragraph(str(eval2_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                            create_cell_paragraph(str(eval3_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                            create_cell_paragraph("")
+                        ]
+                    ]
+                    
+                    # Define column widths proportionally to the page width
+                    col_widths = [120, 180, 45, 45, 45, 160]
+                    
+                    # Create the table with better spacing
+                    table = Table(data, colWidths=col_widths, rowHeights=[30, 60, 80, 80, 30])
+                    print("Created table for PDF")
+                    
+                    # Enhanced table style with better borders and colors
+                    green_color = colors.Color(0.176, 0.416, 0.31)  # #2d6a4f in RGB
+                    light_green = colors.Color(0.925, 0.965, 0.945)  # Light green for alternating rows
+                    
+                    table_style = TableStyle([
+                        # Header row styling
+                        ('BACKGROUND', (0, 0), (5, 0), green_color),
+                        ('TEXTCOLOR', (0, 0), (5, 0), colors.white),
+                        ('ALIGN', (0, 0), (5, 0), 'CENTER'),
+                        ('VALIGN', (0, 0), (5, 0), 'MIDDLE'),
+                        
+                        # Alternating row colors
+                        ('BACKGROUND', (0, 1), (5, 1), light_green),
+                        ('BACKGROUND', (0, 3), (5, 3), light_green),
+                        
+                        # Total row styling
+                        ('BACKGROUND', (0, 4), (5, 4), colors.Color(0.9, 0.9, 0.9)),
+                        ('SPAN', (0, 4), (1, 4)),  # Span TOTAL SCORE across two columns
+                        
+                        # Vertical alignment
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        
+                        # Text alignment
+                        ('ALIGN', (2, 1), (4, 4), 'CENTER'),  # Center-align evaluation checkboxes
+                        
+                        # Borders
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('BOX', (0, 0), (-1, -1), 2, colors.black),
+                        
+                        # Cell padding
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ])
+                    
+                    # Apply the style to the table
+                    table.setStyle(table_style)
+                    
+                    # Add the table to the elements
+                    elements.append(table)
+                    
+                    # Add a footer with disclaimer and signature line
+                    elements.append(Spacer(1, 20))
+                    elements.append(Paragraph("Disclaimer: This evaluation is based on observation and assessment at the time of evaluation.", normal_style))
+                    
+                    # Add a signature line
+                    elements.append(Spacer(1, 30))
+                    signature_data = [
+                        ['________________________', '________________________'],
+                        ['Evaluator\'s Signature', 'Date']
+                    ]
+                    signature_table = Table(signature_data, colWidths=[200, 200])
+                    signature_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('TOPPADDING', (0, 1), (-1, 1), 5),
+                        ('LINEABOVE', (0, 1), (0, 1), 1, colors.black),
+                        ('LINEABOVE', (1, 1), (1, 1), 1, colors.black),
+                    ]))
+                    elements.append(signature_table)
+                    
+                    # Build the PDF with enhanced elements
+                    print("Building PDF document...")
+                    doc.build(elements)
+                    print("PDF document built successfully")
+                    
+                    # Get the PDF value from the buffer
+                    pdf_value = buffer.getvalue()
+                    print(f"PDF size: {len(pdf_value)} bytes")
+                    buffer.close()
+                except Exception as complex_pdf_error:
+                    print(f"Error creating complex PDF: {complex_pdf_error}")
+                    # Fallback to simple PDF if complex one fails
+                    buffer = BytesIO()  # Reset buffer
+                    p = canvas.Canvas(buffer, pagesize=letter)
+                    p.setFont("Helvetica-Bold", 16)
+                    p.drawString(100, 750, f"Gross Motor Evaluation")
+                    p.setFont("Helvetica", 12)
+                    p.drawString(100, 730, f"Student: {student_name}")
+                    p.drawString(100, 710, f"Date: {datetime.now().strftime('%B %d, %Y')}")
+                    p.drawString(100, 670, f"1st Evaluation Score: {eval1_score}")
+                    p.drawString(100, 650, f"2nd Evaluation Score: {eval2_score}")
+                    p.drawString(100, 630, f"3rd Evaluation Score: {eval3_score}")
+                    p.save()
+                    pdf_value = buffer.getvalue()
+                    buffer.close()
+            except Exception as pdf_error:
+                print(f"Error creating PDF content: {pdf_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error creating PDF content: {str(pdf_error)}'
+                }, status=500)
+            
+            try:
+                # Generate a unique filename
+                filename = f"gross_motor_{student_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                db_info = []  # To store database operation info
+                
+                # Check if we already have a recent evaluation for this student
+                from django.db.models import Q
+                existing_record = GrossMotorPDF.objects.filter(
+                    Q(student_name=student_name) & 
+                    Q(uploaded_at__date=timezone.now().date())
+                ).first()
+                
+                # If there's an existing evaluation from today, update it instead of creating a new one
+                if existing_record:
+                    print(f"Found existing GrossMotorPDF from today: {existing_record.id}")
+                    db_info.append(f"Found existing GrossMotorPDF ID: {existing_record.id}")
+                    
+                    # Delete the old file
+                    existing_record.file.delete(save=False)
+                    
+                    # Update the record with new data
+                    existing_record.eval1_score = eval1_score
+                    existing_record.eval2_score = eval2_score
+                    existing_record.eval3_score = eval3_score
+                    existing_record.file.save(filename, ContentFile(pdf_value))
+                    existing_record.save()
+                    
+                    print(f"Updated existing GrossMotorPDF with ID: {existing_record.id}")
+                    db_info.append(f"Updated existing GrossMotorPDF ID: {existing_record.id}")
+                    gross_motor_pdf = existing_record
+                else:
+                    # Create a new GrossMotorPDF entry directly
+                    gross_motor_pdf = GrossMotorPDF(
+                        student_name=student_name,
+                        eval1_score=eval1_score,
+                        eval2_score=eval2_score,
+                        eval3_score=eval3_score
+                    )
+                    gross_motor_pdf.file.save(filename, ContentFile(pdf_value))
+                    gross_motor_pdf.save()
+                    
+                    print(f"Created new GrossMotorPDF with ID: {gross_motor_pdf.id}")
+                    db_info.append(f"Created new GrossMotorPDF ID: {gross_motor_pdf.id}")
+                
+                # Also save to ParentGrossEvaluation for backward compatibility
+                evaluation, created = ParentGrossEvaluation.objects.update_or_create(
+                    student_name=student_name,
+                    defaults={
+                        'eval1_score': eval1_score,
+                        'eval2_score': eval2_score,
+                        'eval3_score': eval3_score
+                    }
+                )
+                db_info.append(f"{'Created' if created else 'Updated'} ParentGrossEvaluation ID: {evaluation.id}")
+                
+                # Try getting the URL from the FileField
+                pdf_url = gross_motor_pdf.file.url
+                print(f"PDF URL from FileField: {pdf_url}")
+                
+                # Count existing records for confirmation
+                gross_motor_pdf_count = GrossMotorPDF.objects.count()
+                eval_count = ParentGrossEvaluation.objects.count()
+                
+                db_info.append(f"Total GrossMotorPDF records: {gross_motor_pdf_count}")
+                db_info.append(f"Total ParentGrossEvaluation records: {eval_count}")
+                
+                # Return success response with PDF info
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Evaluation saved and PDF generated successfully',
+                    'pdf_id': gross_motor_pdf.id,
+                    'pdf_url': pdf_url,
+                    'download_url': request.build_absolute_uri(pdf_url),
+                    'db_operations': db_info,
+                    'database_status': 'Records saved successfully to GrossMotorPDF model'
+                })
+            except Exception as db_error:
+                print(f"Error saving PDF to database: {db_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error saving PDF to database: {str(db_error)}'
+                }, status=500)
+            
+        except Exception as e:
+            print(f"General error in generate_gross_motor_pdf: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Error generating PDF: {str(e)}'
+            }, status=500)
+            
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method. POST required.'
+    }, status=405)
+
+@login_required
+def download_pdf(request, pdf_id):
+    """
+    Directly serve a PDF file by ID
+    """
+    try:
+        pdf_file = PDFFile.objects.get(id=pdf_id)
+        
+        # Check if the file exists
+        import os
+        from django.conf import settings
+        file_path = os.path.join(settings.MEDIA_ROOT, pdf_file.file.name)
+        
+        if not os.path.exists(file_path):
+            print(f"PDF file not found at: {file_path}")
+            return JsonResponse({'error': 'PDF file not found on disk'}, status=404)
+        
+        # Serve the file directly
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{os.path.basename(pdf_file.file.name)}"'
+            return response
+            
+    except PDFFile.DoesNotExist:
+        return JsonResponse({'error': 'PDF not found'}, status=404)
+    except Exception as e:
+        print(f"Error serving PDF: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def test_pdf(request):
+    """A simple test view to check if PDF generation and saving works."""
+    from reportlab.pdfgen import canvas
+    from io import BytesIO
+    import os
+    from django.conf import settings
+    import datetime
+    
+    try:
+        # First, create the PDF in memory
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer)
+        p.drawString(100, 800, "Test PDF Generated Successfully")
+        p.drawString(100, 780, f"Generated at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        p.drawString(100, 760, f"Generated by: {request.user.username}")
+        p.showPage()
+        p.save()
+        
+        # Get the value of the BytesIO buffer
+        pdf_value = buffer.getvalue()
+        buffer.close()
+        
+        # Create pdfs directory if it doesn't exist
+        pdf_dir = os.path.join(settings.MEDIA_ROOT, 'pdfs')
+        print(f"PDF directory: {pdf_dir}")
+        try:
+            os.makedirs(pdf_dir, exist_ok=True)
+            print(f"PDF directory created/confirmed: {pdf_dir}")
+        except Exception as dir_error:
+            print(f"Error creating PDF directory: {dir_error}")
+            # Try a different approach
+            try:
+                os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+                if not os.path.exists(pdf_dir):
+                    os.mkdir(pdf_dir)
+                print("PDF directory created using alternative method")
+            except Exception as alt_error:
+                print(f"Alternative directory creation failed: {alt_error}")
+        
+        # Check if directory exists now
+        if os.path.exists(pdf_dir):
+            print(f"PDF directory exists at: {pdf_dir}")
+        else:
+            print(f"WARNING: PDF directory does not exist at: {pdf_dir}")
+            
+        # Save the PDF to a file
+        filename = f"test_pdf_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filepath = os.path.join(pdf_dir, filename)
+        print(f"Saving PDF to file: {filepath}")
+        
+        with open(filepath, 'wb') as f:
+            f.write(pdf_value)
+        
+        # Return a simple HTML response
+        return HttpResponse(f"""
+        <html>
+            <head><title>PDF Test</title></head>
+            <body>
+                <h1>PDF Generated Successfully!</h1>
+                <p>PDF saved as: {filename}</p>
+                <p>Full path: {filepath}</p>
+                <p><a href="/media/pdfs/{filename}" target="_blank">View PDF</a></p>
+                <p><a href="/system/dashboard/">Return to Dashboard</a></p>
+            </body>
+        </html>
+        """)
+    
+    except Exception as e:
+        import traceback
+        trace = traceback.format_exc()
+        return HttpResponse(f"""
+        <html>
+            <head><title>PDF Test Failed</title></head>
+            <body>
+                <h1>PDF Generation Failed</h1>
+                <p>Error: {str(e)}</p>
+                <pre>{trace}</pre>
+                <p><a href="/system/dashboard/">Return to Dashboard</a></p>
+            </body>
+        </html>
+        """)
+
+@login_required
+def view_gross_motor_pdfs(request):
+    """
+    View function to list all gross motor PDFs.
+    """
+    gross_motor_pdfs = GrossMotorPDF.objects.all().order_by('-uploaded_at')
+    return render(request, 'gross_motor_pdfs.html', {'pdfs': gross_motor_pdfs})
+
+@login_required
+def download_gross_motor_pdf(request, pdf_id):
+    """
+    Directly serve a gross motor PDF file by ID
+    """
+    try:
+        pdf = GrossMotorPDF.objects.get(id=pdf_id)
+        
+        # Check if the file exists
+        import os
+        from django.conf import settings
+        file_path = os.path.join(settings.MEDIA_ROOT, pdf.file.name)
+        
+        if not os.path.exists(file_path):
+            print(f"PDF file not found at: {file_path}")
+            return JsonResponse({'error': 'PDF file not found on disk'}, status=404)
+        
+        # Serve the file directly
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{os.path.basename(pdf.file.name)}"'
+            return response
+            
+    except GrossMotorPDF.DoesNotExist:
+        return JsonResponse({'error': 'PDF not found'}, status=404)
+    except Exception as e:
+        print(f"Error serving PDF: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def generate_self_help_pdf(request):
+    """
+    Generate a PDF for the Self-Help evaluation and save it to the database.
+    Uses the dedicated SelfHelpPDF model to store the PDF directly.
+    """
+    if request.method == 'POST':
+        try:
+            # Extract form data
+            student_name = request.POST.get('student_name', '')
+            eval1_score = int(request.POST.get('eval1_score', 0))
+            eval2_score = int(request.POST.get('eval2_score', 0))
+            eval3_score = int(request.POST.get('eval3_score', 0))
+            comments_json = request.POST.get('comments', '[]')
+            comments = json.loads(comments_json)
+            
+            # Print debug info
+            print(f"Starting PDF generation for {student_name}")
+            print(f"Scores: {eval1_score}, {eval2_score}, {eval3_score}")
+            print(f"Comments: {comments}")
+            
+            # Get checkbox data if provided
+            checkbox_data_json = request.POST.get('checkbox_data', '[]')
+            checkbox_data = json.loads(checkbox_data_json)
+            print(f"Checkbox data: {checkbox_data}")
+            
+            # Create BytesIO buffer to receive PDF data
+            buffer = BytesIO()
+            print("Created BytesIO buffer")
+            
+            try:
+                # Create a simple PDF instead of the complex table
+                try:
+                    from django.conf import settings
+                    os.makedirs(os.path.join(settings.MEDIA_ROOT, 'self_help_pdfs'), exist_ok=True)
+                    
+                    # Create a PDF using ReportLab
+                    # Use landscape orientation for more space
+                    doc = SimpleDocTemplate(
+                        buffer, 
+                        pagesize=landscape(letter),
+                        topMargin=30,
+                        leftMargin=30,
+                        rightMargin=30,
+                        bottomMargin=30
+                    )
+                    elements = []
+                    
+                    # Define styles with enhanced formatting
+                    styles = getSampleStyleSheet()
+                    title_style = ParagraphStyle(
+                        'Title',
+                        parent=styles['Heading1'],
+                        fontSize=18,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=10
+                    )
+                    subtitle_style = ParagraphStyle(
+                        'Subtitle',
+                        parent=styles['Heading2'],
+                        fontSize=14,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=6
+                    )
+                    normal_style = ParagraphStyle(
+                        'Normal',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        leading=14,  # Line spacing
+                        spaceBefore=6,
+                        spaceAfter=6
+                    )
+                    header_style = ParagraphStyle(
+                        'TableHeader',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        textColor=colors.white,
+                        alignment=1,  # Center
+                        fontName='Helvetica-Bold'
+                    )
+                    cell_style = ParagraphStyle(
+                        'TableCell',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        leading=14,
+                        wordWrap='CJK'  # Better word wrapping
+                    )
+                    
+                    # Add title
+                    elements.append(Paragraph(f"Self-Help Evaluation", title_style))
+                    elements.append(Spacer(1, 5))
+                    elements.append(Paragraph(f"Student: {student_name}", subtitle_style))
+                    elements.append(Paragraph(f"Date: {datetime.now().strftime('%B %d, %Y')}", normal_style))
+                    elements.append(Spacer(1, 15))
+                    
+                    # Helper function to create paragraphs for table cells
+                    def create_cell_paragraph(text, style=cell_style):
+                        return Paragraph(text, style)
+                    
+                    # Process checkbox data
+                    def get_checkbox_status(checkbox_data, row_idx, col_idx):
+                        if checkbox_data and len(checkbox_data) > row_idx and checkbox_data[row_idx]['checked'][col_idx]:
+                            return "✓"
+                        return ""
+                    
+                    # Get comments text
+                    def get_comment(comments, number):
+                        comment = next((c['text'] for c in comments if c['number'] == number), '')
+                        if comment:
+                            return comment
+                        return "No comment"
+                    
+                    # Self-Help evaluation items
+                    self_help_items = [
+                        ["1. Feeding sub-domain", "Parental report will suffice."],
+                        ["2. Feed self using fingers to eat non-hands with spoon", "Automatically credit if child eats without spillage. Parental report will suffice."],
+                        ["3. Feed self using spoon without spillage", "Automatically credit if child eats without spillage. Parental report will suffice."],
+                        ["4. Feed self using fingers without spillage", "Parental report will suffice."],
+                        ["5. Feed self using spoon without spillage", "Parental report will suffice."],
+                        ["6. Eats with head held for spoon-feeding during any meal", "Parental report will suffice."],
+                        ["7. Gets drink for self-unassisted", "Parental report will suffice."],
+                        ["8. Pours from pitcher without spillage", "Parental report will suffice."],
+                        ["9. Volunteers to help younger siblings/family members when no adult is around", "Parental report will suffice."],
+                        ["10. Dressing sub-domain\nSelf-dresses after being dressed (e.g., raises arms or lift legs)", "Parental report will suffice."],
+                        ["11. Pulls down preferred short pants", "Parental report will suffice."],
+                        ["12. Removes sando", "Parental report will suffice."],
+                        ["13. Dresses without assistance except for buttoning and tying", "Parental report will suffice."],
+                        ["14. Toilet Training sub-domain\nInforms adult only after he has already urinated (wash) or moved has bowels (pooped) in his underpants", "Parental report will suffice."],
+                        ["15. Informs the adult of need to urinate (pee) or move bowels (poop) ahead of time such as through place (e.g., comfort room)", "Parental report will suffice."],
+                        ["16. Goes to the designated place to urinate (pee) or move bowels (poop) but sometimes still does this in his underpants", "Parental report will suffice."],
+                        ["17. Goes to the designated place to urinate (pee) or move bowels (poop) and never does this in his underpants", "Parental report will suffice."],
+                        ["18. Wipes/cleans self after a bowel movement (poop)", "Parental report will suffice."],
+                        ["19. Bathing sub-domain\nParticipates when bathing (e.g., putting on soap)", "Parental report will suffice."],
+                        ["20. Bathes without any help", "Parental report will suffice."]
+                    ]
+                    
+                    # Create table header
+                    data = [[
+                        create_cell_paragraph("Self-Help", header_style),
+                        create_cell_paragraph("Material/Procedure", header_style),
+                        create_cell_paragraph("1st Eval", header_style),
+                        create_cell_paragraph("2nd Eval", header_style),
+                        create_cell_paragraph("3rd Eval", header_style),
+                        create_cell_paragraph("Comments", header_style)
+                    ]]
+                    
+                    # Add rows for each evaluation item
+                    for i, (item_text, procedure_text) in enumerate(self_help_items):
+                        data.append([
+                            create_cell_paragraph(item_text),
+                            create_cell_paragraph(procedure_text),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 0)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 1)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 2)),
+                            create_cell_paragraph(get_comment(comments, i+1))
+                        ])
+                    
+                    # Add total row
+                    data.append([
+                        create_cell_paragraph("TOTAL SCORE", ParagraphStyle('Total', parent=cell_style, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(""),
+                        create_cell_paragraph(str(eval1_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(str(eval2_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(str(eval3_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph("")
+                    ])
+                    
+                    # Define column widths proportionally to the page width
+                    col_widths = [140, 180, 45, 45, 45, 140]
+                    
+                    # Calculate row heights based on content (with minimums)
+                    row_heights = [30]  # Header row
+                    for i in range(len(self_help_items)):
+                        # Determine height based on content length
+                        row_heights.append(max(30, min(20 + len(self_help_items[i][0]) // 3, 60)))
+                    row_heights.append(30)  # Total row
+                    
+                    # Create the table with better spacing
+                    table = Table(data, colWidths=col_widths, rowHeights=row_heights)
+                    print("Created table for PDF")
+                    
+                    # Enhanced table style with better borders and colors
+                    green_color = colors.Color(0.176, 0.416, 0.31)  # #2d6a4f in RGB
+                    light_green = colors.Color(0.925, 0.965, 0.945)  # Light green for alternating rows
+                    
+                    table_style = TableStyle([
+                        # Header row styling
+                        ('BACKGROUND', (0, 0), (5, 0), green_color),
+                        ('TEXTCOLOR', (0, 0), (5, 0), colors.white),
+                        ('ALIGN', (0, 0), (5, 0), 'CENTER'),
+                        ('VALIGN', (0, 0), (5, 0), 'MIDDLE'),
+                        
+                        # Alternating row colors
+                        ('BACKGROUND', (0, 1), (5, 1), light_green),
+                        ('BACKGROUND', (0, 3), (5, 3), light_green),
+                        ('BACKGROUND', (0, 5), (5, 5), light_green),
+                        ('BACKGROUND', (0, 7), (5, 7), light_green),
+                        ('BACKGROUND', (0, 9), (5, 9), light_green),
+                        ('BACKGROUND', (0, 11), (5, 11), light_green),
+                        ('BACKGROUND', (0, 13), (5, 13), light_green),
+                        ('BACKGROUND', (0, 15), (5, 15), light_green),
+                        ('BACKGROUND', (0, 17), (5, 17), light_green),
+                        ('BACKGROUND', (0, 19), (5, 19), light_green),
+                        
+                        # Total row styling
+                        ('BACKGROUND', (0, -1), (5, -1), colors.Color(0.9, 0.9, 0.9)),
+                        ('SPAN', (0, -1), (1, -1)),  # Span TOTAL SCORE across two columns
+                        
+                        # Vertical alignment
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        
+                        # Text alignment
+                        ('ALIGN', (2, 1), (4, -1), 'CENTER'),  # Center-align evaluation checkboxes
+                        
+                        # Borders
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('BOX', (0, 0), (-1, -1), 2, colors.black),
+                        
+                        # Cell padding
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ])
+                    
+                    # Apply the style to the table
+                    table.setStyle(table_style)
+                    
+                    # Add the table to the elements
+                    elements.append(table)
+                    
+                    # Add a footer with disclaimer and signature line
+                    elements.append(Spacer(1, 20))
+                    elements.append(Paragraph("Disclaimer: This evaluation is based on observation and assessment at the time of evaluation.", normal_style))
+                    
+                    # Add a signature line
+                    elements.append(Spacer(1, 30))
+                    signature_data = [
+                        ['________________________', '________________________'],
+                        ['Evaluator\'s Signature', 'Date']
+                    ]
+                    signature_table = Table(signature_data, colWidths=[200, 200])
+                    signature_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('TOPPADDING', (0, 1), (-1, 1), 5),
+                        ('LINEABOVE', (0, 1), (0, 1), 1, colors.black),
+                        ('LINEABOVE', (1, 1), (1, 1), 1, colors.black),
+                    ]))
+                    elements.append(signature_table)
+                    
+                    # Build the PDF with enhanced elements
+                    print("Building PDF document...")
+                    doc.build(elements)
+                    print("PDF document built successfully")
+                    
+                    # Get the PDF value from the buffer
+                    pdf_value = buffer.getvalue()
+                    print(f"PDF size: {len(pdf_value)} bytes")
+                    buffer.close()
+                except Exception as complex_pdf_error:
+                    print(f"Error creating complex PDF: {complex_pdf_error}")
+                    # Fallback to simple PDF if complex one fails
+                    buffer = BytesIO()  # Reset buffer
+                    p = canvas.Canvas(buffer, pagesize=letter)
+                    p.setFont("Helvetica-Bold", 16)
+                    p.drawString(100, 750, f"Self-Help Evaluation")
+                    p.setFont("Helvetica", 12)
+                    p.drawString(100, 730, f"Student: {student_name}")
+                    p.drawString(100, 710, f"Date: {datetime.now().strftime('%B %d, %Y')}")
+                    p.drawString(100, 670, f"1st Evaluation Score: {eval1_score}")
+                    p.drawString(100, 650, f"2nd Evaluation Score: {eval2_score}")
+                    p.drawString(100, 630, f"3rd Evaluation Score: {eval3_score}")
+                    p.save()
+                    pdf_value = buffer.getvalue()
+                    buffer.close()
+            except Exception as pdf_error:
+                print(f"Error creating PDF content: {pdf_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error creating PDF content: {str(pdf_error)}'
+                }, status=500)
+            
+            try:
+                # Generate a unique filename
+                filename = f"self_help_{student_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                db_info = []  # To store database operation info
+                
+                # Check if we already have a recent evaluation for this student
+                from django.db.models import Q
+                existing_record = SelfHelpPDF.objects.filter(
+                    Q(student_name=student_name) & 
+                    Q(uploaded_at__date=timezone.now().date())
+                ).first()
+                
+                # If there's an existing evaluation from today, update it instead of creating a new one
+                if existing_record:
+                    print(f"Found existing SelfHelpPDF from today: {existing_record.id}")
+                    db_info.append(f"Found existing SelfHelpPDF ID: {existing_record.id}")
+                    
+                    # Delete the old file
+                    existing_record.file.delete(save=False)
+                    
+                    # Update the record with new data
+                    existing_record.eval1_score = eval1_score
+                    existing_record.eval2_score = eval2_score
+                    existing_record.eval3_score = eval3_score
+                    existing_record.file.save(filename, ContentFile(pdf_value))
+                    existing_record.save()
+                    
+                    print(f"Updated existing SelfHelpPDF with ID: {existing_record.id}")
+                    db_info.append(f"Updated existing SelfHelpPDF ID: {existing_record.id}")
+                    self_help_pdf = existing_record
+                else:
+                    # Create a new SelfHelpPDF entry directly
+                    self_help_pdf = SelfHelpPDF(
+                        student_name=student_name,
+                        eval1_score=eval1_score,
+                        eval2_score=eval2_score,
+                        eval3_score=eval3_score
+                    )
+                    self_help_pdf.file.save(filename, ContentFile(pdf_value))
+                    self_help_pdf.save()
+                    
+                    print(f"Created new SelfHelpPDF with ID: {self_help_pdf.id}")
+                    db_info.append(f"Created new SelfHelpPDF ID: {self_help_pdf.id}")
+                
+                # Also save to ParentSelfHelpEvaluation for backward compatibility
+                evaluation, created = ParentSelfHelpEvaluation.objects.update_or_create(
+                    student_name=student_name,
+                    defaults={
+                        'eval1_score': eval1_score,
+                        'eval2_score': eval2_score,
+                        'eval3_score': eval3_score
+                    }
+                )
+                db_info.append(f"{'Created' if created else 'Updated'} ParentSelfHelpEvaluation ID: {evaluation.id}")
+                
+                # Try getting the URL from the FileField
+                pdf_url = self_help_pdf.file.url
+                print(f"PDF URL from FileField: {pdf_url}")
+                
+                # Count existing records for confirmation
+                self_help_pdf_count = SelfHelpPDF.objects.count()
+                eval_count = ParentSelfHelpEvaluation.objects.count()
+                
+                db_info.append(f"Total SelfHelpPDF records: {self_help_pdf_count}")
+                db_info.append(f"Total ParentSelfHelpEvaluation records: {eval_count}")
+                
+                # Return success response with PDF info
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Self-Help evaluation PDF generated successfully',
+                    'pdf_id': self_help_pdf.id,
+                    'pdf_url': pdf_url,
+                    'download_url': request.build_absolute_uri(pdf_url),
+                    'db_operations': db_info,
+                    'database_status': 'Records saved successfully to database'
+                })
+            except Exception as db_error:
+                print(f"Error saving PDF to database: {db_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error saving PDF to database: {str(db_error)}'
+                }, status=500)
+            
+        except Exception as e:
+            print(f"General error in generate_self_help_pdf: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Error generating PDF: {str(e)}'
+            }, status=500)
+            
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method. POST required.'
+    }, status=405)
+
+@login_required
+def download_self_help_pdf(request, pdf_id):
+    """
+    Download a specific Self-Help PDF file by its ID.
+    """
+    try:
+        pdf = get_object_or_404(SelfHelpPDF, id=pdf_id)
+        response = FileResponse(pdf.file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="self_help_evaluation_{pdf.student_name}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error downloading PDF: {str(e)}")
+        return redirect('dashboard')
+
+@login_required
+def view_self_help_pdfs(request):
+    """
+    View all Self-Help PDF files.
+    """
+    pdfs = SelfHelpPDF.objects.all().order_by('-uploaded_at')
+    return render(request, 'pdfs/self_help_pdfs.html', {'pdfs': pdfs})
+
+@login_required
+def generate_social_pdf(request):
+    """
+    Generate a PDF for the Social-Emotional evaluation and save it to the database.
+    Uses the dedicated SocialPDF model to store the PDF directly.
+    """
+    if request.method == 'POST':
+        try:
+            # Extract form data
+            student_name = request.POST.get('student_name', '')
+            eval1_score = int(request.POST.get('eval1_score', 0))
+            eval2_score = int(request.POST.get('eval2_score', 0))
+            eval3_score = int(request.POST.get('eval3_score', 0))
+            comments_json = request.POST.get('comments', '[]')
+            comments = json.loads(comments_json)
+            
+            # Print debug info
+            print(f"Starting PDF generation for {student_name}")
+            print(f"Scores: {eval1_score}, {eval2_score}, {eval3_score}")
+            print(f"Comments: {comments}")
+            
+            # Get checkbox data if provided
+            checkbox_data_json = request.POST.get('checkbox_data', '[]')
+            checkbox_data = json.loads(checkbox_data_json)
+            print(f"Checkbox data: {checkbox_data}")
+            
+            # Create BytesIO buffer to receive PDF data
+            buffer = BytesIO()
+            print("Created BytesIO buffer")
+            
+            try:
+                # Create a simple PDF instead of the complex table
+                try:
+                    from django.conf import settings
+                    os.makedirs(os.path.join(settings.MEDIA_ROOT, 'social_pdfs'), exist_ok=True)
+                    
+                    # Create a PDF using ReportLab
+                    # Use landscape orientation for more space
+                    doc = SimpleDocTemplate(
+                        buffer, 
+                        pagesize=landscape(letter),
+                        topMargin=30,
+                        leftMargin=30,
+                        rightMargin=30,
+                        bottomMargin=30
+                    )
+                    elements = []
+                    
+                    # Define styles with enhanced formatting
+                    styles = getSampleStyleSheet()
+                    title_style = ParagraphStyle(
+                        'Title',
+                        parent=styles['Heading1'],
+                        fontSize=18,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=10
+                    )
+                    subtitle_style = ParagraphStyle(
+                        'Subtitle',
+                        parent=styles['Heading2'],
+                        fontSize=14,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=6
+                    )
+                    normal_style = ParagraphStyle(
+                        'Normal',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        leading=14,  # Line spacing
+                        spaceBefore=6,
+                        spaceAfter=6
+                    )
+                    header_style = ParagraphStyle(
+                        'TableHeader',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        textColor=colors.white,
+                        alignment=1,  # Center
+                        fontName='Helvetica-Bold'
+                    )
+                    cell_style = ParagraphStyle(
+                        'TableCell',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        leading=14,
+                        wordWrap='CJK'  # Better word wrapping
+                    )
+                    
+                    # Add title
+                    elements.append(Paragraph(f"Social-Emotional Evaluation", title_style))
+                    elements.append(Spacer(1, 5))
+                    elements.append(Paragraph(f"Student: {student_name}", subtitle_style))
+                    elements.append(Paragraph(f"Date: {datetime.now().strftime('%B %d, %Y')}", normal_style))
+                    elements.append(Spacer(1, 15))
+                    
+                    # Helper function to create paragraphs for table cells
+                    def create_cell_paragraph(text, style=cell_style):
+                        return Paragraph(text, style)
+                    
+                    # Process checkbox data
+                    def get_checkbox_status(checkbox_data, row_idx, col_idx):
+                        if checkbox_data and len(checkbox_data) > row_idx and checkbox_data[row_idx]['checked'][col_idx]:
+                            return "✓"
+                        return ""
+                    
+                    # Get comments text
+                    def get_comment(comments, number):
+                        comment = next((c['text'] for c in comments if c['number'] == number), '')
+                        if comment:
+                            return comment
+                        return "No comment"
+                    
+                    # Social-Emotional evaluation items
+                    social_items = [
+                        ["1. Responds to adult activities or nearby children", "Parental report will suffice."],
+                        ["2. Begins to recognize differences in emotions", "Parental report will suffice."],
+                        ["3. Plays alone but likes to be near adults or brothers and sisters", "Parental report will suffice."],
+                        ["4. Laughs or squeals about happy things", "Parental report will suffice."],
+                        ["5. Uses speech-like babbling", "Parental report will suffice."],
+                        ["7. Gets and interpretively into a sequence correctly", "Parental report will suffice."],
+                        ["8. Hugs or cuddles toys, companions, parents", "Parental report will suffice."],
+                        ["9. Demonstrates respect for others' belongings and space", "Parental report will suffice."],
+                        ["10. Shows with pictures 'sad' and 'happy'", "Parental report will suffice."],
+                        ["11. Shares toys with others (e.g., cooking, pababa)", "Parental report will suffice."],
+                        ["12. Identifies feelings in others", "Credit if the child can tell when the examiner is sad or hurt. Parental report will suffice."],
+                        ["13. Appropriately uses words referring to mental states (e.g., know, think, etc.)", "Parental report will suffice."],
+                        ["14. Tolerates feelings in others", "Parental report will suffice."],
+                        ["15. Reacts when toys with a problem or someone to his wants", "Credit if the child tries to solve the problem instead of crying when something doesn't go his way (e.g., attempting a toy with his reasons). Parental report will suffice."],
+                        ["16. Helps the family chores (e.g., sweeping floors, watering plants, etc.)", "Parental report will suffice."],
+                        ["18. Curious about environment but knows when to stop asking questions of adults", "Credit if the child asks questions about things around him but knows when to stop asking if a topic. Parental report will suffice."],
+                        ["19. Ask permission to play with his being used by another", "Parental report will suffice."],
+                        ["20. Defends possessions with determination", "Credit if the child tries to hold on to what is his when someone tries to grab him. Parental report will suffice."],
+                        ["21. Helps organize group play", "Parental report will suffice."],
+                        ["22. Can talk about complex feelings (e.g., anger, sadness, worry); he experiences", "Parental report will suffice."],
+                        ["23. Cooperates with peers (e.g., plays outside only after school)", "Parental report will suffice."],
+                        ["24. Interacts well with adults/siblings/family members", "Parental report will suffice."]
+                    ]
+                    
+                    # Create table header
+                    data = [[
+                        create_cell_paragraph("Social-Emotional", header_style),
+                        create_cell_paragraph("Material/Procedure", header_style),
+                        create_cell_paragraph("1st Eval", header_style),
+                        create_cell_paragraph("2nd Eval", header_style),
+                        create_cell_paragraph("3rd Eval", header_style),
+                        create_cell_paragraph("Comments", header_style)
+                    ]]
+                    
+                    # Add rows for each evaluation item
+                    for i, (item_text, procedure_text) in enumerate(social_items):
+                        data.append([
+                            create_cell_paragraph(item_text),
+                            create_cell_paragraph(procedure_text),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 0)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 1)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 2)),
+                            create_cell_paragraph(get_comment(comments, i+1))
+                        ])
+                    
+                    # Add total row
+                    data.append([
+                        create_cell_paragraph("TOTAL SCORE", ParagraphStyle('Total', parent=cell_style, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(""),
+                        create_cell_paragraph(str(eval1_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(str(eval2_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(str(eval3_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph("")
+                    ])
+                    
+                    # Define column widths proportionally to the page width
+                    col_widths = [140, 180, 45, 45, 45, 140]
+                    
+                    # Calculate row heights based on content (with minimums)
+                    row_heights = [30]  # Header row
+                    for i in range(len(social_items)):
+                        # Determine height based on content length
+                        row_heights.append(max(30, min(20 + len(social_items[i][0]) // 3, 60)))
+                    row_heights.append(30)  # Total row
+                    
+                    # Create the table with better spacing
+                    table = Table(data, colWidths=col_widths, rowHeights=row_heights)
+                    print("Created table for PDF")
+                    
+                    # Enhanced table style with better borders and colors
+                    green_color = colors.Color(0.176, 0.416, 0.31)  # #2d6a4f in RGB
+                    light_green = colors.Color(0.925, 0.965, 0.945)  # Light green for alternating rows
+                    
+                    table_style = TableStyle([
+                        # Header row styling
+                        ('BACKGROUND', (0, 0), (5, 0), green_color),
+                        ('TEXTCOLOR', (0, 0), (5, 0), colors.white),
+                        ('ALIGN', (0, 0), (5, 0), 'CENTER'),
+                        ('VALIGN', (0, 0), (5, 0), 'MIDDLE'),
+                        
+                        # Alternating row colors
+                        ('BACKGROUND', (0, 1), (5, 1), light_green),
+                        ('BACKGROUND', (0, 3), (5, 3), light_green),
+                        ('BACKGROUND', (0, 5), (5, 5), light_green),
+                        ('BACKGROUND', (0, 7), (5, 7), light_green),
+                        ('BACKGROUND', (0, 9), (5, 9), light_green),
+                        ('BACKGROUND', (0, 11), (5, 11), light_green),
+                        ('BACKGROUND', (0, 13), (5, 13), light_green),
+                        ('BACKGROUND', (0, 15), (5, 15), light_green),
+                        ('BACKGROUND', (0, 17), (5, 17), light_green),
+                        ('BACKGROUND', (0, 19), (5, 19), light_green),
+                        ('BACKGROUND', (0, 21), (5, 21), light_green),
+                        
+                        # Total row styling
+                        ('BACKGROUND', (0, -1), (5, -1), colors.Color(0.9, 0.9, 0.9)),
+                        ('SPAN', (0, -1), (1, -1)),  # Span TOTAL SCORE across two columns
+                        
+                        # Vertical alignment
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        
+                        # Text alignment
+                        ('ALIGN', (2, 1), (4, -1), 'CENTER'),  # Center-align evaluation checkboxes
+                        
+                        # Borders
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('BOX', (0, 0), (-1, -1), 2, colors.black),
+                        
+                        # Cell padding
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ])
+                    
+                    # Apply the style to the table
+                    table.setStyle(table_style)
+                    
+                    # Add the table to the elements
+                    elements.append(table)
+                    
+                    # Add a footer with disclaimer and signature line
+                    elements.append(Spacer(1, 20))
+                    elements.append(Paragraph("Disclaimer: This evaluation is based on observation and assessment at the time of evaluation.", normal_style))
+                    
+                    # Add a signature line
+                    elements.append(Spacer(1, 30))
+                    signature_data = [
+                        ['________________________', '________________________'],
+                        ['Evaluator\'s Signature', 'Date']
+                    ]
+                    signature_table = Table(signature_data, colWidths=[200, 200])
+                    signature_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('TOPPADDING', (0, 1), (-1, 1), 5),
+                        ('LINEABOVE', (0, 1), (0, 1), 1, colors.black),
+                        ('LINEABOVE', (1, 1), (1, 1), 1, colors.black),
+                    ]))
+                    elements.append(signature_table)
+                    
+                    # Build the PDF with enhanced elements
+                    print("Building PDF document...")
+                    doc.build(elements)
+                    print("PDF document built successfully")
+                    
+                    # Get the PDF value from the buffer
+                    pdf_value = buffer.getvalue()
+                    print(f"PDF size: {len(pdf_value)} bytes")
+                    buffer.close()
+                except Exception as complex_pdf_error:
+                    print(f"Error creating complex PDF: {complex_pdf_error}")
+                    # Fallback to simple PDF if complex one fails
+                    buffer = BytesIO()  # Reset buffer
+                    p = canvas.Canvas(buffer, pagesize=letter)
+                    p.setFont("Helvetica-Bold", 16)
+                    p.drawString(100, 750, f"Social-Emotional Evaluation")
+                    p.setFont("Helvetica", 12)
+                    p.drawString(100, 730, f"Student: {student_name}")
+                    p.drawString(100, 710, f"Date: {datetime.now().strftime('%B %d, %Y')}")
+                    p.drawString(100, 670, f"1st Evaluation Score: {eval1_score}")
+                    p.drawString(100, 650, f"2nd Evaluation Score: {eval2_score}")
+                    p.drawString(100, 630, f"3rd Evaluation Score: {eval3_score}")
+                    p.save()
+                    pdf_value = buffer.getvalue()
+                    buffer.close()
+            except Exception as pdf_error:
+                print(f"Error creating PDF content: {pdf_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error creating PDF content: {str(pdf_error)}'
+                }, status=500)
+            
+            try:
+                # Generate a unique filename
+                filename = f"social_{student_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                db_info = []  # To store database operation info
+                
+                # Check if we already have a recent evaluation for this student
+                from django.db.models import Q
+                existing_record = SocialPDF.objects.filter(
+                    Q(student_name=student_name) & 
+                    Q(uploaded_at__date=timezone.now().date())
+                ).first()
+                
+                # If there's an existing evaluation from today, update it instead of creating a new one
+                if existing_record:
+                    print(f"Found existing SocialPDF from today: {existing_record.id}")
+                    db_info.append(f"Found existing SocialPDF ID: {existing_record.id}")
+                    
+                    # Delete the old file
+                    existing_record.file.delete(save=False)
+                    
+                    # Update the record with new data
+                    existing_record.eval1_score = eval1_score
+                    existing_record.eval2_score = eval2_score
+                    existing_record.eval3_score = eval3_score
+                    existing_record.file.save(filename, ContentFile(pdf_value))
+                    existing_record.save()
+                    
+                    print(f"Updated existing SocialPDF with ID: {existing_record.id}")
+                    db_info.append(f"Updated existing SocialPDF ID: {existing_record.id}")
+                    social_pdf = existing_record
+                else:
+                    # Create a new SocialPDF entry directly
+                    social_pdf = SocialPDF(
+                        student_name=student_name,
+                        eval1_score=eval1_score,
+                        eval2_score=eval2_score,
+                        eval3_score=eval3_score
+                    )
+                    social_pdf.file.save(filename, ContentFile(pdf_value))
+                    social_pdf.save()
+                    
+                    print(f"Created new SocialPDF with ID: {social_pdf.id}")
+                    db_info.append(f"Created new SocialPDF ID: {social_pdf.id}")
+                
+                # Also save to ParentSocialEvaluation for backward compatibility
+                try:
+                    # First try to get the most recent evaluation for this student
+                    parent_eval = ParentSocialEvaluation.objects.filter(
+                        student_name=student_name
+                    ).order_by('-created_at').first()
+                    
+                    if parent_eval:
+                        # Update existing record
+                        parent_eval.eval1_score = eval1_score
+                        parent_eval.eval2_score = eval2_score
+                        parent_eval.eval3_score = eval3_score
+                        parent_eval.save()
+                        db_info.append(f"Updated existing ParentSocialEvaluation ID: {parent_eval.id}")
+                    else:
+                        # Create new record
+                        parent_eval = ParentSocialEvaluation.objects.create(
+                            student_name=student_name,
+                            eval1_score=eval1_score,
+                            eval2_score=eval2_score,
+                            eval3_score=eval3_score
+                        )
+                        db_info.append(f"Created new ParentSocialEvaluation ID: {parent_eval.id}")
+                except Exception as e:
+                    print(f"Warning: Error updating ParentSocialEvaluation: {e}")
+                    db_info.append(f"Warning: Error updating ParentSocialEvaluation: {str(e)}")
+                    # Continue execution, don't fail the whole operation
+                
+                # Try getting the URL from the FileField
+                pdf_url = social_pdf.file.url
+                print(f"PDF URL from FileField: {pdf_url}")
+                
+                # Count existing records for confirmation
+                social_pdf_count = SocialPDF.objects.count()
+                eval_count = ParentSocialEvaluation.objects.count()
+                
+                db_info.append(f"Total SocialPDF records: {social_pdf_count}")
+                db_info.append(f"Total ParentSocialEvaluation records: {eval_count}")
+                
+                # Return success response with PDF info
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Social-Emotional evaluation PDF generated successfully',
+                    'pdf_id': social_pdf.id,
+                    'pdf_url': pdf_url,
+                    'download_url': request.build_absolute_uri(pdf_url),
+                    'db_operations': db_info,
+                    'database_status': 'Records saved successfully to database'
+                })
+            except Exception as db_error:
+                print(f"Error saving PDF to database: {db_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error saving PDF to database: {str(db_error)}'
+                }, status=500)
+            
+        except Exception as e:
+            print(f"General error in generate_social_pdf: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Error generating PDF: {str(e)}'
+            }, status=500)
+            
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method. POST required.'
+    }, status=405)
+
+@login_required
+def download_social_pdf(request, pdf_id):
+    """
+    Download a specific Social-Emotional PDF file by its ID.
+    """
+    try:
+        pdf = get_object_or_404(SocialPDF, id=pdf_id)
+        response = FileResponse(pdf.file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="social_evaluation_{pdf.student_name}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error downloading PDF: {str(e)}")
+        return redirect('dashboard')
+
+@login_required
+def view_social_pdfs(request):
+    """
+    View all Social-Emotional PDF files.
+    """
+    pdfs = SocialPDF.objects.all().order_by('-uploaded_at')
+    return render(request, 'pdfs/social_pdfs.html', {'pdfs': pdfs})
+
+@login_required
+def generate_expressive_pdf(request):
+    """
+    Generate a PDF for the Expressive Language evaluation and save it to the database.
+    Uses the dedicated ExpressivePDF model to store the PDF directly.
+    """
+    if request.method == 'POST':
+        try:
+            # Extract form data
+            student_name = request.POST.get('student_name', '')
+            eval1_score = int(request.POST.get('eval1_score', 0))
+            eval2_score = int(request.POST.get('eval2_score', 0))
+            eval3_score = int(request.POST.get('eval3_score', 0))
+            comments_json = request.POST.get('comments', '[]')
+            comments = json.loads(comments_json)
+            
+            # Print debug info
+            print(f"Starting PDF generation for {student_name}")
+            print(f"Scores: {eval1_score}, {eval2_score}, {eval3_score}")
+            print(f"Comments: {comments}")
+            
+            # Get checkbox data if provided
+            checkbox_data_json = request.POST.get('checkbox_data', '[]')
+            checkbox_data = json.loads(checkbox_data_json)
+            print(f"Checkbox data: {checkbox_data}")
+            
+            # Create BytesIO buffer to receive PDF data
+            buffer = BytesIO()
+            print("Created BytesIO buffer")
+            
+            try:
+                # Create a simple PDF instead of the complex table
+                try:
+                    from django.conf import settings
+                    os.makedirs(os.path.join(settings.MEDIA_ROOT, 'expressive_pdfs'), exist_ok=True)
+                    
+                    # Create a PDF using ReportLab
+                    # Use landscape orientation for more space
+                    doc = SimpleDocTemplate(
+                        buffer, 
+                        pagesize=landscape(letter),
+                        topMargin=30,
+                        leftMargin=30,
+                        rightMargin=30,
+                        bottomMargin=30
+                    )
+                    elements = []
+                    
+                    # Define styles with enhanced formatting
+                    styles = getSampleStyleSheet()
+                    title_style = ParagraphStyle(
+                        'Title',
+                        parent=styles['Heading1'],
+                        fontSize=18,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=10
+                    )
+                    subtitle_style = ParagraphStyle(
+                        'Subtitle',
+                        parent=styles['Heading2'],
+                        fontSize=14,
+                        textColor=colors.darkgreen,
+                        alignment=1,  # Center
+                        spaceAfter=6
+                    )
+                    normal_style = ParagraphStyle(
+                        'Normal',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        leading=14,  # Line spacing
+                        spaceBefore=6,
+                        spaceAfter=6
+                    )
+                    header_style = ParagraphStyle(
+                        'TableHeader',
+                        parent=styles['Normal'],
+                        fontSize=11,
+                        textColor=colors.white,
+                        alignment=1,  # Center
+                        fontName='Helvetica-Bold'
+                    )
+                    cell_style = ParagraphStyle(
+                        'TableCell',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        leading=14,
+                        wordWrap='CJK'  # Better word wrapping
+                    )
+                    
+                    # Add title
+                    elements.append(Paragraph(f"Expressive Language Evaluation", title_style))
+                    elements.append(Spacer(1, 5))
+                    elements.append(Paragraph(f"Student: {student_name}", subtitle_style))
+                    elements.append(Paragraph(f"Date: {datetime.now().strftime('%B %d, %Y')}", normal_style))
+                    elements.append(Spacer(1, 15))
+                    
+                    # Helper function to create paragraphs for table cells
+                    def create_cell_paragraph(text, style=cell_style):
+                        return Paragraph(text, style)
+                    
+                    # Process checkbox data
+                    def get_checkbox_status(checkbox_data, row_idx, col_idx):
+                        if checkbox_data and len(checkbox_data) > row_idx and checkbox_data[row_idx]['checked'][col_idx]:
+                            return "✓"
+                        return ""
+                    
+                    # Get comments text
+                    def get_comment(comments, number):
+                        comment = next((c['text'] for c in comments if c['number'] == number), '')
+                        if comment:
+                            return comment
+                        return "No comment"
+                    
+                    # Expressive Language evaluation items
+                    expressive_items = [
+                        ["1. Uses pronouns (e.g., I, me, ako, akin)", "Parental report will suffice."],
+                        ["2. Uses 2-to-3-word verb-noun combination (e.g., sipa patas)", "Parental report will suffice."],
+                        ["3. Speaks in grammatically correct 2- to 3-word sentences", "Parental report will suffice."],
+                        ["4. Ask 'what' questions", "Parental report will suffice."],
+                        ["5. Ask 'who' and 'why' questions", "Parental report will suffice."]
+                    ]
+                    
+                    # Create table header
+                    data = [[
+                        create_cell_paragraph("Expressive Language", header_style),
+                        create_cell_paragraph("Material/Procedure", header_style),
+                        create_cell_paragraph("1st Eval", header_style),
+                        create_cell_paragraph("2nd Eval", header_style),
+                        create_cell_paragraph("3rd Eval", header_style),
+                        create_cell_paragraph("Comments", header_style)
+                    ]]
+                    
+                    # Add rows for each evaluation item
+                    for i, (item_text, procedure_text) in enumerate(expressive_items):
+                        data.append([
+                            create_cell_paragraph(item_text),
+                            create_cell_paragraph(procedure_text),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 0)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 1)),
+                            create_cell_paragraph(get_checkbox_status(checkbox_data, i, 2)),
+                            create_cell_paragraph(get_comment(comments, i+1))
+                        ])
+                    
+                    # Add total row
+                    data.append([
+                        create_cell_paragraph("TOTAL SCORE", ParagraphStyle('Total', parent=cell_style, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(""),
+                        create_cell_paragraph(str(eval1_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(str(eval2_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph(str(eval3_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                        create_cell_paragraph("")
+                    ])
+                    
+                    # Define column widths proportionally to the page width
+                    col_widths = [140, 180, 45, 45, 45, 140]
+                    
+                    # Calculate row heights based on content (with minimums)
+                    row_heights = [30]  # Header row
+                    for i in range(len(expressive_items)):
+                        # Determine height based on content length
+                        row_heights.append(max(30, min(20 + len(expressive_items[i][0]) // 3, 60)))
+                    row_heights.append(30)  # Total row
+                    
+                    # Create the table with better spacing
+                    table = Table(data, colWidths=col_widths, rowHeights=row_heights)
+                    print("Created table for PDF")
+                    
+                    # Enhanced table style with better borders and colors
+                    green_color = colors.Color(0.176, 0.416, 0.31)  # #2d6a4f in RGB
+                    light_green = colors.Color(0.925, 0.965, 0.945)  # Light green for alternating rows
+                    
+                    table_style = TableStyle([
+                        # Header row styling
+                        ('BACKGROUND', (0, 0), (5, 0), green_color),
+                        ('TEXTCOLOR', (0, 0), (5, 0), colors.white),
+                        ('ALIGN', (0, 0), (5, 0), 'CENTER'),
+                        ('VALIGN', (0, 0), (5, 0), 'MIDDLE'),
+                        
+                        # Alternating row colors
+                        ('BACKGROUND', (0, 1), (5, 1), light_green),
+                        ('BACKGROUND', (0, 3), (5, 3), light_green),
+                        ('BACKGROUND', (0, 5), (5, 5), light_green),
+                        
+                        # Total row styling
+                        ('BACKGROUND', (0, -1), (5, -1), colors.Color(0.9, 0.9, 0.9)),
+                        ('SPAN', (0, -1), (1, -1)),  # Span TOTAL SCORE across two columns
+                        
+                        # Vertical alignment
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        
+                        # Text alignment
+                        ('ALIGN', (2, 1), (4, -1), 'CENTER'),  # Center-align evaluation checkboxes
+                        
+                        # Borders
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('BOX', (0, 0), (-1, -1), 2, colors.black),
+                        
+                        # Cell padding
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ])
+                    
+                    # Apply the style to the table
+                    table.setStyle(table_style)
+                    
+                    # Add the table to the elements
+                    elements.append(table)
+                    
+                    # Add a footer with disclaimer and signature line
+                    elements.append(Spacer(1, 20))
+                    elements.append(Paragraph("Disclaimer: This evaluation is based on observation and assessment at the time of evaluation.", normal_style))
+                    
+                    # Add a signature line
+                    elements.append(Spacer(1, 30))
+                    signature_data = [
+                        ['________________________', '________________________'],
+                        ['Evaluator\'s Signature', 'Date']
+                    ]
+                    signature_table = Table(signature_data, colWidths=[200, 200])
+                    signature_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('TOPPADDING', (0, 1), (-1, 1), 5),
+                        ('LINEABOVE', (0, 1), (0, 1), 1, colors.black),
+                        ('LINEABOVE', (1, 1), (1, 1), 1, colors.black),
+                    ]))
+                    elements.append(signature_table)
+                    
+                    # Build the PDF with enhanced elements
+                    print("Building PDF document...")
+                    doc.build(elements)
+                    print("PDF document built successfully")
+                    
+                    # Get the PDF value from the buffer
+                    pdf_value = buffer.getvalue()
+                    print(f"PDF size: {len(pdf_value)} bytes")
+                    buffer.close()
+                except Exception as complex_pdf_error:
+                    print(f"Error creating complex PDF: {complex_pdf_error}")
+                    # Fallback to simple PDF if complex one fails
+                    buffer = BytesIO()  # Reset buffer
+                    p = canvas.Canvas(buffer, pagesize=letter)
+                    p.setFont("Helvetica-Bold", 16)
+                    p.drawString(100, 750, f"Expressive Language Evaluation")
+                    p.setFont("Helvetica", 12)
+                    p.drawString(100, 730, f"Student: {student_name}")
+                    p.drawString(100, 710, f"Date: {datetime.now().strftime('%B %d, %Y')}")
+                    p.drawString(100, 670, f"1st Evaluation Score: {eval1_score}")
+                    p.drawString(100, 650, f"2nd Evaluation Score: {eval2_score}")
+                    p.drawString(100, 630, f"3rd Evaluation Score: {eval3_score}")
+                    p.save()
+                    pdf_value = buffer.getvalue()
+                    buffer.close()
+            except Exception as pdf_error:
+                print(f"Error creating PDF content: {pdf_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error creating PDF content: {str(pdf_error)}'
+                }, status=500)
+            
+            try:
+                # Generate a unique filename
+                filename = f"expressive_{student_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                db_info = []  # To store database operation info
+                
+                # Check if we already have a recent evaluation for this student
+                from django.db.models import Q
+                existing_record = ExpressivePDF.objects.filter(
+                    Q(student_name=student_name) & 
+                    Q(uploaded_at__date=timezone.now().date())
+                ).first()
+                
+                # If there's an existing evaluation from today, update it instead of creating a new one
+                if existing_record:
+                    print(f"Found existing ExpressivePDF from today: {existing_record.id}")
+                    db_info.append(f"Found existing ExpressivePDF ID: {existing_record.id}")
+                    
+                    # Delete the old file
+                    existing_record.file.delete(save=False)
+                    
+                    # Update the record with new data
+                    existing_record.eval1_score = eval1_score
+                    existing_record.eval2_score = eval2_score
+                    existing_record.eval3_score = eval3_score
+                    existing_record.file.save(filename, ContentFile(pdf_value))
+                    existing_record.save()
+                    
+                    print(f"Updated existing ExpressivePDF with ID: {existing_record.id}")
+                    db_info.append(f"Updated existing ExpressivePDF ID: {existing_record.id}")
+                    expressive_pdf = existing_record
+                else:
+                    # Create a new ExpressivePDF entry directly
+                    expressive_pdf = ExpressivePDF(
+                        student_name=student_name,
+                        eval1_score=eval1_score,
+                        eval2_score=eval2_score,
+                        eval3_score=eval3_score
+                    )
+                    expressive_pdf.file.save(filename, ContentFile(pdf_value))
+                    expressive_pdf.save()
+                    
+                    print(f"Created new ExpressivePDF with ID: {expressive_pdf.id}")
+                    db_info.append(f"Created new ExpressivePDF ID: {expressive_pdf.id}")
+                
+                # Also save to ParentExpressiveEvaluation for backward compatibility
+                try:
+                    # First try to get the most recent evaluation for this student
+                    parent_eval = ParentExpressiveEvaluation.objects.filter(
+                        student_name=student_name
+                    ).order_by('-created_at').first()
+                    
+                    if parent_eval:
+                        # Update existing record
+                        parent_eval.eval1_score = eval1_score
+                        parent_eval.eval2_score = eval2_score
+                        parent_eval.eval3_score = eval3_score
+                        parent_eval.save()
+                        db_info.append(f"Updated existing ParentExpressiveEvaluation ID: {parent_eval.id}")
+                    else:
+                        # Create new record
+                        parent_eval = ParentExpressiveEvaluation.objects.create(
+                            student_name=student_name,
+                            eval1_score=eval1_score,
+                            eval2_score=eval2_score,
+                            eval3_score=eval3_score
+                        )
+                        db_info.append(f"Created new ParentExpressiveEvaluation ID: {parent_eval.id}")
+                except Exception as e:
+                    print(f"Warning: Error updating ParentExpressiveEvaluation: {e}")
+                    db_info.append(f"Warning: Error updating ParentExpressiveEvaluation: {str(e)}")
+                    # Continue execution, don't fail the whole operation
+                
+                # Try getting the URL from the FileField
+                pdf_url = expressive_pdf.file.url
+                print(f"PDF URL from FileField: {pdf_url}")
+                
+                # Count existing records for confirmation
+                expressive_pdf_count = ExpressivePDF.objects.count()
+                eval_count = ParentExpressiveEvaluation.objects.count()
+                
+                db_info.append(f"Total ExpressivePDF records: {expressive_pdf_count}")
+                db_info.append(f"Total ParentExpressiveEvaluation records: {eval_count}")
+                
+                # Return success response with PDF info
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Expressive Language evaluation PDF generated successfully',
+                    'pdf_id': expressive_pdf.id,
+                    'pdf_url': pdf_url,
+                    'download_url': request.build_absolute_uri(pdf_url),
+                    'db_operations': db_info,
+                    'database_status': 'Records saved successfully to database'
+                })
+            except Exception as db_error:
+                print(f"Error saving PDF to database: {db_error}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error saving PDF to database: {str(db_error)}'
+                }, status=500)
+            
+        except Exception as e:
+            print(f"General error in generate_expressive_pdf: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Error generating PDF: {str(e)}'
+            }, status=500)
+            
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method. POST required.'
+    }, status=405)
+
+@login_required
+def download_expressive_pdf(request, pdf_id):
+    """
+    Download a specific Expressive Language PDF file by its ID.
+    """
+    try:
+        pdf = get_object_or_404(ExpressivePDF, id=pdf_id)
+        response = FileResponse(pdf.file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="expressive_evaluation_{pdf.student_name}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error downloading PDF: {str(e)}")
+        return redirect('dashboard')
+
+@login_required
+def view_expressive_pdfs(request):
+    """
+    View all Expressive Language PDF files.
+    """
+    pdfs = ExpressivePDF.objects.all().order_by('-uploaded_at')
+    return render(request, 'pdfs/expressive_pdfs.html', {'pdfs': pdfs})
+
+@login_required
+def generate_cognitive_pdf(request):
+    """
+    Generate a PDF for cognitive domain evaluation, and save it to the database.
+    This function can be called independently or automatically from the form submission process.
+    """
+    try:
+        # Get data from the request
+        student_name = request.POST.get('student_name')
+        eval1_score = int(request.POST.get('eval1_score', 0))
+        eval2_score = int(request.POST.get('eval2_score', 0))
+        eval3_score = int(request.POST.get('eval3_score', 0))
+        comments_json = request.POST.get('comments', '[]')
+        checkbox_data_json = request.POST.get('checkbox_data', '[]')
+        
+        comments = json.loads(comments_json) if comments_json else []
+        checkbox_data = json.loads(checkbox_data_json) if checkbox_data_json else []
+        
+        print(f"Generating PDF for {student_name}, scores: {eval1_score}, {eval2_score}, {eval3_score}")
+        
+        try:
+            # Prepare cognitive evaluation items
+            cognitive_items = [
+                ("1. Imitates house play just seen a few minutes earlier", "Parental report will suffice."),
+                ("2. Gives an object but does not release it", "Parental report will suffice.")
+            ]
+            
+            # Generate PDF using ReportLab
+            buffer = BytesIO()
+            
+            # Try generating a complex, nicely formatted PDF
+            try:
+                doc = SimpleDocTemplate(
+                    buffer,
+                    pagesize=letter,
+                    leftMargin=36,
+                    rightMargin=36,
+                    topMargin=36,
+                    bottomMargin=36
+                )
+                
+                styles = getSampleStyleSheet()
+                elements = []
+                
+                # Create a custom style for the title
+                title_style = ParagraphStyle(
+                    'Title',
+                    parent=styles['Heading1'],
+                    fontSize=18,
+                    textColor=colors.Color(0.176, 0.416, 0.31),  # Green color #2d6a4f
+                    spaceAfter=10,
+                    alignment=1  # Center alignment
+                )
+                
+                # Add a title
+                elements.append(Paragraph(f"Cognitive Domain Evaluation", title_style))
+                
+                # Add student name and date
+                student_info_style = ParagraphStyle(
+                    'StudentInfo',
+                    parent=styles['Normal'],
+                    fontSize=12,
+                    spaceAfter=12,
+                    alignment=1  # Center alignment
+                )
+                elements.append(Paragraph(f"Student: {student_name}", student_info_style))
+                elements.append(Paragraph(f"Date: {datetime.now().strftime('%B %d, %Y')}", student_info_style))
+                
+                # Add some space
+                elements.append(Spacer(1, 20))
+                
+                # Define a style for table cells
+                cell_style = ParagraphStyle(
+                    'CellStyle',
+                    parent=styles['Normal'],
+                    fontSize=10,
+                    leading=14,
+                    wordWrap='CJK',
+                )
+                
+                # Helper functions
+                def create_cell_paragraph(text, style=cell_style):
+                    return Paragraph(text, style)
+                
+                def get_checkbox_status(checkbox_data, row_idx, col_idx):
+                    for item in checkbox_data:
+                        if item.get('item') == row_idx + 1:
+                            if item.get('checked', [])[col_idx]:
+                                return "✓"
+                    return ""
+                
+                def get_comment(comments, number):
+                    for comment in comments:
+                        if comment.get('number') == number or comment.get('item') == number:
+                            return comment.get('text', '')
+                    return ""
+                
+                # Create table data
+                data = [
+                    [
+                        create_cell_paragraph("Cognitive", ParagraphStyle('Header', parent=cell_style, fontName='Helvetica-Bold', textColor=colors.white)),
+                        create_cell_paragraph("Material/Procedure", ParagraphStyle('Header', parent=cell_style, fontName='Helvetica-Bold', textColor=colors.white)),
+                        create_cell_paragraph("1st Eval", ParagraphStyle('Header', parent=cell_style, fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+                        create_cell_paragraph("2nd Eval", ParagraphStyle('Header', parent=cell_style, fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+                        create_cell_paragraph("3rd Eval", ParagraphStyle('Header', parent=cell_style, fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+                        create_cell_paragraph("Comments", ParagraphStyle('Header', parent=cell_style, fontName='Helvetica-Bold', textColor=colors.white))
+                    ]
+                ]
+                
+                # Add rows for each evaluation item
+                for i, (item_text, procedure_text) in enumerate(cognitive_items):
+                    data.append([
+                        create_cell_paragraph(item_text),
+                        create_cell_paragraph(procedure_text),
+                        create_cell_paragraph(get_checkbox_status(checkbox_data, i, 0)),
+                        create_cell_paragraph(get_checkbox_status(checkbox_data, i, 1)),
+                        create_cell_paragraph(get_checkbox_status(checkbox_data, i, 2)),
+                        create_cell_paragraph(get_comment(comments, i+1))
+                    ])
+                
+                # Add total row
+                data.append([
+                    create_cell_paragraph("TOTAL SCORE", ParagraphStyle('Total', parent=cell_style, fontName='Helvetica-Bold')),
+                    create_cell_paragraph(""),
+                    create_cell_paragraph(str(eval1_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                    create_cell_paragraph(str(eval2_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                    create_cell_paragraph(str(eval3_score), ParagraphStyle('Total', parent=cell_style, alignment=1, fontName='Helvetica-Bold')),
+                    create_cell_paragraph("")
+                ])
+                
+                # Define column widths proportionally to the page width
+                col_widths = [140, 180, 45, 45, 45, 140]
+                
+                # Calculate row heights based on content (with minimums)
+                row_heights = [30]  # Header row
+                for i in range(len(cognitive_items)):
+                    # Determine height based on content length
+                    row_heights.append(max(30, min(20 + len(cognitive_items[i][0]) // 3, 60)))
+                row_heights.append(30)  # Total row
+                
+                # Create the table with better spacing
+                table = Table(data, colWidths=col_widths, rowHeights=row_heights)
+                print("Created table for PDF")
+                
+                # Enhanced table style with better borders and colors
+                green_color = colors.Color(0.176, 0.416, 0.31)  # #2d6a4f in RGB
+                light_green = colors.Color(0.925, 0.965, 0.945)
+                
+                table_style = TableStyle([
+                    # Header styling
+                    ('BACKGROUND', (0, 0), (-1, 0), green_color),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    
+                    # Borders
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                    ('BOX', (0, 0), (-1, -1), 1, colors.black),
+                    
+                    # Align evaluation checkboxes to center
+                    ('ALIGN', (2, 1), (4, -2), 'CENTER'),
+                    
+                    # Style for total row
+                    ('BACKGROUND', (0, -1), (-1, -1), light_green),
+                    ('ALIGN', (0, -1), (0, -1), 'RIGHT'),
+                ])
+                
+                table.setStyle(table_style)
+                elements.append(table)
+                
+                # Build the PDF
+                doc.build(elements)
+                pdf_value = buffer.getvalue()
+                print(f"PDF size: {len(pdf_value)} bytes")
+                buffer.close()
+            except Exception as complex_pdf_error:
+                print(f"Error creating complex PDF: {complex_pdf_error}")
+                # Fallback to simple PDF if complex one fails
+                buffer = BytesIO()  # Reset buffer
+                p = canvas.Canvas(buffer, pagesize=letter)
+                p.setFont("Helvetica-Bold", 16)
+                p.drawString(100, 750, f"Cognitive Evaluation")
+                p.setFont("Helvetica", 12)
+                p.drawString(100, 730, f"Student: {student_name}")
+                p.drawString(100, 710, f"Date: {datetime.now().strftime('%B %d, %Y')}")
+                p.drawString(100, 670, f"1st Evaluation Score: {eval1_score}")
+                p.drawString(100, 650, f"2nd Evaluation Score: {eval2_score}")
+                p.drawString(100, 630, f"3rd Evaluation Score: {eval3_score}")
+                p.save()
+                pdf_value = buffer.getvalue()
+                buffer.close()
+        except Exception as pdf_error:
+            print(f"Error creating PDF content: {pdf_error}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Error creating PDF content: {str(pdf_error)}'
+            }, status=500)
+            
+        # Save the PDF to the database
+        try:
+            # Create a filename for the PDF
+            filename = f"cognitive_{student_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+            
+            # Save to CognitivePDF model
+            cognitive_pdf = CognitivePDF(
+                student_name=student_name,
+                file=ContentFile(pdf_value, name=filename),
+                eval1_score=eval1_score,
+                eval2_score=eval2_score,
+                eval3_score=eval3_score
+            )
+            cognitive_pdf.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'PDF generated and saved successfully',
+                'pdf_id': cognitive_pdf.id
+            })
+        except Exception as save_error:
+            print(f"Error saving PDF: {save_error}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Error saving PDF: {str(save_error)}'
+            }, status=500)
+    except Exception as e:
+        print(f"Error in generate_cognitive_pdf: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error', 
+            'message': f'Error generating PDF: {str(e)}'
+        }, status=500)
+
+@login_required
+def download_cognitive_pdf(request, pdf_id):
+    """Download the cognitive PDF file"""
+    try:
+        pdf = get_object_or_404(CognitivePDF, id=pdf_id)
+        filename = os.path.basename(pdf.file.name)
+        response = FileResponse(pdf.file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        print(f"Error downloading PDF: {e}")
+        raise Http404("PDF not found")
+
+@login_required
+def view_cognitive_pdfs(request):
+    """View all cognitive PDF files"""
+    pdfs = CognitivePDF.objects.all().order_by('-uploaded_at')
+    return render(request, 'view_pdfs.html', {'pdfs': pdfs, 'domain': 'Cognitive'})
 

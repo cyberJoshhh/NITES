@@ -119,11 +119,6 @@
                                     </div>
                                 </div>
                                 {% endfor %}
-                                {% if recent_announcements.count > 0 %}
-                                <div class="view-more-btn">
-                                    <a href="{% url 'view_announcements' %}">View All Announcements</a>
-                                </div>
-                                {% endif %}
                             {% else %}
                                 <div class="notification-item">
                                     <div class="notification-icon">

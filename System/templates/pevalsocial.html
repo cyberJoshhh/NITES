@@ -222,7 +222,14 @@
         <button type="button" class="submit-button">
             <i class="fas fa-save"></i> Save Evaluation
         </button>
+        <div id="loading-spinner" class="loading-spinner" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Generating PDF...
+        </div>
     </div>
+    
+    <!-- Hidden fields for JavaScript -->
+    <input type="hidden" id="studentName" value="{% if student and student.child_name %}{{ student.child_name }}{% else %}Unknown{% endif %}">
+    <input type="hidden" id="generatePdfUrl" value="{% url 'generate_social_pdf' %}">
 </div>
 
 <style>
@@ -378,6 +385,100 @@ tr:last-child td {
 .submit-button i {
     margin-right: 0.5rem;
 }
+
+/* Loading spinner */
+.loading-spinner {
+    margin-top: 1rem;
+    text-align: center;
+    color: #2d6a4f;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.loading-spinner i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    width: 80%;
+    max-width: 700px;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover {
+    color: #333;
+}
+
+.modal h2 {
+    color: #2d6a4f;
+    margin-bottom: 1rem;
+    font-size: 1.6rem;
+}
+
+#dbStatusContent {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#dbStatusContent p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+.modal-actions button {
+    padding: 0.6rem 1.2rem;
+    margin: 0 5px;
+    flex: 1;
+}
+
+.success-message {
+    color: #2d6a4f;
+    font-weight: bold;
+}
+
+.error-message {
+    color: #d32f2f;
+    font-weight: bold;
+}
 </style>
 
 <script>
@@ -433,80 +534,170 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize totals on page load
     updateTotalScore();
     
+    // Modal functionality
+    const modal = document.getElementById('dbStatusModal');
+    const closeButton = document.querySelector('.close-button');
+    const viewPdfBtn = document.getElementById('viewPdfBtn');
+    const returnToDashboardBtn = document.getElementById('returnToDashboardBtn');
+    
+    // Close modal when clicking the close button
+    if (closeButton) {
+        closeButton.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+    }
+    
+    // Close modal when clicking outside the modal content
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Return to dashboard button
+    if (returnToDashboardBtn) {
+        returnToDashboardBtn.addEventListener('click', function() {
+            window.location.href = "{% url 'dashboard' %}";
+        });
+    }
+    
     // Updated submission function
     document.querySelector('.submit-button').addEventListener('click', function() {
-        // Get the total scores
+        // Gather the data
         const totalRow = document.querySelector('tbody tr:last-child');
-        const eval1Score = parseInt(totalRow.cells[2].textContent) || 0;
-        const eval2Score = parseInt(totalRow.cells[3].textContent) || 0;
-        const eval3Score = parseInt(totalRow.cells[4].textContent) || 0;
-        
-        // Get student ID and name from hidden input fields
-        const studentId = document.getElementById('student-id') ? document.getElementById('student-id').value : '';
-        const studentName = document.getElementById('student-name') ? document.getElementById('student-name').value : '';
-        
-        // Create form data
-        const formData = new FormData();
-        formData.append('student_id', studentId);
-        formData.append('student_name', studentName);
-        formData.append('eval1_score', eval1Score);
-        formData.append('eval2_score', eval2Score);
-        formData.append('eval3_score', eval3Score);
+        const eval1Score = parseInt(totalRow.querySelector('td:nth-child(3)').textContent || '0');
+        const eval2Score = parseInt(totalRow.querySelector('td:nth-child(4)').textContent || '0');
+        const eval3Score = parseInt(totalRow.querySelector('td:nth-child(5)').textContent || '0');
         
         // Collect comments
         const comments = [];
-        document.querySelectorAll('.comment-input').forEach(function(input, index) {
-            if (input.value.trim() !== '') {
-                comments.push({
-                    item: index + 1,
-                    comment: input.value.trim()
-                });
+        document.querySelectorAll('.comment-input').forEach((input, index) => {
+            if (input.value) {
+                comments.push({ number: index + 1, text: input.value });
+            } else {
+                comments.push({ number: index + 1, text: '' });
             }
         });
         
-        if (comments.length > 0) {
-            formData.append('comments', JSON.stringify(comments));
+        // Also collect checkbox states for the PDF generation
+        const checkboxData = [];
+        const rows = document.querySelectorAll('tbody tr:not(:last-child)');
+        rows.forEach((row, rowIndex) => {
+            const rowNumber = rowIndex + 1;
+            const checkboxes = [
+                row.querySelector('td:nth-child(3) input[type="checkbox"]').checked,
+                row.querySelector('td:nth-child(4) input[type="checkbox"]').checked,
+                row.querySelector('td:nth-child(5) input[type="checkbox"]').checked
+            ];
+            checkboxData.push({ item: rowIndex, checked: checkboxes });
+        });
+        
+        // Get student name or use "Unknown" if not available
+        let studentName = "Unknown";
+        // Using a JavaScript approach to get Django template variables
+        const studentNameElement = document.getElementById('studentName');
+        if (studentNameElement) {
+            studentName = studentNameElement.value;
         }
         
-        // Get CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        // Show loading state
+        const saveButton = document.querySelector('.submit-button');
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        document.getElementById('loading-spinner').style.display = 'block';
         
-        // Add visual feedback
-        const submitButton = document.querySelector('.submit-button');
-        const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        submitButton.disabled = true;
+        // Send data via AJAX
+        console.log("Preparing to send evaluation data to server");
+        console.log("Student name:", studentName);
+        console.log("Scores:", eval1Score, eval2Score, eval3Score);
+        console.log("Comments:", comments);
+        console.log("Checkbox data:", checkboxData);
         
-        // Submit the data to the new endpoint
-        fetch('{% url "parent_evaluation_social" %}', {
+        let pdfUrl = ''; // Store PDF URL for later use
+        
+        fetch(document.getElementById('generatePdfUrl').value, {
             method: 'POST',
-            body: formData,
             headers: {
-                'X-CSRFToken': csrfToken
-            }
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({
+                'student_name': studentName,
+                'eval1_score': eval1Score,
+                'eval2_score': eval2Score,
+                'eval3_score': eval3Score,
+                'comments': JSON.stringify(comments),
+                'checkbox_data': JSON.stringify(checkboxData)
+            })
         })
         .then(response => {
-            submitButton.disabled = false;
-            if (response.ok) {
-                return response.json().then(data => {
-                    submitButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
-                    setTimeout(() => {
-                        alert('Social-Emotional evaluation saved successfully!');
-                        window.location.href = '{% url "dashboard" %}';
-                    }, 500);
-                });
+            console.log("Received response from server:", response.status);
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Received data from server:", data);
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fas fa-save"></i> Save Evaluation';
+            document.getElementById('loading-spinner').style.display = 'none';
+            
+            if (data.status === 'success') {
+                // Save PDF URL for View PDF button
+                pdfUrl = data.pdf_url;
+                
+                // Show database operation details in modal
+                const dbStatusContent = document.getElementById('dbStatusContent');
+                if (dbStatusContent) {
+                    let htmlContent = `<p class="success-message">${data.database_status}</p>`;
+                    htmlContent += '<p><strong>Database Operations:</strong></p>';
+                    
+                    if (data.db_operations && data.db_operations.length > 0) {
+                        htmlContent += '<ul>';
+                        data.db_operations.forEach(op => {
+                            htmlContent += `<li>${op}</li>`;
+                        });
+                        htmlContent += '</ul>';
+                    } else {
+                        htmlContent += '<p>No database operations reported.</p>';
+                    }
+                    
+                    dbStatusContent.innerHTML = htmlContent;
+                }
+                
+                // Set the View PDF button URL
+                if (viewPdfBtn) {
+                    viewPdfBtn.addEventListener('click', function() {
+                        window.open(pdfUrl, '_blank');
+                    });
+                }
+                
+                // Show the modal
+                if (modal) {
+                    modal.style.display = 'block';
+                } else {
+                    // Fallback if modal not found
+                    alert('Evaluation saved and PDF generated successfully!');
+                    if (confirm('Do you want to view the generated PDF?')) {
+                        window.open(pdfUrl, '_blank');
+                    }
+                    window.location.href = "{% url 'dashboard' %}";
+                }
+            } else if (data.status === 'partial_success') {
+                // Evaluation was saved but PDF generation failed
+                alert('Evaluation data was saved, but the PDF could not be generated: ' + data.message);
+                window.location.href = "{% url 'dashboard' %}";
             } else {
-                submitButton.innerHTML = originalText;
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Error saving evaluation');
-                });
+                alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            submitButton.innerHTML = originalText;
-            submitButton.disabled = false;
-            alert(error.message || 'Error saving evaluation. Please try again.');
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fas fa-save"></i> Save Evaluation';
+            document.getElementById('loading-spinner').style.display = 'none';
+            alert('An error occurred while saving the evaluation: ' + error.message);
         });
     });
 });

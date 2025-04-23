@@ -269,6 +269,46 @@
                 padding: 30px 15px;
             }
         }
+        
+        /* Evaluation links styles */
+        .evaluation-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .evaluation-link {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .evaluation-link:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+        
+        .evaluation-link i {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        
+        .evaluation-link span {
+            font-weight: 500;
+        }
+        
+        @media (max-width: 576px) {
+            .evaluation-links {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -349,6 +389,37 @@
                             {% endif %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+            
+            <!-- Evaluation PDFs Section -->
+            <div class="pdf-card">
+                <div class="pdf-header">
+                    <h3><i class="fas fa-file-medical-alt"></i> Evaluation PDFs</h3>
+                </div>
+                <div class="pdf-body">
+                    <div class="evaluation-links">
+                        <a href="{% url 'view_gross_motor_pdfs' %}" class="evaluation-link">
+                            <i class="fas fa-running"></i>
+                            <span>Gross Motor</span>
+                        </a>
+                        <a href="{% url 'view_self_help_pdfs' %}" class="evaluation-link">
+                            <i class="fas fa-hands-helping"></i>
+                            <span>Self Help</span>
+                        </a>
+                        <a href="{% url 'view_social_pdfs' %}" class="evaluation-link">
+                            <i class="fas fa-users"></i>
+                            <span>Social-Emotional</span>
+                        </a>
+                        <a href="{% url 'view_expressive_pdfs' %}" class="evaluation-link">
+                            <i class="fas fa-comment-alt"></i>
+                            <span>Expressive Language</span>
+                        </a>
+                        <a href="{% url 'view_cognitive_pdfs' %}" class="evaluation-link">
+                            <i class="fas fa-brain"></i>
+                            <span>Cognitive</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

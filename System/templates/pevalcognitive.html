@@ -307,6 +307,19 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('comments', JSON.stringify(comments));
         }
         
+        // Collect checkbox data for PDF generation
+        const checkboxData = [];
+        const rows = document.querySelectorAll('tbody tr:not(:last-child)');
+        rows.forEach((row, index) => {
+            const checkboxes = [
+                row.querySelector('td:nth-child(3) input[type="checkbox"]').checked,
+                row.querySelector('td:nth-child(4) input[type="checkbox"]').checked,
+                row.querySelector('td:nth-child(5) input[type="checkbox"]').checked
+            ];
+            checkboxData.push({ item: index + 1, checked: checkboxes });
+        });
+        formData.append('checkbox_data', JSON.stringify(checkboxData));
+        
         // Get CSRF token
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
@@ -325,16 +338,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            submitButton.disabled = false;
             if (response.ok) {
+                submitButton.innerHTML = '<i class="fas fa-check"></i> Saved! Generating PDF...';
                 return response.json().then(data => {
-                    submitButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
-                    setTimeout(() => {
-                        alert('Cognitive evaluation saved successfully!');
-                        window.location.href = '{% url "dashboard" %}';
-                    }, 500);
+                    // Now generate PDF automatically
+                    generatePDF(studentName, eval1Score, eval2Score, eval3Score, comments, checkboxData);
                 });
             } else {
+                submitButton.disabled = false;
                 submitButton.innerHTML = originalText;
                 return response.json().then(data => {
                     throw new Error(data.message || 'Error saving evaluation');
@@ -348,6 +359,63 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(error.message || 'Error saving evaluation. Please try again.');
         });
     });
+
+    // Function to generate PDF
+    function generatePDF(studentName, eval1Score, eval2Score, eval3Score, comments, checkboxData) {
+        // Prepare form data for PDF generation
+        const formData = new FormData();
+        formData.append('student_name', studentName);
+        formData.append('eval1_score', eval1Score);
+        formData.append('eval2_score', eval2Score);
+        formData.append('eval3_score', eval3Score);
+        formData.append('comments', JSON.stringify(comments));
+        formData.append('checkbox_data', JSON.stringify(checkboxData));
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Submit the request to generate PDF
+        fetch('{% url "generate_cognitive_pdf" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json().then(data => {
+                    // Show success message
+                    const submitButton = document.querySelector('.submit-button');
+                    submitButton.innerHTML = '<i class="fas fa-check"></i> Done!';
+                    setTimeout(() => {
+                        alert('Cognitive evaluation and PDF saved successfully!');
+                        window.location.href = '{% url "dashboard" %}';
+                    }, 500);
+                });
+            } else {
+                const submitButton = document.querySelector('.submit-button');
+                submitButton.innerHTML = '<i class="fas fa-check"></i> Saved (PDF failed)';
+                setTimeout(() => {
+                    alert('Evaluation saved but PDF generation failed.');
+                    window.location.href = '{% url "dashboard" %}';
+                }, 500);
+                
+                return response.json().then(data => {
+                    console.error('PDF Error:', data.message);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('PDF Error:', error);
+            const submitButton = document.querySelector('.submit-button');
+            submitButton.innerHTML = '<i class="fas fa-check"></i> Saved (PDF failed)';
+            setTimeout(() => {
+                alert('Evaluation saved but PDF generation failed.');
+                window.location.href = '{% url "dashboard" %}';
+            }, 500);
+        });
+    }
 });
 </script>
 

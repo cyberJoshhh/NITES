@@ -209,7 +209,103 @@ class PDFFile(models.Model):
     
     def __str__(self):
         return self.name
+
+class EvaluationPDF(models.Model):
+    """
+    Model to link evaluation records with their generated PDF files.
+    This model helps track which evaluations have associated PDF documents.
+    """
+    student_name = models.CharField(max_length=255)
+    evaluation_type = models.CharField(max_length=50, choices=[
+        ('gross_motor', 'Gross Motor'),
+        ('fine_motor', 'Fine Motor'),
+        ('self_help', 'Self Help'),
+        ('cognitive', 'Cognitive'),
+        ('expressive', 'Expressive Language'),
+        ('receptive', 'Receptive Language'),
+        ('social', 'Social-Emotional')
+    ])
+    pdf_file = models.ForeignKey(PDFFile, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
     
+    def __str__(self):
+        return f"{self.evaluation_type} - {self.student_name} - {self.created_at.strftime('%Y-%m-%d')}"
+
+class GrossMotorPDF(models.Model):
+    """
+    Dedicated model to store Gross Motor PDF files directly.
+    This is a standalone model that doesn't require linking to PDFFile.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='gross_motor_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Gross Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class SelfHelpPDF(models.Model):
+    """
+    Dedicated model to store Self-Help PDF files directly.
+    This is a standalone model that doesn't require linking to PDFFile.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='self_help_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Self-Help PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class SocialPDF(models.Model):
+    """
+    Dedicated model to store Social-Emotional PDF files directly.
+    This is a standalone model that doesn't require linking to PDFFile.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='social_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Social-Emotional PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class ExpressivePDF(models.Model):
+    """
+    Dedicated model to store Expressive Language PDF files directly.
+    This is a standalone model that doesn't require linking to PDFFile.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='expressive_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Expressive Language PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class CognitivePDF(models.Model):
+    """
+    Dedicated model to store Cognitive PDF files directly.
+    This is a standalone model that doesn't require linking to PDFFile.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='cognitive_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Cognitive PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
 class Announcement(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
@@ -222,4 +318,4 @@ class Announcement(models.Model):
     
     def __str__(self):
         return self.title
-    
+
