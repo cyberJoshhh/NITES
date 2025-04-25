@@ -147,3 +147,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login redirect URLs
 LOGIN_REDIRECT_URL = '/system/dashboard/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Increase maximum number of form fields allowed
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000  # Increased from default 1000

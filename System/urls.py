@@ -34,19 +34,7 @@ from .views import (
     create_announcement,
     view_announcements,
     delete_announcement,
-    generate_gross_motor_pdf,
-    generate_self_help_pdf,
-    view_self_help_pdfs,
-    download_self_help_pdf,
-    generate_social_pdf,
-    view_social_pdfs,
-    download_social_pdf,
-    generate_expressive_pdf,
-    download_expressive_pdf,
-    view_expressive_pdfs,
-    generate_cognitive_pdf,
-    download_cognitive_pdf,
-    view_cognitive_pdfs,
+    teacher_evaluation_pdfs,
 )
 
 urlpatterns = [
@@ -94,23 +82,10 @@ urlpatterns = [
     path('create-announcement/', create_announcement, name='create_announcement'),
     path('announcements/', view_announcements, name='view_announcements'),
     path('delete-announcement/<int:announcement_id>/', delete_announcement, name='delete_announcement'),
-    path('generate-gross-motor-pdf/', generate_gross_motor_pdf, name='generate_gross_motor_pdf'),
-    path('generate-self-help-pdf/', generate_self_help_pdf, name='generate_self_help_pdf'),
-    path('generate-social-pdf/', generate_social_pdf, name='generate_social_pdf'),
-    path('view-self-help-pdfs/', view_self_help_pdfs, name='view_self_help_pdfs'),
-    path('view-social-pdfs/', view_social_pdfs, name='view_social_pdfs'),
-    path('download-self-help-pdf/<int:pdf_id>/', download_self_help_pdf, name='download_self_help_pdf'),
-    path('download-social-pdf/<int:pdf_id>/', download_social_pdf, name='download_social_pdf'),
-    path('download-pdf/<int:pdf_id>/', views.download_pdf, name='download_pdf'),
-    path('test-pdf/', views.test_pdf, name='test_pdf'),
     
-    # Expressive PDF URLs
-    path('generate_expressive_pdf/', generate_expressive_pdf, name='generate_expressive_pdf'),
-    path('download_expressive_pdf/<int:pdf_id>/', download_expressive_pdf, name='download_expressive_pdf'),
-    path('view_expressive_pdfs/', view_expressive_pdfs, name='view_expressive_pdfs'),
+    # Evaluation Reports URL
+    path('evaluation-reports/', views.evaluation_reports, name='evaluation_reports'),
     
-    # Cognitive PDF URLs
-    path('generate_cognitive_pdf/', generate_cognitive_pdf, name='generate_cognitive_pdf'),
-    path('download_cognitive_pdf/<int:pdf_id>/', download_cognitive_pdf, name='download_cognitive_pdf'),
-    path('view_cognitive_pdfs/', view_cognitive_pdfs, name='view_cognitive_pdfs'),
+    # Teacher Evaluation PDFs URL
+    path('teacher-evaluation-pdfs/', teacher_evaluation_pdfs, name='teacher_evaluation_pdfs'),
 ]

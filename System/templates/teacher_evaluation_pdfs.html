@@ -1,0 +1,429 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<script>
+    // Add class to body for CSS targeting
+    document.body.classList.add('evaluation-page');
+</script>
+
+<!-- Include appropriate sidebar based on user type -->
+{% if request.user.is_staff %}
+    {% include 'sidebar.html' %}
+{% else %}
+    {% include 'sidebar_parent.html' %}
+{% endif %}
+
+<link rel="stylesheet" href="{% static 'css/tdash.css' %}">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<!-- Toggle button for sidebar in mobile view -->
+<button class="mobile-menu-toggle" id="toggleSidebar">
+    <i class="fas fa-bars"></i>
+</button>
+
+<div class="main-content reports-content fullscreen">
+    <!-- Top Navigation Bar -->
+    <div class="top-nav animate__animated animate__fadeIn">
+        <div class="nav-left">
+            <h1 class="page-title">
+                <i class="fas fa-file-alt"></i>
+                Teacher Evaluation Reports
+            </h1>
+        </div>
+        <div class="nav-right">
+            <div class="date-display">
+                <i class="fas fa-calendar"></i>
+                {% now "F d, Y" %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Area -->
+    <div class="dashboard-wrapper full-width">
+        {% if error_message %}
+            <div class="error-message animate__animated animate__fadeIn">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>{{ error_message }}</p>
+            </div>
+        {% else %}
+            <!-- Student Information Panel -->
+            <div class="student-panel full-width animate__animated animate__fadeInUp">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-user-graduate"></i>
+                        <h2>{{ student_name }}'s Evaluation Reports</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Area -->
+            {% if pdfs %}
+                <div class="results-wrapper full-width animate__animated animate__fadeIn">
+                    <div class="results-grid">
+                        {% for eval_type, reports in pdfs.items %}
+                            <div class="evaluation-card animate__animated animate__fadeInUp">
+                                <div class="card-header">
+                                    <div class="header-content">
+                                        <div class="domain-icon">
+                                            {% if eval_type == 'fine_motor' %}
+                                                <i class="fas fa-hand-paper" style="color: rgb(54, 162, 235);"></i>
+                                            {% elif eval_type == 'receptive' %}
+                                                <i class="fas fa-ear-listen" style="color: rgb(153, 102, 255);"></i>
+                                            {% elif eval_type == 'gross_motor' %}
+                                                <i class="fas fa-running" style="color: rgb(255, 99, 132);"></i>
+                                            {% elif eval_type == 'self_help' %}
+                                                <i class="fas fa-hands-helping" style="color: rgb(75, 192, 192);"></i>
+                                            {% elif eval_type == 'expressive' %}
+                                                <i class="fas fa-comments" style="color: rgb(255, 159, 64);"></i>
+                                            {% elif eval_type == 'cognitive' %}
+                                                <i class="fas fa-brain" style="color: rgb(255, 205, 86);"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="header-text">
+                                            <h3>
+                                                {% for type_value, type_label in evaluation_types %}
+                                                    {% if type_value == eval_type %}
+                                                        {{ type_label }}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </h3>
+                                            <span class="report-count">
+                                                {{ reports|length }} Report{% if reports|length != 1 %}s{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if reports %}
+                                        <div class="reports-list">
+                                            {% for report in reports %}
+                                                <div class="report-item">
+                                                    <div class="report-info">
+                                                        <div class="date-info">
+                                                            <i class="fas fa-calendar"></i>
+                                                            <span>{{ report.uploaded_at|date:"M d, Y" }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="scores-container">
+                                                        <div class="score-item">
+                                                            <span class="score-label">1st</span>
+                                                            <span class="score-pill">{{ report.eval1_score }}</span>
+                                                        </div>
+                                                        <div class="score-item">
+                                                            <span class="score-label">2nd</span>
+                                                            <span class="score-pill">{{ report.eval2_score }}</span>
+                                                        </div>
+                                                        <div class="score-item">
+                                                            <span class="score-label">3rd</span>
+                                                            <span class="score-pill">{{ report.eval3_score }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="report-actions">
+                                                        <a href="{{ report.file.url }}" class="action-button pulse-on-hover" target="_blank">
+                                                            <i class="fas fa-file-pdf"></i>
+                                                            View Report
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-file-alt"></i>
+                                            <p>No reports found</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state large">
+                    <i class="fas fa-file-alt"></i>
+                    <p>No evaluation reports available at this time</p>
+                    <span class="helper-text">Check back later as your teacher uploads evaluation reports</span>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle sidebar in mobile view
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (toggleSidebarBtn && sidebar) {
+            toggleSidebarBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+        }
+    });
+</script>
+
+<style>
+    /* Make content occupy the full screen */
+    .fullscreen {
+        width: 1225px !important;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    
+    /* Adjust main content to take full width when sidebar is not visible */
+    @media (max-width: 768px) {
+        .main-content.fullscreen {
+            margin-left: 0;
+        }
+    }
+    
+    /* Results grid that uses card layout */
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+        width: 100%;
+    }
+    
+    /* Evaluation card styling */
+    .evaluation-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .evaluation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .header-content {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .domain-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .header-text {
+        flex: 1;
+    }
+    
+    .header-text h3 {
+        margin: 0 0 5px 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .report-count {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .card-body {
+        padding: 20px;
+        flex: 1;
+    }
+    
+    /* Reports list styling */
+    .reports-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .report-item {
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        transition: all 0.2s ease;
+    }
+    
+    .report-item:hover {
+        background-color: #e9ecef;
+    }
+    
+    .report-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .date-info {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    /* Additional styles for this page */
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 40px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .empty-state.large {
+        padding: 60px;
+    }
+    
+    .empty-state.large i {
+        font-size: 60px;
+    }
+    
+    .helper-text {
+        font-size: 0.9rem;
+        color: #adb5bd;
+        display: block;
+        margin-top: 10px;
+    }
+    
+    .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .error-message i {
+        font-size: 24px;
+    }
+    
+    .student-panel {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .panel-title i {
+        color: #2d6a4f;
+        font-size: 1.2rem;
+    }
+    
+    .panel-title h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d6a4f;
+    }
+    
+    .pulse-on-hover:hover {
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    
+    /* Score pills styling */
+    .scores-container {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+    }
+    
+    .score-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .score-label {
+        font-size: 0.7rem;
+        color: #6c757d;
+        margin-bottom: 2px;
+    }
+    
+    .score-pill {
+        background-color: #e9ecef;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background-color: #2d6a4f;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 30px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .action-button:hover {
+        background-color: #52b788;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .results-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %} 

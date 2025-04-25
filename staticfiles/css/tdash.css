@@ -31,9 +31,9 @@ body {
 /* Main Content Styles */
 .main-content {
     flex: 1;
-    margin-left: 250px;
+    margin: 0;
     padding: 20px;
-    width: calc(100% - 250px);
+    width: 100%;
     transition: var(--transition);
 }
 

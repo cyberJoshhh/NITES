@@ -246,6 +246,51 @@ class GrossMotorPDF(models.Model):
     def __str__(self):
         return f"Gross Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
 
+class GrossMotorPDFTeacher(models.Model):
+    """
+    Model to store teacher's Gross Motor evaluation PDF files.
+    Created automatically when submitting an evaluation from the gross_motor.html form.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='gross_motor_teacher_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Teacher Gross Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class FinePDFTeacher(models.Model):
+    """
+    Model to store teacher's Fine Motor evaluation PDF files.
+    Created automatically when submitting an evaluation from the fine_motor.html form.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='fine_motor_teacher_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Teacher Fine Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class CognitivePDFTeacher(models.Model):
+    """
+    Model to store teacher's Cognitive evaluation PDF files.
+    Created automatically when submitting an evaluation from the cognitive.html form.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='cognitive_teacher_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Teacher Cognitive PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
 class SelfHelpPDF(models.Model):
     """
     Dedicated model to store Self-Help PDF files directly.
@@ -318,4 +363,49 @@ class Announcement(models.Model):
     
     def __str__(self):
         return self.title
+
+class SelfHelpPDFTeacher(models.Model):
+    """
+    Model to store teacher's Self-Help evaluation PDF files.
+    Created automatically when submitting an evaluation from the self_help.html form.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='self_help_teacher_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Teacher Self-Help PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class ReceptivePDFTeacher(models.Model):
+    """
+    Model to store teacher's Receptive Language evaluation PDF files.
+    Created automatically when submitting an evaluation from the receptive_language.html form.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='receptive_teacher_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Teacher Receptive Language PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+
+class ExpressivePDFTeacher(models.Model):
+    """
+    Model to store teacher's Expressive Language evaluation PDF files.
+    Created automatically when submitting an evaluation from the expressive_language.html form.
+    """
+    student_name = models.CharField(max_length=255)
+    file = models.FileField(upload_to='expressive_teacher_pdfs/')
+    eval1_score = models.IntegerField()
+    eval2_score = models.IntegerField()
+    eval3_score = models.IntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Teacher Expressive Language PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
 

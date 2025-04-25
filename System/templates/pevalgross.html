@@ -20,83 +20,86 @@
                 </a>
             </div>
 
-            <h1 class="domain-title">Gross Motor Domain</h1>
+            <h1 class="domain-title">Parent Gross Motor Domain</h1>
             
             <!-- Include the domain navigation -->
             {% include 'domain_nav.html' with active_domain='gross' %}
             
-            <div class="evaluation-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="gross-motor-col">Gross Motor</th>
-                            <th class="material-col">Material / Procedure</th>
-                            <th class="eval-col">1st Eval</th>
-                            <th class="eval-col">2nd Eval</th>
-                            <th class="eval-col">3rd Eval</th>
-                            <th class="comments-col">Comments</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>1. Climbs on the chair or other elevated furniture like a bed without a help</td>
-                            <td>Parental report will suffice.</td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="text" class="comment-input"></td>
-                        </tr>
-                        <tr>
-                            <td>2. Walks downstairs, 2 feet on each step, with one handheld</td>
-                            <td>
-                                MATERIAL: toy<br>
-                                PROCEDURE: Ask the child to walk backwards by demonstrating this. Credit if the child is able to walk backwards without falling and holding anything. Parental report will suffice.
-                            </td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="text" class="comment-input"></td>
-                        </tr>
-                        <tr>
-                            <td>3. Dances patterns/joins group movement activities</td>
-                            <td>
-                                MATERIAL: ball<br>
-                                PROCEDURE: Encourage the child to run by rolling a ball across the floor. Credit if the child can run past and without tripping or falling.
-                            </td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="checkbox"></td>
-                            <td><input type="text" class="comment-input"></td>
-                        </tr>
-                        <tr>
-                            <td>--</td>
-                            <td colspan="1" class="total-row">TOTAL SCORE</td>
-                            <td>0</td>
-                            <td>0</td>
-                            <td>0</td>
-                            
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="submit-button-container">
-                <button type="button" class="submit-button">
-                    <i class="fas fa-save"></i> Save Evaluation
-                </button>
-                <div id="loading-spinner" class="loading-spinner" style="display: none;">
-                    <i class="fas fa-spinner fa-spin"></i> Generating PDF...
+            <form id="evaluationForm" method="POST" action="{% url 'parent_evaluation_gross' %}">
+                {% csrf_token %}
+                <input type="hidden" name="student_name" value="{% if student and student.child_name %}{{ student.child_name }}{% else %}Unknown{% endif %}">
+                
+                <div class="evaluation-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="gross-motor-col">Gross Motor</th>
+                                <th class="material-col">Material / Procedure</th>
+                                <th class="eval-col">1st Eval</th>
+                                <th class="eval-col">2nd Eval</th>
+                                <th class="eval-col">3rd Eval</th>
+                                <th class="comments-col">Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1. Climbs on the chair or other elevated furniture like a bed without a help</td>
+                                <td>Parental report will suffice.</td>
+                                <td><input type="checkbox" name="checkbox_1_eval1" value="1"></td>
+                                <td><input type="checkbox" name="checkbox_1_eval2" value="1"></td>
+                                <td><input type="checkbox" name="checkbox_1_eval3" value="1"></td>
+                                <td><input type="text" name="comment_1" class="comment-input"></td>
+                            </tr>
+                            <tr>
+                                <td>2. Walks downstairs, 2 feet on each step, with one handheld</td>
+                                <td>
+                                    MATERIAL: toy<br>
+                                    PROCEDURE: Ask the child to walk backwards by demonstrating this. Credit if the child is able to walk backwards without falling and holding anything. Parental report will suffice.
+                                </td>
+                                <td><input type="checkbox" name="checkbox_2_eval1" value="1"></td>
+                                <td><input type="checkbox" name="checkbox_2_eval2" value="1"></td>
+                                <td><input type="checkbox" name="checkbox_2_eval3" value="1"></td>
+                                <td><input type="text" name="comment_2" class="comment-input"></td>
+                            </tr>
+                            <tr>
+                                <td>3. Dances patterns/joins group movement activities</td>
+                                <td>
+                                    MATERIAL: ball<br>
+                                    PROCEDURE: Encourage the child to run by rolling a ball across the floor. Credit if the child can run past and without tripping or falling.
+                                </td>
+                                <td><input type="checkbox" name="checkbox_3_eval1" value="1"></td>
+                                <td><input type="checkbox" name="checkbox_3_eval2" value="1"></td>
+                                <td><input type="checkbox" name="checkbox_3_eval3" value="1"></td>
+                                <td><input type="text" name="comment_3" class="comment-input"></td>
+                            </tr>
+                            <tr>
+                                <td>--</td>
+                                <td colspan="1" class="total-row">TOTAL SCORE</td>
+                                <td id="total1">0</td>
+                                <td id="total2">0</td>
+                                <td id="total3">0</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-            
-            <!-- Hidden fields for JavaScript -->
-            <input type="hidden" id="studentName" value="{% if student and student.child_name %}{{ student.child_name }}{% else %}Unknown{% endif %}">
-            <input type="hidden" id="generatePdfUrl" value="{% url 'generate_gross_motor_pdf' %}">
+                
+                <input type="hidden" name="eval1_score" id="eval1Score" value="0">
+                <input type="hidden" name="eval2_score" id="eval2Score" value="0">
+                <input type="hidden" name="eval3_score" id="eval3Score" value="0">
+                
+                <div class="submit-button-container">
+                    <button type="submit" class="submit-button">
+                        <i class="fas fa-save"></i> Save Evaluation
+                    </button>
+                    <div id="loading-spinner" class="loading-spinner" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Processing...
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-
-
 
 <style>
 /* Main Content Styles */
@@ -106,6 +109,9 @@
     transition: margin-left 0.3s ease;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -234,6 +240,9 @@
 
 .back-button-container {
     margin-bottom: 1rem;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
 }
 
 .back-button {
@@ -258,10 +267,13 @@
 }
 
 .evaluation-container {
-    padding: 1rem;
+    padding: 2rem;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .domain-title {
@@ -269,6 +281,7 @@
     margin-bottom: 2rem;
     font-size: 2rem;
     font-weight: 600;
+    text-align: center;
 }
 
 .evaluation-table {
@@ -276,6 +289,9 @@
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow-x: auto;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 table {
@@ -316,6 +332,7 @@ input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;
+    accent-color: #2d6a4f;
 }
 
 .comment-input {
@@ -404,325 +421,68 @@ input[type="checkbox"] {
     margin-right: 0.5rem;
     font-size: 1.2rem;
 }
-
-/* Modal Styles */
-.modal {
-    position: fixed;
-    z-index: 1050;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-    position: relative;
-    background-color: #fff;
-    margin: 10% auto;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    width: 80%;
-    max-width: 700px;
-}
-
-.close-button {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    color: #aaa;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close-button:hover {
-    color: #333;
-}
-
-.modal h2 {
-    color: #2d6a4f;
-    margin-bottom: 1rem;
-    font-size: 1.6rem;
-}
-
-#dbStatusContent {
-    margin: 1rem 0;
-    padding: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f8f9fa;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-#dbStatusContent p {
-    margin: 0.5rem 0;
-    line-height: 1.5;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 1.5rem;
-}
-
-.modal-actions button {
-    padding: 0.6rem 1.2rem;
-    margin: 0 5px;
-    flex: 1;
-}
-
-.success-message {
-    color: #2d6a4f;
-    font-weight: bold;
-}
-
-.error-message {
-    color: #d32f2f;
-    font-weight: bold;
-}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Mobile menu toggle functionality
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-    // Function to toggle sidebar if elements exist
-    if (mobileMenuToggle && sidebar && sidebarOverlay) {
-        function toggleSidebar() {
-            sidebar.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        }
-
-        // Add click event to mobile menu toggle
-        mobileMenuToggle.addEventListener('click', toggleSidebar);
-
-        // Close sidebar when clicking on overlay
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-
-        // Fix for sidebar links to ensure they're clickable
-        const sidebarLinks = document.querySelectorAll('.sidebar-btn, .logout-btn');
-        sidebarLinks.forEach(link => {
-            link.style.pointerEvents = 'auto';
-            link.style.cursor = 'pointer';
-            link.style.position = 'relative';
-            link.style.zIndex = '1002';
-        });
-    }
-
-    // Modal functionality
-    const modal = document.getElementById('dbStatusModal');
-    const closeButton = document.querySelector('.close-button');
-    const viewPdfBtn = document.getElementById('viewPdfBtn');
-    const returnToDashboardBtn = document.getElementById('returnToDashboardBtn');
+    const form = document.getElementById('evaluationForm');
+    const loadingSpinner = document.getElementById('loading-spinner');
     
-    // Close modal when clicking the close button
-    if (closeButton) {
-        closeButton.addEventListener('click', function() {
-            modal.style.display = 'none';
-        });
+    function calculateScores() {
+        const eval1Total = document.querySelectorAll('input[name$="_eval1"]:checked').length;
+        const eval2Total = document.querySelectorAll('input[name$="_eval2"]:checked').length;
+        const eval3Total = document.querySelectorAll('input[name$="_eval3"]:checked').length;
+        
+        document.getElementById('total1').textContent = eval1Total;
+        document.getElementById('total2').textContent = eval2Total;
+        document.getElementById('total3').textContent = eval3Total;
+        
+        document.getElementById('eval1Score').value = eval1Total;
+        document.getElementById('eval2Score').value = eval2Total;
+        document.getElementById('eval3Score').value = eval3Total;
     }
     
-    // Close modal when clicking outside the modal content
-    window.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
+    // Add event listeners to checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', calculateScores);
     });
     
-    // Return to dashboard button
-    if (returnToDashboardBtn) {
-        returnToDashboardBtn.addEventListener('click', function() {
-            window.location.href = "{% url 'dashboard' %}";
-        });
-    }
-
-    function countCheckedBoxes(columnIndex) {
-        let count = 0;
-        const rows = document.querySelectorAll('tbody tr:not(:last-child)');
-        
-        rows.forEach(row => {
-            const checkbox = row.querySelector(`td:nth-child(${columnIndex}) input[type="checkbox"]`);
-            if (checkbox && checkbox.checked) {
-                count++;
-            }
-        });
-        return count;
-    }
-
-    function updateTotals() {
-        const eval1Total = countCheckedBoxes(3);
-        const eval2Total = countCheckedBoxes(4);
-        const eval3Total = countCheckedBoxes(5);
-        
-        const totalRow = document.querySelector('tbody tr:last-child');
-        if (totalRow) {
-            const cell3 = totalRow.querySelector('td:nth-child(3)');
-            const cell4 = totalRow.querySelector('td:nth-child(4)');
-            const cell5 = totalRow.querySelector('td:nth-child(5)');
-            
-            if (cell3) cell3.textContent = eval1Total;
-            if (cell4) cell4.textContent = eval2Total;
-            if (cell5) cell5.textContent = eval3Total;
-        }
-    }
-
-    // Add event listeners to all checkboxes
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateTotals);
-    });
-
-    // Initial totals update
-    updateTotals();
+    // Initial calculation
+    calculateScores();
     
-    // Save button logic
-    const saveButton = document.querySelector('.submit-button');
-    if (saveButton) {
-        saveButton.addEventListener('click', function() {
-            // Gather the data
-            const totalRow = document.querySelector('tbody tr:last-child');
-            const eval1Score = parseInt(totalRow.querySelector('td:nth-child(3)').textContent || '0');
-            const eval2Score = parseInt(totalRow.querySelector('td:nth-child(4)').textContent || '0');
-            const eval3Score = parseInt(totalRow.querySelector('td:nth-child(5)').textContent || '0');
-            
-            // Collect comments
-            const comments = [];
-            document.querySelectorAll('.comment-input').forEach((input, index) => {
-                if (input.value) {
-                    comments.push({ number: index + 1, text: input.value });
-                } else {
-                    comments.push({ number: index + 1, text: '' });
-                }
-            });
-            
-            // Also collect checkbox states for the PDF generation
-            const checkboxData = [];
-            const rows = document.querySelectorAll('tbody tr:not(:last-child)');
-            rows.forEach((row, rowIndex) => {
-                const rowNumber = rowIndex + 1;
-                const checkboxes = [
-                    row.querySelector('td:nth-child(3) input[type="checkbox"]').checked,
-                    row.querySelector('td:nth-child(4) input[type="checkbox"]').checked,
-                    row.querySelector('td:nth-child(5) input[type="checkbox"]').checked
-                ];
-                checkboxData.push({ number: rowNumber, checked: checkboxes });
-            });
-            
-            // Get student name or use "Unknown" if not available
-            let studentName = "Unknown";
-            // Using a JavaScript approach to get Django template variables
-            const studentNameElement = document.getElementById('studentName');
-            if (studentNameElement) {
-                studentName = studentNameElement.value;
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading spinner
+        loadingSpinner.style.display = 'block';
+        
+        // Submit form data
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingSpinner.style.display = 'none';
             
-            // Show loading state
-            saveButton.disabled = true;
-            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            document.getElementById('loading-spinner').style.display = 'block';
-            
-            // Send data via AJAX
-            console.log("Preparing to send evaluation data to server");
-            console.log("Student name:", studentName);
-            console.log("Scores:", eval1Score, eval2Score, eval3Score);
-            console.log("Comments:", comments);
-            console.log("Checkbox data:", checkboxData);
-            
-            let pdfUrl = ''; // Store PDF URL for later use
-            
-            fetch(document.getElementById('generatePdfUrl').value, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: new URLSearchParams({
-                    'student_name': studentName,
-                    'eval1_score': eval1Score,
-                    'eval2_score': eval2Score,
-                    'eval3_score': eval3Score,
-                    'comments': JSON.stringify(comments),
-                    'checkbox_data': JSON.stringify(checkboxData)
-                })
-            })
-            .then(response => {
-                console.log("Received response from server:", response.status);
-                if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Received data from server:", data);
-                saveButton.disabled = false;
-                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Evaluation';
-                document.getElementById('loading-spinner').style.display = 'none';
-                
-                if (data.status === 'success') {
-                    // Save PDF URL for View PDF button
-                    pdfUrl = data.pdf_url;
-                    
-                    // Show database operation details in modal
-                    const dbStatusContent = document.getElementById('dbStatusContent');
-                    if (dbStatusContent) {
-                        let htmlContent = `<p class="success-message">${data.database_status}</p>`;
-                        htmlContent += '<p><strong>Database Operations:</strong></p>';
-                        
-                        if (data.db_operations && data.db_operations.length > 0) {
-                            htmlContent += '<ul>';
-                            data.db_operations.forEach(op => {
-                                htmlContent += `<li>${op}</li>`;
-                            });
-                            htmlContent += '</ul>';
-                        } else {
-                            htmlContent += '<p>No database operations reported.</p>';
-                        }
-                        
-                        dbStatusContent.innerHTML = htmlContent;
-                    }
-                    
-                    // Set the View PDF button URL
-                    if (viewPdfBtn) {
-                        viewPdfBtn.addEventListener('click', function() {
-                            window.open(pdfUrl, '_blank');
-                        });
-                    }
-                    
-                    // Show the modal
-                    if (modal) {
-                        modal.style.display = 'block';
-                    } else {
-                        // Fallback if modal not found
-                        alert('Evaluation saved and PDF generated successfully!');
-                        if (confirm('Do you want to view the generated PDF?')) {
-                            window.open(pdfUrl, '_blank');
-                        }
-                        window.location.href = "{% url 'dashboard' %}";
-                    }
-                } else if (data.status === 'partial_success') {
-                    // Evaluation was saved but PDF generation failed
-                    alert('Evaluation data was saved, but the PDF could not be generated: ' + data.message);
-                    window.location.href = "{% url 'dashboard' %}";
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                saveButton.disabled = false;
-                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Evaluation';
-                document.getElementById('loading-spinner').style.display = 'none';
-                alert('An error occurred while saving the evaluation: ' + error.message);
-            });
+            if (data.status === 'success') {
+                alert('Evaluation saved successfully!');
+                // Redirect to dashboard
+                window.location.href = "{% url 'dashboard' %}";
+            } else {
+                alert(data.message || 'An error occurred while saving the evaluation.');
+            }
+        })
+        .catch(error => {
+            loadingSpinner.style.display = 'none';
+            alert('An error occurred while saving the evaluation.');
+            console.error('Error:', error);
         });
-    }
+    });
 });
 </script>
 {% endblock %}

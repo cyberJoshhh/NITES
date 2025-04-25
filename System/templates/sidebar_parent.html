@@ -34,6 +34,10 @@
             <i class="fas fa-chart-bar"></i>
             <span>Evaluation</span>
         </a>
+        <a href="{% url 'teacher_evaluation_pdfs' %}" class="sidebar-btn {% if request.path == '/teacher-evaluation-pdfs/' %}active{% endif %}">
+            <i class="fas fa-file-pdf"></i>
+            <span>Teacher Evaluations</span>
+        </a>
         <a href="{% url 'account_settings' %}" class="sidebar-btn {% if request.path == '/account_settings/' %}active{% endif %}">
             <i class="fas fa-user-cog"></i>
             <span>Manage Account</span>

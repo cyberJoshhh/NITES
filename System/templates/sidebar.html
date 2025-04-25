@@ -28,7 +28,7 @@
 
         <a href="{% url 'pdf_view' %}" class="sidebar-btn {% if request.path == '/pdf_view/' %}active{% endif %}">
             <i class="fas fa-file-pdf"></i>
-            <span>PDF Files</span>
+            <span>Learning Materials/Exercises</span>
         </a>
         
         <a href="{% url 'create_announcement' %}" class="sidebar-btn {% if request.path == '/create_announcement/' %}active{% endif %}">
@@ -53,6 +53,10 @@
                 </a>
             </div>
         </div>
+        <a href="{% url 'evaluation_reports' %}" class="sidebar-btn {% if request.path == '/evaluation_reports/' %}active{% endif %}">
+            <i class="fas fa-file-alt"></i>
+            <span>Evaluation Report</span>
+        </a>
         
     </div>
     <div class="sidebar-footer">

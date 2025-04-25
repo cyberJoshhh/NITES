@@ -12,86 +12,110 @@
         </a>
     </div>
 
-    <h1 class="domain-title">Expressive Language Domain</h1>
+    <h1 class="domain-title">Parent Expressive Language Domain</h1>
     
-    <!-- Include the domain navigation -->
     {% include 'domain_nav.html' with active_domain='expressive' %}
     
-    <div class="evaluation-table">
-        <table>
-            <thead>
-                <tr>
-                    <th class="expressive-col">Expressive Language</th>
-                    <th class="material-col">Material/Procedure</th>
-                    <th class="eval-col">1st Eval</th>
-                    <th class="eval-col">2nd Eval</th>
-                    <th class="eval-col">3rd Eval</th>
-                    <th class="comments-col">Comments</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1. Uses pronouns (e.g., I, me, ako, akin)</td>
-                    <td>Parental report will suffice.</td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="text" class="comment-input"></td>
-                </tr>
-                <tr>
-                    <td>2. Uses 2-to-3-word verb-noun combination (e.g., sipa patas)</td>
-                    <td>Parental report will suffice.</td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="text" class="comment-input"></td>
-                </tr>
-                <tr>
-                    <td>3. Speaks in grammatically correct 2- to 3-word sentences</td>
-                    <td>Parental report will suffice.</td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="text" class="comment-input"></td>
-                </tr>
-                <tr>
-                    <td>4. Ask "what" questions</td>
-                    <td>Parental report will suffice.</td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="text" class="comment-input"></td>
-                </tr>
-                <tr>
-                    <td>5. Ask "who" and "why" questions</td>
-                    <td>Parental report will suffice.</td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="checkbox"></td>
-                    <td><input type="text" class="comment-input"></td>
-                </tr>
-                <tr>
-                    <td>--</td>
-                    <td colspan="1" class="total-row">TOTAL SCORE</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="submit-button-container">
-        <button type="button" class="submit-button">
-            <i class="fas fa-save"></i> Save Evaluation
-        </button>
-    </div>
+    <form id="evaluationForm" method="POST" action="{% url 'parent_evaluation_expressive' %}">
+        {% csrf_token %}
+        <input type="hidden" name="student_name" value="{% if student and student.child_name %}{{ student.child_name }}{% else %}Unknown{% endif %}">
+        
+        <div class="evaluation-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="expressive-col">Expressive Language</th>
+                        <th class="material-col">Material/Procedure</th>
+                        <th class="eval-col">1st Eval</th>
+                        <th class="eval-col">2nd Eval</th>
+                        <th class="eval-col">3rd Eval</th>
+                        <th class="comments-col">Comments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1. Uses pronouns (e.g., I, me, ako, akin)</td>
+                        <td>Parental report will suffice.</td>
+                        <td><input type="checkbox" name="checkbox_1_eval1" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_1_eval2" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_1_eval3" value="1"></td>
+                        <td><input type="text" name="comment_1" class="comment-input"></td>
+                    </tr>
+                    <tr>
+                        <td>2. Uses 2-to-3-word verb-noun combination (e.g., sipa patas)</td>
+                        <td>Parental report will suffice.</td>
+                        <td><input type="checkbox" name="checkbox_2_eval1" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_2_eval2" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_2_eval3" value="1"></td>
+                        <td><input type="text" name="comment_2" class="comment-input"></td>
+                    </tr>
+                    <tr>
+                        <td>3. Speaks in grammatically correct 2- to 3-word sentences</td>
+                        <td>Parental report will suffice.</td>
+                        <td><input type="checkbox" name="checkbox_3_eval1" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_3_eval2" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_3_eval3" value="1"></td>
+                        <td><input type="text" name="comment_3" class="comment-input"></td>
+                    </tr>
+                    <tr>
+                        <td>4. Ask "what" questions</td>
+                        <td>Parental report will suffice.</td>
+                        <td><input type="checkbox" name="checkbox_4_eval1" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_4_eval2" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_4_eval3" value="1"></td>
+                        <td><input type="text" name="comment_4" class="comment-input"></td>
+                    </tr>
+                    <tr>
+                        <td>5. Ask "who" and "why" questions</td>
+                        <td>Parental report will suffice.</td>
+                        <td><input type="checkbox" name="checkbox_5_eval1" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_5_eval2" value="1"></td>
+                        <td><input type="checkbox" name="checkbox_5_eval3" value="1"></td>
+                        <td><input type="text" name="comment_5" class="comment-input"></td>
+                    </tr>
+                    <tr>
+                        <td>--</td>
+                        <td colspan="1" class="total-row">TOTAL SCORE</td>
+                        <td id="total1">0</td>
+                        <td id="total2">0</td>
+                        <td id="total3">0</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <input type="hidden" name="eval1_score" id="eval1Score" value="0">
+        <input type="hidden" name="eval2_score" id="eval2Score" value="0">
+        <input type="hidden" name="eval3_score" id="eval3Score" value="0">
+        
+        <div class="submit-button-container">
+            <button type="submit" class="submit-button">
+                <i class="fas fa-save"></i> Save Evaluation
+            </button>
+            <div id="loading-spinner" class="loading-spinner" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Processing...
+            </div>
+        </div>
+    </form>
 </div>
 
 <style>
+.evaluation-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .back-button-container {
     margin-bottom: 1rem;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
 }
 
 .back-button {
@@ -115,17 +139,12 @@
     margin-right: 0.5rem;
 }
 
-.evaluation-container {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
 .domain-title {
     color: #2d6a4f;
     margin-bottom: 2rem;
     font-size: 2rem;
     font-weight: 600;
+    text-align: center;
 }
 
 .evaluation-table {
@@ -133,6 +152,9 @@
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow-x: auto;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 table {
@@ -246,145 +268,64 @@ tr:last-child td {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    function countCheckedBoxes(columnIndex) {
-        let count = 0;
-        const rows = document.querySelectorAll('tbody tr:not(:last-child)');
-        rows.forEach(row => {
-            const checkbox = row.querySelector(`td:nth-child(${columnIndex}) input[type="checkbox"]`);
-            if (checkbox && checkbox.checked) {
-                count++;
-            }
-        });
-        return count;
-    }
-
-    function updateTotalScore() {
-        // Get the total row cells
-        const totalRow = document.querySelector('tbody tr:last-child');
-        
-        // Count and update for each evaluation column
-        const firstEvalTotal = countCheckedBoxes(3);  // 3rd column (1st Eval)
-        const secondEvalTotal = countCheckedBoxes(4); // 4th column (2nd Eval)
-        const thirdEvalTotal = countCheckedBoxes(5);  // 5th column (3rd Eval)
-
-        // Update the total cells
-        totalRow.cells[2].textContent = firstEvalTotal;
-        totalRow.cells[3].textContent = secondEvalTotal;
-        totalRow.cells[4].textContent = thirdEvalTotal;
-
-        // Add animation effect
-        [2, 3, 4].forEach(index => {
-            totalRow.cells[index].style.backgroundColor = '#e8f5e9';
-            setTimeout(() => {
-                totalRow.cells[index].style.backgroundColor = '';
-            }, 500);
-        });
-    }
-
-    // Add event listeners to checkboxes
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            // Highlight the cell when checked
-            const cell = this.parentElement;
-            cell.style.backgroundColor = this.checked ? '#e8f5e9' : '';
-            
-            // Update the totals
-            updateTotalScore();
-        });
-    });
-
-    // Initialize totals on page load
-    updateTotalScore();
+    const form = document.getElementById('evaluationForm');
+    const loadingSpinner = document.getElementById('loading-spinner');
     
-    // Add submission function
-    document.querySelector('.submit-button').addEventListener('click', function() {
-        // Get the total scores
-        const totalRow = document.querySelector('tbody tr:last-child');
-        const eval1Score = parseInt(totalRow.cells[2].textContent) || 0;
-        const eval2Score = parseInt(totalRow.cells[3].textContent) || 0;
-        const eval3Score = parseInt(totalRow.cells[4].textContent) || 0;
+    function calculateScores() {
+        const eval1Total = document.querySelectorAll('input[name$="_eval1"]:checked').length;
+        const eval2Total = document.querySelectorAll('input[name$="_eval2"]:checked').length;
+        const eval3Total = document.querySelectorAll('input[name$="_eval3"]:checked').length;
         
-        // Get student ID and name from hidden input fields
-        const studentId = document.getElementById('student-id') ? document.getElementById('student-id').value : '';
-        const studentName = document.getElementById('student-name') ? document.getElementById('student-name').value : '';
+        document.getElementById('total1').textContent = eval1Total;
+        document.getElementById('total2').textContent = eval2Total;
+        document.getElementById('total3').textContent = eval3Total;
         
-        // Create form data
-        const formData = new FormData();
-        formData.append('student_id', studentId);
-        formData.append('student_name', studentName);
-        formData.append('eval1_score', eval1Score);
-        formData.append('eval2_score', eval2Score);
-        formData.append('eval3_score', eval3Score);
+        document.getElementById('eval1Score').value = eval1Total;
+        document.getElementById('eval2Score').value = eval2Total;
+        document.getElementById('eval3Score').value = eval3Total;
+    }
+    
+    // Add event listeners to checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', calculateScores);
+    });
+    
+    // Initial calculation
+    calculateScores();
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        // Collect comments
-        const comments = [];
-        document.querySelectorAll('.comment-input').forEach(function(input, index) {
-            if (input.value.trim() !== '') {
-                comments.push({
-                    item: index + 1,
-                    comment: input.value.trim()
-                });
-            }
-        });
+        // Show loading spinner
+        loadingSpinner.style.display = 'block';
         
-        if (comments.length > 0) {
-            formData.append('comments', JSON.stringify(comments));
-        }
-        
-        // Get CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        // Add visual feedback
-        const submitButton = document.querySelector('.submit-button');
-        const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        submitButton.disabled = true;
-        
-        // Submit the data to the new endpoint
-        fetch('{% url "parent_evaluation_expressive" %}', {
+        // Submit form data
+        fetch(form.action, {
             method: 'POST',
-            body: formData,
+            body: new FormData(form),
             headers: {
-                'X-CSRFToken': csrfToken
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => {
-            submitButton.disabled = false;
-            if (response.ok) {
-                return response.json().then(data => {
-                    submitButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
-                    setTimeout(() => {
-                        alert('Expressive Language evaluation saved successfully!');
-                        window.location.href = '{% url "dashboard" %}';
-                    }, 500);
-                });
+        .then(response => response.json())
+        .then(data => {
+            loadingSpinner.style.display = 'none';
+            
+            if (data.status === 'success') {
+                alert('Evaluation saved successfully!');
+                // Redirect to dashboard
+                window.location.href = "{% url 'dashboard' %}";
             } else {
-                submitButton.innerHTML = originalText;
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Error saving evaluation');
-                });
+                alert(data.message || 'An error occurred while saving the evaluation.');
             }
         })
         .catch(error => {
+            loadingSpinner.style.display = 'none';
+            alert('An error occurred while saving the evaluation.');
             console.error('Error:', error);
-            submitButton.innerHTML = originalText;
-            submitButton.disabled = false;
-            alert(error.message || 'Error saving evaluation. Please try again.');
         });
     });
 });
 </script>
-
-<!-- Add CSRF Token -->
-{% csrf_token %}
-
-<!-- Add hidden fields for student information -->
-{% if student %}
-<input type="hidden" id="student-id" value="{{ student.id }}">
-<input type="hidden" id="student-name" value="{{ student.child_name }}">
-{% else %}
-<input type="hidden" id="student-id" value="">
-<input type="hidden" id="student-name" value="Unknown Student">
-{% endif %}
 {% endblock %} 
