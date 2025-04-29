@@ -545,11 +545,10 @@ def submit_cognitive_evaluation(request):
             print(f"Error generating PDF: {str(e)}")
             import traceback
             traceback.print_exc()
+            messages.success(request, 'Evaluation submitted successfully!')
+            return redirect('evaluation_cognitive')  # Redirect to cognitive evaluation interface
 
-        messages.success(request, 'Evaluation submitted successfully!')
-        return redirect('dashboard')
-
-    return redirect('dashboard')
+    return redirect('evaluation_cognitive')  # Redirect to cognitive evaluation interface
 
 def submit_expressive_evaluation(request):
     if request.method == 'POST':

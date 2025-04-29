@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'success') {
                 alert('Evaluation saved successfully!');
                 // Redirect to dashboard
-                window.location.href = "{% url 'dashboard' %}";
+                window.location.href = "{% url 'evaluation_social' %}";
             } else {
                 alert(data.message || 'An error occurred while saving the evaluation.');
             }

@@ -87,10 +87,6 @@
             <div class="student-card" data-session="{{ student.session_no }}" onclick="openStudentModal('{{ student.child_name }}', '{{ student.sex }}', '{{ student.dob }}', '{{ student.address }}', '{{ student.barangay }}', '{{ student.municipality }}', '{{ student.province }}', '{{ student.region }}', '{{ student.handedness }}', '{{ student.studying }}', '{{ student.father_name }}', '{{ student.father_age }}', '{{ student.father_occupation }}', '{{ student.father_education }}', '{{ student.mother_name }}', '{{ student.mother_age }}', '{{ student.mother_occupation }}', '{{ student.mother_education }}', '{{ student.num_siblings }}', '{{ student.birth_order }}', '{{ student.session_no }}')">
                 <div class="student-name">{{ student.child_name }}</div>
                 <div class="student-info">
-                    <p><i class="fas fa-venus-mars"></i> <strong>Sex:</strong> {{ student.sex }}</p>
-                    <p><i class="fas fa-birthday-cake"></i> <strong>Date of Birth:</strong> {{ student.dob }}</p>
-                    <p data-parent="father"><i class="fas fa-male"></i> <strong>Father:</strong> {{ student.father_name }}</p>
-                    <p data-parent="mother"><i class="fas fa-female"></i> <strong>Mother:</strong> {{ student.mother_name }}</p>
                     <p><i class="fas fa-chalkboard-teacher"></i> <strong>Session:</strong> {{ student.session_no }}</p>
                 </div>
                 <div class="card-actions">
