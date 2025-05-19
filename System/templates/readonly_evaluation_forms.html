@@ -1,0 +1,1042 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<script>
+    // Add class to body for CSS targeting
+    document.body.classList.add('evaluation-page');
+</script>
+{% include 'sidebar.html' %}
+<link rel="stylesheet" href="{% static 'css/tdash.css' %}">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<!-- Toggle button for sidebar in mobile view -->
+<button class="mobile-menu-toggle" id="toggleSidebar">
+    <i class="fas fa-bars"></i>
+</button>
+
+<div class="main-content reports-content">
+    <!-- Top Navigation Bar -->
+    <div class="top-nav animate__animated animate__fadeIn">
+        <div class="nav-left">
+            <h1 class="page-title">
+                <i class="fas fa-file-alt"></i>
+                Evaluation Forms
+            </h1>
+        </div>
+        <div class="nav-right">
+            <div class="date-display">
+                <i class="fas fa-calendar"></i>
+                {% now "F d, Y" %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Area -->
+    <div class="dashboard-wrapper full-width">
+        <!-- Search Panel -->
+        <div class="search-panel full-width animate__animated animate__fadeInUp">
+            <div class="search-panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-search-plus"></i>
+                    <h2>Search Evaluation Forms</h2>
+                </div>
+                <div class="panel-help">
+                    <span class="helper-text">Find forms by pupil name or type</span>
+                </div>
+            </div>
+            <form method="GET" class="search-form">
+                <div class="search-container full-width">
+                    <div class="search-box main-search">
+                        <label for="student_name" class="search-label">Pupil Name</label>
+                        <input type="text" 
+                               class="search-input" 
+                               id="student_name" 
+                               name="student_name" 
+                               value="{{ student_name }}" 
+                               placeholder="Enter pupil's name..."
+                               autocomplete="off">
+                        <div class="input-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        {% if student_name %}
+                        <button type="button" class="clear-input" onclick="clearInput('student_name')" title="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="search-box type-select">
+                        <label for="evaluation_type" class="search-label">Evaluation Type</label>
+                        <select class="search-select" id="evaluation_type" name="evaluation_type">
+                            <option value="">All Evaluation Types</option>
+                            {% for type_value, type_label in evaluation_types %}
+                            <option value="{{ type_value }}" {% if evaluation_type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="input-icon">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                    </div>
+                    <div class="search-actions">
+                        <button type="submit" class="search-button pulse-on-hover" id="searchBtn">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                        {% if student_name or evaluation_type %}
+                        <a href="?" class="reset-button pulse-on-hover">
+                            <i class="fas fa-undo"></i>
+                            Reset
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Area -->
+        {% if student_name %}
+            {% if evaluations.teacher or evaluations.parent %}
+                <div class="results-wrapper full-width animate__animated animate__fadeIn">
+                    <div class="results-header">
+                        <h2>Search Results</h2>
+                        <div class="results-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-user"></i>
+                                Pupil: {{ student_name }}
+                            </span>
+                            {% if evaluation_type %}
+                                <span class="meta-item">
+                                    <i class="fas fa-filter"></i>
+                                    Type: {{ evaluation_type }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Teacher Evaluations -->
+                    {% if evaluations.teacher %}
+                    <div class="evaluation-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            Teacher Evaluations
+                        </h3>
+                        <div class="table-responsive">
+                            <table class="evaluation-table">
+                                <thead>
+                                    <tr>
+                                        <th>Evaluation Type</th>
+                                        <th>Date</th>
+                                        <th>1st Eval</th>
+                                        <th>2nd Eval</th>
+                                        <th>3rd Eval</th>
+                                        <th>Form Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for eval in evaluations.teacher %}
+                                    <tr>
+                                        <td>{{ eval.get_evaluation_type_display }}</td>
+                                        <td>{{ eval.created_at|date:"M d, Y" }}</td>
+                                        <td>{{ eval.first_eval_score }}</td>
+                                        <td>{{ eval.second_eval_score }}</td>
+                                        <td>{{ eval.third_eval_score }}</td>
+                                        <td>
+                                            {% if eval.data %}
+                                            <div class="button-group">
+                                                <button class="view-data-btn" onclick="showFormData(this)" data-form-data="{{ eval.data|safe }}">
+                                                    <i class="fas fa-eye"></i> View Data
+                                                </button>
+                                                <button class="view-model-btn" onclick="showModelData(this)" 
+                                                        data-model-id="{{ eval.id }}"
+                                                        data-child-name="{{ eval.child_name }}"
+                                                        data-evaluation-type="{{ eval.get_evaluation_type_display }}"
+                                                        data-evaluator-type="{{ eval.get_evaluator_type_display }}"
+                                                        data-eval1="{{ eval.first_eval_score }}"
+                                                        data-eval2="{{ eval.second_eval_score }}"
+                                                        data-eval3="{{ eval.third_eval_score }}"
+                                                        data-created="{{ eval.created_at|date:'Y-m-d H:i' }}"
+                                                        data-updated="{{ eval.updated_at|date:'Y-m-d H:i' }}">
+                                                    <i class="fas fa-database"></i> View Model
+                                                </button>
+                                            </div>
+                                            {% else %}
+                                            <span class="no-data">No form data</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Parent Evaluations -->
+                    {% if evaluations.parent %}
+                    <div class="evaluation-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-home"></i>
+                            Parent Evaluations
+                        </h3>
+                        <div class="table-responsive">
+                            <table class="evaluation-table">
+                                <thead>
+                                    <tr>
+                                        <th>Evaluation Type</th>
+                                        <th>Date</th>
+                                        <th>1st Eval</th>
+                                        <th>2nd Eval</th>
+                                        <th>3rd Eval</th>
+                                        <th>Form Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for eval in evaluations.parent %}
+                                    <tr>
+                                        <td>{{ eval.get_evaluation_type_display }}</td>
+                                        <td>{{ eval.created_at|date:"M d, Y" }}</td>
+                                        <td>{{ eval.first_eval_score }}</td>
+                                        <td>{{ eval.second_eval_score }}</td>
+                                        <td>{{ eval.third_eval_score }}</td>
+                                        <td>
+                                            {% if eval.data %}
+                                            <div class="button-group">
+                                                <button class="view-data-btn" onclick="showFormData(this)" data-form-data="{{ eval.data|safe }}">
+                                                    <i class="fas fa-eye"></i> View Data
+                                                </button>
+                                                <button class="view-model-btn" onclick="showModelData(this)" 
+                                                        data-model-id="{{ eval.id }}"
+                                                        data-child-name="{{ eval.child_name }}"
+                                                        data-evaluation-type="{{ eval.get_evaluation_type_display }}"
+                                                        data-evaluator-type="{{ eval.get_evaluator_type_display }}"
+                                                        data-eval1="{{ eval.first_eval_score }}"
+                                                        data-eval2="{{ eval.second_eval_score }}"
+                                                        data-eval3="{{ eval.third_eval_score }}"
+                                                        data-created="{{ eval.created_at|date:'Y-m-d H:i' }}"
+                                                        data-updated="{{ eval.updated_at|date:'Y-m-d H:i' }}">
+                                                    <i class="fas fa-database"></i> View Model
+                                                </button>
+                                            </div>
+                                            {% else %}
+                                            <span class="no-data">No form data</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="empty-state large">
+                    <i class="fas fa-search"></i>
+                    <p>No evaluation forms found for "{{ student_name }}"</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state large">
+                <i class="fas fa-info-circle"></i>
+                <p>Enter a student name to search for evaluation forms</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Form Data Modal -->
+<div id="formDataModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Form Data</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="formDataContent" class="form-data-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Data Modal -->
+<div id="modelDataModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Evaluation Model Data</h3>
+            <span class="close" onclick="closeModelModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="modelDataContent" class="model-data-container">
+                <!-- Model data will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Inherit existing styles from evaluation_reports.html */
+.full-width {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Table Styles */
+.table-responsive {
+    overflow-x: auto;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.evaluation-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 0.95rem;
+}
+
+.evaluation-table th,
+.evaluation-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.evaluation-table th {
+    background: var(--primary);
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.evaluation-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.evaluation-table td {
+    vertical-align: middle;
+}
+
+/* Section Styles */
+.evaluation-section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    color: var(--primary);
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Button Styles */
+.view-data-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.view-data-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.no-data {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--primary);
+}
+
+.close {
+    color: #666;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Form Data Display Styles */
+.form-data-container {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.form-data-section {
+    margin-bottom: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-data-section:last-child {
+    margin-bottom: 0;
+}
+
+.form-data-section h4 {
+    color: var(--primary);
+    margin: 0 0 10px 0;
+    font-size: 1.1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.form-data-item {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.form-data-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.form-data-value {
+    font-size: 1rem;
+    color: #333;
+    font-weight: 500;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.form-data-value.checked {
+    color: var(--primary);
+}
+
+.form-data-value.unchecked {
+    color: #999;
+}
+
+.form-data-comments {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.form-data-comments .form-data-label {
+    margin-bottom: 8px;
+}
+
+.form-data-comments .form-data-value {
+    font-style: italic;
+    color: #666;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .evaluation-table {
+        font-size: 0.9rem;
+    }
+    
+    .evaluation-table th,
+    .evaluation-table td {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .form-data-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.view-model-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.view-model-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.model-data-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.model-data-header {
+    background: #3498db;
+    color: white;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.model-data-field {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+}
+
+.model-data-field:nth-child(odd) {
+    background: white;
+}
+
+.field-label {
+    font-weight: bold;
+    width: 150px;
+    color: #555;
+}
+
+.field-value {
+    flex: 1;
+}
+
+.score-value {
+    font-weight: bold;
+    color: #27ae60;
+}
+
+.timestamps {
+    font-style: italic;
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+</style>
+
+<script>
+function clearInput(inputId) {
+    document.getElementById(inputId).value = '';
+    document.querySelector('form').submit();
+}
+
+// Modal functionality
+const modal = document.getElementById('formDataModal');
+const closeBtn = document.querySelector('.close');
+
+function showFormData(button) {
+    try {
+        // Get the data from the button's data attribute
+        const formDataStr = button.getAttribute('data-form-data');
+        
+        // Display the raw data for debugging
+        console.log('Raw form data:', formDataStr);
+        
+        // Parse the data
+        let formData;
+        try {
+            // First clean any HTML entities
+            const cleanedData = formDataStr
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+                .replace(/\xa0/g, ' ');
+            
+            console.log('Cleaned data:', cleanedData);
+            
+            // Try to determine if this is Python dictionary notation or JSON
+            let normalizedData = cleanedData;
+            
+            // Convert Python True/False/None to JSON true/false/null
+            normalizedData = normalizedData
+                .replace(/True/g, 'true')
+                .replace(/False/g, 'false')
+                .replace(/None/g, 'null');
+                
+            // Convert Python single quotes to double quotes for JSON compatibility
+            // This is a simplistic approach and might not handle nested quotes properly
+            if (normalizedData.indexOf("'") !== -1) {
+                // If we detect single quotes, try to convert Python dict format to JSON
+                normalizedData = normalizedData
+                    .replace(/'/g, '"') // Replace single quotes with double quotes
+                    .replace(/\\/g, '\\\\'); // Escape backslashes
+            }
+            
+            console.log('Normalized data:', normalizedData);
+            
+            // Try multiple parsing approaches
+            try {
+                // First, try standard JSON parse
+                formData = JSON.parse(normalizedData);
+                console.log('Parsed as JSON successfully');
+            } catch (jsonError) {
+                console.error('JSON parse error:', jsonError);
+                
+                // If that fails, try eval as a fallback (with safety checks)
+                try {
+                    // Only allow eval if the string looks like a plain object literal
+                    if (/^[\s\n]*\{[\s\S]*\}[\s\n]*$/.test(normalizedData)) {
+                        // Create a safe evaluation function
+                        const safeEval = (str) => {
+                            try {
+                                // Replace properties with double quotes to ensure valid JSON
+                                const jsonStr = str.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+                                return JSON.parse(jsonStr);
+                            } catch (e) {
+                                throw new Error(`Failed to safely evaluate: ${e.message}`);
+                            }
+                        };
+                        
+                        formData = safeEval(normalizedData);
+                        console.log('Parsed with safe eval successfully');
+                    } else {
+                        throw new Error('String is not a valid object literal');
+                    }
+                } catch (evalError) {
+                    console.error('Safe eval error:', evalError);
+                    
+                    // Last resort - try a direct Python dictionary parser
+                    const parsePythonDict = (str) => {
+                        // Remove outer braces
+                        str = str.trim().slice(1, -1);
+                        
+                        // Split into key-value pairs
+                        const pairs = str.split(/,(?=(?:[^"']*["'][^"']*["'])*[^"']*$)/).map(p => p.trim());
+                        
+                        const result = {};
+                        for (const pair of pairs) {
+                            // Split each pair into key and value
+                            const colonPos = pair.indexOf(':');
+                            if (colonPos === -1) continue;
+                            
+                            const key = pair.slice(0, colonPos).trim();
+                            const value = pair.slice(colonPos + 1).trim();
+                            
+                            // Clean up the key (remove quotes)
+                            const cleanKey = key.replace(/^["']|["']$/g, '');
+                            
+                            // Parse the value
+                            let parsedValue;
+                            
+                            if (value === 'True') parsedValue = true;
+                            else if (value === 'False') parsedValue = false;
+                            else if (value === 'None') parsedValue = null;
+                            else if (value.startsWith('[') && value.endsWith(']')) {
+                                // Handle arrays
+                                const arrayStr = value.slice(1, -1).trim();
+                                if (!arrayStr) {
+                                    parsedValue = [];
+                                } else {
+                                    parsedValue = arrayStr.split(/,(?=(?:[^"']*["'][^"']*["'])*[^"']*$)/)
+                                        .map(item => {
+                                            item = item.trim();
+                                            if (item === 'True') return true;
+                                            if (item === 'False') return false;
+                                            if (item === 'None') return null;
+                                            return item.replace(/^["']|["']$/g, '');
+                                        });
+                                }
+                            } else if (value.startsWith('{') && value.endsWith('}')) {
+                                // Recursively parse nested objects
+                                parsedValue = parsePythonDict(value);
+                            } else {
+                                // Handle strings
+                                parsedValue = value.replace(/^["']|["']$/g, '');
+                            }
+                            
+                            result[cleanKey] = parsedValue;
+                        }
+                        
+                        return result;
+                    };
+                    
+                    try {
+                        formData = parsePythonDict(cleanedData);
+                        console.log('Parsed with Python dict parser successfully');
+                    } catch (pyError) {
+                        console.error('Python dict parse error:', pyError);
+                        throw new Error('All parsing methods failed');
+                    }
+                }
+            }
+            
+            // Log the parsed data
+            console.log('Parsed data:', formData);
+            
+        } catch (e) {
+            console.error('Parsing error:', e);
+            
+            // For debugging - show the raw data in the modal
+            const container = document.getElementById('formDataContent');
+            container.innerHTML = '<div class="error-message">Error parsing data: ' + e.message + '</div>' +
+                '<div style="margin-top:15px; font-size:12px; background:#f0f0f0; padding:10px; border-radius:4px; white-space:pre-wrap; overflow:auto; max-height:300px;">' + 
+                formDataStr.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+            modal.style.display = 'block';
+            return;
+        }
+        
+        // Get the container and clear previous content
+        const container = document.getElementById('formDataContent');
+        container.innerHTML = '';
+        
+        // Create a more permissive check for valid data
+        if (!formData) {
+            container.innerHTML = '<div class="error-message">Invalid data format: Data is empty or null</div>';
+            modal.style.display = 'block';
+            return;
+        }
+        
+        // Extract data - handle both object notation and arrays
+        let headers, rows;
+        
+        if (formData.headers && Array.isArray(formData.headers)) {
+            headers = formData.headers;
+        } else {
+            // Default headers if not found
+            headers = [
+                'Evaluation Domain',
+                'Material / Procedure',
+                '1st Eval',
+                '2nd Eval',
+                '3rd Eval',
+                'Comments'
+            ];
+        }
+        
+        if (formData.rows && Array.isArray(formData.rows)) {
+            rows = formData.rows;
+        } else {
+            // Try to extract data from other formats or show empty
+            rows = [];
+        }
+        
+        // Create domain header (first column header is the domain name)
+        const domainName = headers[0] || 'Evaluation Domain';
+        const domainHeader = document.createElement('h3');
+        domainHeader.textContent = domainName;
+        domainHeader.style.background = '#2ecc71';
+        domainHeader.style.color = 'white';
+        domainHeader.style.padding = '12px 20px';
+        domainHeader.style.margin = '0 0 10px 0';
+        domainHeader.style.borderRadius = '8px 8px 0 0';
+        container.appendChild(domainHeader);
+        
+        // Create table
+        const table = document.createElement('table');
+        table.className = 'evaluation-data-table';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.border = '1px solid #ddd';
+        
+        // Create table header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        // Add column headers
+        headers.forEach((header, index) => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            
+            // Style the headers
+            if (index === 0) {
+                th.style.background = '#e8f6ef'; // Light green for first column
+            } else {
+                th.style.background = '#7ed6a7'; // Green for other columns
+            }
+            th.style.padding = '10px';
+            th.style.textAlign = 'center';
+            th.style.fontWeight = 'bold';
+            th.style.color = '#333';
+            th.style.border = '1px solid #ddd';
+            
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        
+        // Create table body
+        const tbody = document.createElement('tbody');
+        
+        // Add rows
+        if (!rows.length) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = headers.length;
+            td.textContent = 'No evaluation data available.';
+            td.style.textAlign = 'center';
+            td.style.padding = '15px';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        } else {
+            rows.forEach((row, rowIndex) => {
+                // Skip if not an array
+                if (!Array.isArray(row)) {
+                    console.warn('Invalid row format:', row);
+                    return;
+                }
+                
+                const tr = document.createElement('tr');
+                
+                // Style alternate rows
+                if (rowIndex % 2 === 1) {
+                    tr.style.background = '#f9f9f9';
+                }
+                
+                // Add cells
+                row.forEach((cell, cellIndex) => {
+                    const td = document.createElement('td');
+                    
+                    // Function to clean text content and remove \xa0 characters
+                    const cleanText = (text) => {
+                        if (text === null || text === undefined) return '';
+                        return String(text)
+                            .replace(/\xa0/g, ' ')  // Replace non-breaking spaces with regular spaces
+                            .replace(/\\xa0/g, ' '); // Replace escaped non-breaking spaces
+                    };
+                    
+                    // Handle different types of cells
+                    if (cellIndex === 0) {
+                        // Item number/description (first column)
+                        td.textContent = cleanText(cell);
+                        td.style.fontWeight = 'bold';
+                        td.style.padding = '10px';
+                        td.style.border = '1px solid #ddd';
+                    } 
+                    else if (cellIndex === 1) {
+                        // Material/Procedure (second column)
+                        td.innerHTML = cleanText(cell).replace(/\n/g, '<br>');
+                        td.style.padding = '10px';
+                        td.style.border = '1px solid #ddd';
+                        td.style.maxWidth = '300px';
+                    }
+                    else if (cellIndex >= 2 && cellIndex <= 4) {
+                        // Evaluation checkboxes (columns 3-5)
+                        td.style.textAlign = 'center';
+                        td.style.padding = '10px';
+                        td.style.border = '1px solid #ddd';
+                        
+                        if (cell === true || cell === 'True' || cell === 1 || cell === '1') {
+                            td.innerHTML = '<span style="color:#27ae60;font-size:1.5em;">&#10003;</span>'; // Checkmark
+                        } else {
+                            td.innerHTML = '<span style="color:#ccc;font-size:1.5em;">&#9633;</span>'; // Empty box
+                        }
+                    }
+                    else if (cellIndex === 5) {
+                        // Comments (last column)
+                        td.textContent = cleanText(cell);
+                        td.style.padding = '10px';
+                        td.style.border = '1px solid #ddd';
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                tbody.appendChild(tr);
+            });
+        }
+        
+        table.appendChild(tbody);
+        container.appendChild(table);
+        
+        // Show the modal
+        modal.style.display = 'block';
+    } catch (error) {
+        console.error('Error in showFormData:', error);
+        alert('Error displaying form data: ' + error.message);
+        const container = document.getElementById('formDataContent');
+        container.innerHTML = '<div class="error-message">Error displaying form data. Please try again.</div>';
+        modal.style.display = 'block';
+    }
+}
+
+closeBtn.onclick = function() {
+    modal.style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Add sidebar toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleSidebar');
+    
+    if (toggleButton) {
+        toggleButton.addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('active');
+            }
+        });
+    }
+});
+
+function showModelData(button) {
+    // Get modal elements
+    const modal = document.getElementById('modelDataModal');
+    const container = document.getElementById('modelDataContent');
+    
+    // Get data attributes
+    const childName = button.getAttribute('data-child-name');
+    const evaluationType = button.getAttribute('data-evaluation-type');
+    const evaluatorType = button.getAttribute('data-evaluator-type');
+    const eval1 = button.getAttribute('data-eval1');
+    const eval2 = button.getAttribute('data-eval2');
+    const eval3 = button.getAttribute('data-eval3');
+    const created = button.getAttribute('data-created');
+    const updated = button.getAttribute('data-updated');
+    const modelId = button.getAttribute('data-model-id');
+    
+    // Clean the container
+    container.innerHTML = '';
+    
+    // Build the model data display
+    const modelData = document.createElement('div');
+    
+    // Add header
+    const header = document.createElement('div');
+    header.className = 'model-data-header';
+    header.textContent = `${childName} - ${evaluationType}`;
+    modelData.appendChild(header);
+    
+    // Add fields
+    const addField = (label, value, className = '') => {
+        const field = document.createElement('div');
+        field.className = 'model-data-field';
+        
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'field-label';
+        labelDiv.textContent = label;
+        
+        const valueDiv = document.createElement('div');
+        valueDiv.className = `field-value ${className}`;
+        valueDiv.textContent = value;
+        
+        field.appendChild(labelDiv);
+        field.appendChild(valueDiv);
+        modelData.appendChild(field);
+    };
+    
+    // Add all model fields
+    addField('Model ID', modelId);
+    addField('Child Name', childName);
+    addField('Evaluation Type', evaluationType);
+    addField('Evaluator Type', evaluatorType);
+    addField('1st Eval Score', eval1, 'score-value');
+    addField('2nd Eval Score', eval2, 'score-value');
+    addField('3rd Eval Score', eval3, 'score-value');
+    
+    // Calculate total score and progress
+    const totalScore = parseInt(eval1) + parseInt(eval2) + parseInt(eval3);
+    addField('Total Score', totalScore, 'score-value');
+    
+    // Add timestamps
+    const timestamps = document.createElement('div');
+    timestamps.className = 'model-data-field timestamps';
+    timestamps.innerHTML = `<div class="field-label">Timestamps</div>
+                           <div class="field-value">
+                               Created: ${created}<br>
+                               Updated: ${updated}
+                           </div>`;
+    modelData.appendChild(timestamps);
+    
+    // Add to container
+    container.appendChild(modelData);
+    
+    // Show modal
+    modal.style.display = 'block';
+}
+
+function closeModelModal() {
+    document.getElementById('modelDataModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modelModal = document.getElementById('modelDataModal');
+    if (event.target == modelModal) {
+        modelModal.style.display = 'none';
+    }
+});
+</script>
+{% endblock %} 

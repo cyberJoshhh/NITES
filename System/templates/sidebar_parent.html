@@ -17,26 +17,22 @@
             <i class="fas fa-home"></i>
             <span>Dashboard</span>
         </a>
-        <a href="{% url 'student_profile' %}" class="sidebar-btn {% if request.path == '/student_profile/' %}active{% endif %}">
-            <i class="fas fa-user"></i>
-            <span>Pupil's Profile</span>
-        </a>
-        <a href="{% url 'student_performance' %}" class="sidebar-btn {% if request.path == '/student_performance/' %}active{% endif %}">
+        <a href="{% url 'student_full_report' %}" class="sidebar-btn {% if request.path == '/student_performance/' %}active{% endif %}">
             <i class="fas fa-chart-line"></i>
             <span>Performance Report</span>
+        </a>
+        <a href="{% url 'teacher_evaluations' %}" class="sidebar-btn {% if request.path == '/teacher-evaluations/' %}active{% endif %}">
+            <i class="fas fa-file-alt"></i>
+            <span>Teacher Evaluations</span>
         </a>
         <a href="{% url 'message_home' %}" class="sidebar-btn {% if request.path == '/messaging/' %}active{% endif %}">
             <i class="fas fa-envelope"></i>
             <span>Messages</span>
             <span class="notification-badge"></span>
         </a>
-        <a href="{% url 'evaluation_gross' %}" class="sidebar-btn {% if request.path == '/evaluation/gross/' %}active{% endif %}">
+        <a href="{% url 'parent_evaluation_tables' %}" class="sidebar-btn {% if request.path == '/system/parent-evaluation-tables/' %}active{% endif %}">
             <i class="fas fa-chart-bar"></i>
             <span>Evaluation</span>
-        </a>
-        <a href="{% url 'teacher_evaluation_pdfs' %}" class="sidebar-btn {% if request.path == '/teacher-evaluation-pdfs/' %}active{% endif %}">
-            <i class="fas fa-file-pdf"></i>
-            <span>Teacher Evaluations</span>
         </a>
         <a href="{% url 'account_settings' %}" class="sidebar-btn {% if request.path == '/account_settings/' %}active{% endif %}">
             <i class="fas fa-user-cog"></i>

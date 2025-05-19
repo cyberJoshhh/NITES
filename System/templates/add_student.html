@@ -61,7 +61,7 @@
         {% endif %}
 
         <div class="card">
-            <form method="POST" action="{% url 'add_student' %}">
+            <form method="POST" action="{% url 'add_student' %}" id="student-form">
                 {% csrf_token %}
                 <div class="form-grid">
                     <!-- Student Information -->
@@ -69,7 +69,7 @@
                         <h3><i class="fas fa-child"></i> Student Information</h3>
                         <div class="form-group">
                             <label for="child_name" class="required-field">Child's Name</label>
-                            <input type="text" id="child_name" name="child_name" class="form-control" required>
+                            <input type="text" id="child_name" name="child_name" class="form-control" required onchange="updateUsername()">
                         </div>
                         <div class="form-group">
                             <label for="sex" class="required-field">Sex</label>
@@ -178,26 +178,53 @@
                     
                     <!-- Login Information -->
                     <div class="form-section">
-                        <h3><i class="fas fa-lock"></i> Login Information</h3>
+                        <h3><i class="fas fa-envelope"></i> Enter email address for account confirmation</h3>
+                        
                         <div class="form-group">
-                            <label for="username" class="required-field">Username</label>
-                            <input type="text" id="username" name="username" class="form-control" required>
+                            <label for="gmail" class="required-field">Email</label>
+                            <input type="email" id="gmail" name="gmail" class="form-control" required>
                             <p class="form-note">This will be used for parent login</p>
-                        </div>
-                        <div class="form-group">
-                            <label for="password" class="required-field">Password</label>
-                            <input type="password" id="password" name="password" class="form-control" required>
-                            <p class="form-note">Choose a secure password</p>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="submit-btn">Register Student</button>
+                <button type="submit" class="submit-btn" id="submit-btn">Register Student</button>
             </form>
         </div>
     </div>
 
     <!-- Include sidebar JavaScript -->
     <script src="{% static 'js/sidebar.js' %}"></script>
+    
+    <!-- Form submission protection -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('student-form');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            if (form && submitBtn) {
+                // Flag to prevent multiple submissions
+                let formSubmitted = false;
+                
+                form.addEventListener('submit', function(e) {
+                    if (formSubmitted) {
+                        // Prevent duplicate submission
+                        e.preventDefault();
+                        return false;
+        }
+        
+                    // Mark form as submitted
+                    formSubmitted = true;
+                    
+                    // Disable submit button
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Processing...';
+                    
+                    // Allow the form to submit
+                    return true;
+                });
+            }
+        });
+    </script>
 </body>
 </html> 

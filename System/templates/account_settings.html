@@ -2,142 +2,158 @@
 {% load static %}
 
 {% block content %}
+<!-- Add Font Awesome and Google Fonts -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
 <link rel="stylesheet" href="{% static 'css/pdash.css' %}">
-<div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-        <h3>OB Pagsasarili</h3>
-    </div>
-    <div class="sidebar-content">
-        <a href="{% url 'dashboard' %}" class="sidebar-btn">
-            <i class="fas fa-home"></i>
-            <span>Dashboard</span>
-        </a>
-        <a href="{% url 'student_profile' %}" class="sidebar-btn">
-            <i class="fas fa-user"></i>
-            <span>Pupil's Profile</span>
-        </a>
-        <a href="{% url 'student_performance' %}" class="sidebar-btn">
-            <i class="fas fa-chart-line"></i>
-            <span>Performance Report</span>
-        </a>
-        <a href="{% url 'message_home' %}" class="sidebar-btn">
-            <i class="fas fa-envelope"></i>
-            <span>Messages</span>
-            <span class="notification-badge"></span>
-        </a>
-        <a href="{% url 'evaluation_gross' %}" class="sidebar-btn">
-            <i class="fas fa-chart-bar"></i>
-            <span>Evaluation</span>
-        </a>
-        <a href="{% url 'teacher_evaluation_pdfs' %}" class="sidebar-btn">
-            <i class="fas fa-file-pdf"></i>
-            <span>Teacher Evaluations</span>
-        </a>
-        <a href="{% url 'account_settings' %}" class="sidebar-btn active">
-            <i class="fas fa-user-cog"></i>
-            <span>Manage Account</span>
-        </a>
-        <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-        </a>
-    </div>
-</div>
-<div class="account-settings-container">
-    <div class="settings-header">
-        <h1>Account Settings</h1>
-        <p>Manage your account information and password</p>
-    </div>
 
-    {% if success_message %}
-    <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i> {{ success_message }}
-    </div>
-    {% endif %}
-    
-    {% if error_message %}
-    <div class="alert alert-danger">
-        <i class="fas fa-exclamation-circle"></i> {{ error_message }}
-    </div>
-    {% endif %}
+<div class="dashboard-container">
+    <!-- Add this button for mobile menu toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
 
-    <div class="settings-card">
-        <div class="settings-card-header">
-            <i class="fas fa-user"></i>
-            <h2>Profile Information</h2>
+    <!-- Add this for the sidebar overlay -->
+    <div id="sidebarOverlay"></div>
+
+    <!-- Create the sidebar structure -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3 style="color: white;">OB Pagsasarili</h3>
         </div>
-        <div class="settings-card-body">
-            <div class="profile-info">
-                <div class="profile-avatar">
-                    <div class="avatar-circle">
-                        <span class="initials">{{ user.username|slice:":1"|upper }}</span>
-                    </div>
+        <div class="sidebar-content">
+            <a href="{% url 'dashboard' %}" class="sidebar-btn">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'performance' %}" class="sidebar-btn">
+                <i class="fas fa-chart-line"></i>
+                <span>Performance Report</span>
+            </a>
+            <a href="{% url 'message_home' %}" class="sidebar-btn">
+                <i class="fas fa-envelope"></i>
+                <span>Messages</span>
+                <span class="notification-badge"></span>
+            </a>
+            <a href="{% url 'parent_evaluation_tables' %}" class="sidebar-btn">
+                <i class="fas fa-chart-bar"></i>
+                <span>Evaluation</span>
+            </a>
+            <a href="{% url 'teacher_evaluations' %}" class="sidebar-btn">
+                <i class="fas fa-file-pdf"></i>
+                <span>Teacher Evaluations</span>
+            </a>
+            <a href="{% url 'account_settings' %}" class="sidebar-btn active">
+                <i class="fas fa-user-cog"></i>
+                <span>Manage Account</span>
+            </a>
+            <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main-content">
+        <div class="account-settings-container">
+            <div class="settings-header">
+                <h1>Account Settings</h1>
+                <p>Manage your account information and password</p>
+            </div>
+
+            {% if success_message %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> {{ success_message }}
+            </div>
+            {% endif %}
+            
+            {% if error_message %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> {{ error_message }}
+            </div>
+            {% endif %}
+
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <i class="fas fa-user"></i>
+                    <h2>Profile Information</h2>
                 </div>
-                <div class="profile-details">
-                    <h3>{{ user.username }}</h3>
-                    <p>Member since: {{ user.date_joined|date:"F d, Y" }}</p>
+                <div class="settings-card-body">
+                    <div class="profile-info">
+                        <div class="profile-avatar">
+                            <div class="avatar-circle">
+                                <span class="initials">{{ user.username|slice:":1"|upper }}</span>
+                            </div>
+                        </div>
+                        <div class="profile-details">
+                            <h3>{{ user.username }}</h3>
+                            <p>Member since: {{ user.date_joined|date:"F d, Y" }}</p>
+                        </div>
+                    </div>
+                    <form method="post" action="{% url 'account_settings' %}" class="settings-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_username">
+                        
+                        <div class="form-group">
+                            <label for="new_username">New Username</label>
+                            <input type="text" id="new_username" name="new_username" class="form-control" required>
+                        </div>
+                        
+                        <button type="submit" class="btn-update">Update Username</button>
+                    </form>
                 </div>
             </div>
-            <form method="post" action="{% url 'account_settings' %}" class="settings-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="change_username">
-                
-                <div class="form-group">
-                    <label for="new_username">New Username</label>
-                    <input type="text" id="new_username" name="new_username" class="form-control" required>
-                </div>
-                
-                <button type="submit" class="btn-update">Update Username</button>
-            </form>
-        </div>
-    </div>
 
-    <div class="settings-card">
-        <div class="settings-card-header">
-            <i class="fas fa-lock"></i>
-            <h2>Security</h2>
-        </div>
-        <div class="settings-card-body">
-            <form method="post" action="{% url 'account_settings' %}" class="settings-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="change_password">
-                
-                <div class="form-group">
-                    <label for="current_password">Current Password</label>
-                    <div class="password-input-group">
-                        <input type="password" id="current_password" name="current_password" class="form-control" required>
-                        <button type="button" class="toggle-password" data-target="current_password">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <i class="fas fa-lock"></i>
+                    <h2>Security</h2>
                 </div>
-                
-                <div class="form-group">
-                    <label for="new_password">New Password</label>
-                    <div class="password-input-group">
-                        <input type="password" id="new_password" name="new_password" class="form-control" required>
-                        <button type="button" class="toggle-password" data-target="new_password">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <div class="password-strength">
-                        <div id="password-strength-meter"></div>
-                        <span id="password-strength-text">Password must be at least 8 characters long</span>
-                    </div>
+                <div class="settings-card-body">
+                    <form method="post" action="{% url 'account_settings' %}" class="settings-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+                        
+                        <div class="form-group">
+                            <label for="current_password">Current Password</label>
+                            <div class="password-input-group">
+                                <input type="password" id="current_password" name="current_password" class="form-control" required>
+                                <button type="button" class="toggle-password" data-target="current_password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new_password">New Password</label>
+                            <div class="password-input-group">
+                                <input type="password" id="new_password" name="new_password" class="form-control" required>
+                                <button type="button" class="toggle-password" data-target="new_password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength">
+                                <div id="password-strength-meter"></div>
+                                <span id="password-strength-text">Password must be at least 8 characters long</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm New Password</label>
+                            <div class="password-input-group">
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                                <button type="button" class="toggle-password" data-target="confirm_password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-update">Update Password</button>
+                    </form>
                 </div>
-                
-                <div class="form-group">
-                    <label for="confirm_password">Confirm New Password</label>
-                    <div class="password-input-group">
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
-                        <button type="button" class="toggle-password" data-target="confirm_password">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn-update">Update Password</button>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -349,6 +365,7 @@
     }
 </style>
 
+<script src="{% static 'js/sidebar.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Toggle password visibility
@@ -409,6 +426,25 @@
                 alert('Passwords do not match!');
             }
         });
+
+        // Mobile menu toggle functionality
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        if (mobileMenuToggle && sidebar && sidebarOverlay) {
+            // Function to toggle sidebar
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            }
+            
+            // Add click event to mobile menu toggle
+            mobileMenuToggle.addEventListener('click', toggleSidebar);
+            
+            // Close sidebar when clicking overlay
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
     });
 </script>
 {% endblock %} 

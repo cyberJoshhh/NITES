@@ -1,29 +1,15 @@
 from django.urls import path
+from django.shortcuts import redirect
 from . import views
 from .views import (
-    add_student, dashboard, login_view, logout_view, evaluation_checklist,
-    submit_cognitive_evaluation, submit_expressive_evaluation,
-    submit_fine_evaluation, submit_gross_evaluation,
-    submit_receptive_evaluation,
-    submit_selfhelp_evaluation,
-    performance_view,
+    add_student, dashboard, login_view, logout_view,
+    edit_student,
 
-    
-    evaluation_gross,
-    evaluation_self,
-    evaluation_expressive,
-    evaluation_cognitive,
-    evaluation_social,
+    get_evaluation_tables,
+    view_evaluation_table,
+    save_evaluation,
+    load_evaluation_data,
 
-    
-    ParentEvaluationSelf,
-    ParentEvaluationGross,
-    ParentEvaluationSocial,
-    ParentEvaluationExpressive,
-    ParentEvaluationCognitive,
-
-
-    student_profile,
     get_student_performance_data,
     upload_pdf,
     delete_pdf,
@@ -34,7 +20,16 @@ from .views import (
     create_announcement,
     view_announcements,
     delete_announcement,
-    teacher_evaluation_pdfs,
+    student_full_report,
+    evaluation_management,
+    get_saved_evaluation_forms,
+    get_evaluation_form_data,
+    update_evaluation_form,
+    parent_evaluation_tables,
+    teacher_evaluation_tables,
+    get_all_students,
+    readonly_evaluation_forms,
+    get_evaluation_data,
 )
 
 urlpatterns = [
@@ -44,34 +39,9 @@ urlpatterns = [
     path('dashboard/', dashboard, name='dashboard'),
     path('add_student/', add_student, name='add_student'),
     path('logout/', logout_view, name='logout'),
-    path('evaluation-checklist/', evaluation_checklist, name='evaluation_checklist'),
-    path('submit-cognitive-evaluation/', submit_cognitive_evaluation, name='submit_cognitive_evaluation'),
-    path('submit-expressive-evaluation/', submit_expressive_evaluation, name='submit_expressive_evaluation'),
-    path('submit-fine-evaluation/', submit_fine_evaluation, name='submit_fine_evaluation'),
-    path('submit-gross-evaluation/', submit_gross_evaluation, name='submit_gross_evaluation'),
-    path('submit-receptive-evaluation/', submit_receptive_evaluation, name='submit_receptive_evaluation'),
-    path('submit-selfhelp-evaluation/', submit_selfhelp_evaluation, name='submit_selfhelp_evaluation'),
-    path('performance/', performance_view, name='performance'),
     path('pdf_view/', pdf_view, name='pdf_view'),
-    path('evaluation-gross/', evaluation_gross, name='evaluation_gross'),
-    path('evaluation-self/', evaluation_self, name='evaluation_self'),
-    path('evaluation-expressive/', evaluation_expressive, name='evaluation_expressive'),
-    path('evaluation-cognitive/', evaluation_cognitive, name='evaluation_cognitive'),
-    path('evaluation-social/', evaluation_social, name='evaluation_social'),
-    path('parent-evaluation-self/', ParentEvaluationSelf, name='parent_evaluation_self'),
-    path('parent-evaluation-self/<int:student_id>/', ParentEvaluationSelf, name='parent_evaluation_self_with_id'),
-    path('parent-evaluation-gross/', ParentEvaluationGross, name='parent_evaluation_gross'),
-    path('parent-evaluation-gross/<int:student_id>/', ParentEvaluationGross, name='parent_evaluation_gross_with_id'),
-    path('parent-evaluation-social/', ParentEvaluationSocial, name='parent_evaluation_social'),
-    path('parent-evaluation-social/<int:student_id>/', ParentEvaluationSocial, name='parent_evaluation_social_with_id'),
-    path('parent-evaluation-expressive/', ParentEvaluationExpressive, name='parent_evaluation_expressive'),
-    path('parent-evaluation-expressive/<int:student_id>/', ParentEvaluationExpressive, name='parent_evaluation_expressive_with_id'),
-    path('parent-evaluation-cognitive/', ParentEvaluationCognitive, name='parent_evaluation_cognitive'),
-    path('parent-evaluation-cognitive/<int:student_id>/', ParentEvaluationCognitive, name='parent_evaluation_cognitive_with_id'),
-    path('comparison/', views.comparison_view, name='comparison_view'),
-    path('student-performance/', views.student_performance, name='student_performance'),
-    path('student-profile/', student_profile, name='student_profile'),
-    path('api/student-performance-data/', get_student_performance_data, name='get_student_performance_data'),
+    path('student-full-report/', student_full_report, name='student_full_report'),
+    path('get-student-performance-data/', get_student_performance_data, name='get_student_performance_data'),
     path('upload-pdf/', upload_pdf, name='upload_pdf'),
     path('delete-pdf/<int:pdf_id>/', delete_pdf, name='delete_pdf'),
     path('manage-account/', manage_account, name='manage_account'),
@@ -82,10 +52,30 @@ urlpatterns = [
     path('create-announcement/', create_announcement, name='create_announcement'),
     path('announcements/', view_announcements, name='view_announcements'),
     path('delete-announcement/<int:announcement_id>/', delete_announcement, name='delete_announcement'),
-    
-    # Evaluation Reports URL
-    path('evaluation-reports/', views.evaluation_reports, name='evaluation_reports'),
-    
-    # Teacher Evaluation PDFs URL
-    path('teacher-evaluation-pdfs/', teacher_evaluation_pdfs, name='teacher_evaluation_pdfs'),
+    path('get-recent-announcements/', views.get_recent_announcements, name='get_recent_announcements'),   
+    # Calendar URLs
+    path('events/', views.get_events, name='get_events'),
+    path('events/add/', views.add_event, name='add_event'),
+    path('events/delete/<int:event_id>/', views.delete_event, name='delete_event'),
+    # Student Edit URLs
+
+    path('get-all-students/', get_all_students, name='get_all_students'),
+    path('edit-student/', edit_student, name='edit_student'),
+    # Evaluation Management URL
+    path('evaluation-management/', evaluation_management, name='evaluation_management'),
+    path('save-evaluation-management/', views.save_evaluation_management, name='save_evaluation_management'),  
+    # Saved Evaluation Forms URLs
+    path('get-saved-evaluation-forms/', get_saved_evaluation_forms, name='get_saved_evaluation_forms'),
+    path('get-evaluation-form-data/<int:form_id>/', get_evaluation_form_data, name='get_evaluation_form_data'),
+    path('update-evaluation-form/<int:form_id>/', update_evaluation_form, name='update_evaluation_form'),
+    path('get-evaluation-tables/', get_evaluation_tables, name='get_evaluation_tables'),
+    path('view-evaluation-table/<int:table_id>/', view_evaluation_table, name='view_evaluation_table'),
+    path('parent-evaluation-tables/', parent_evaluation_tables, name='parent_evaluation_tables'),
+    path('teacher-evaluation-tables/', teacher_evaluation_tables, name='teacher_evaluation_tables'),
+    path('save-evaluation/<int:table_id>/', save_evaluation, name='save_evaluation'),
+    path('load-evaluation-data/<int:table_id>/', load_evaluation_data, name='load_evaluation_data'),
+    path('readonly-evaluation-forms/', views.readonly_evaluation_forms, name='readonly_evaluation_forms'),
+    path('get-evaluation-data/', get_evaluation_data, name='get_evaluation_data'),
+    path('evaluation-gross/', lambda request: redirect('student_full_report'), name='evaluation_gross'),
+    path('teacher-evaluations/', views.view_teacher_evaluations, name='teacher_evaluations'),
 ]

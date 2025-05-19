@@ -15,12 +15,6 @@
             <i class="fas fa-home"></i>
             <span>Dashboard</span>
         </a>
-
-        <a href="{% url 'add_student' %}" class="sidebar-btn {% if request.path == '/add_student/' %}active{% endif %}">
-            <i class="fas fa-user-plus"></i>
-            <span>Add Pupil</span>
-        </a>
-
         <a href="{% url 'message_home' %}" class="sidebar-btn {% if request.path == '/messaging/' %}active{% endif %}">
             <i class="fas fa-envelope"></i>
             <span>Messages</span>
@@ -30,11 +24,13 @@
             <i class="fas fa-file-pdf"></i>
             <span>Learning Materials/Exercises</span>
         </a>
-        
-        <a href="{% url 'create_announcement' %}" class="sidebar-btn {% if request.path == '/create_announcement/' %}active{% endif %}">
-            <i class="fas fa-bullhorn"></i>
-            <span>Create Announcement</span>
+
+        <a href="{% url 'teacher_evaluation_tables' %}" class="sidebar-btn {% if request.path == '/system/teacher-evaluation-tables/' %}active{% endif %}">
+            <i class="fas fa-file-alt"></i>
+            <span>Evaluate Pupils</span>
         </a>
+        
+        
         
         <div class="dropdown">
             <a href="#" class="sidebar-btn dropdown-toggle" id="managementDropdown">
@@ -45,15 +41,19 @@
             <div class="dropdown-menu">
                 <a href="{% url 'manage_account' %}" class="dropdown-item">
                     <i class="fas fa-user-cog"></i>
-                    <span>Manage account</span>
+                    <span>Account Management</span>
                 </a>
                 <a href="{% url 'manage_student_session' %}" class="dropdown-item">
                     <i class="fas fa-users-cog"></i>
-                    <span>Manage pupil's session</span>
+                    <span>Pupil's Management</span>
+                </a>
+                <a href="{% url 'evaluation_management' %}" class="dropdown-item">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>Evaluation Management</span>
                 </a>
             </div>
         </div>
-        <a href="{% url 'evaluation_reports' %}" class="sidebar-btn {% if request.path == '/evaluation_reports/' %}active{% endif %}">
+        <a href="{% url 'readonly_evaluation_forms' %}" class="sidebar-btn {% if request.path == '/readonly-evaluation-forms/' %}active{% endif %}">
             <i class="fas fa-file-alt"></i>
             <span>Evaluation Report</span>
         </a>

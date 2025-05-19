@@ -59,10 +59,10 @@
             </div>
 
             <!-- Results Area -->
-            {% if pdfs %}
+            {% if evaluations %}
                 <div class="results-wrapper full-width animate__animated animate__fadeIn">
                     <div class="results-grid">
-                        {% for eval_type, reports in pdfs.items %}
+                        {% for eval_type, data in evaluations.items %}
                             <div class="evaluation-card animate__animated animate__fadeInUp">
                                 <div class="card-header">
                                     <div class="header-content">
@@ -79,52 +79,59 @@
                                                 <i class="fas fa-comments" style="color: rgb(255, 159, 64);"></i>
                                             {% elif eval_type == 'cognitive' %}
                                                 <i class="fas fa-brain" style="color: rgb(255, 205, 86);"></i>
+                                            {% elif eval_type == 'social' %}
+                                                <i class="fas fa-users" style="color: rgb(255, 99, 132);"></i>
                                             {% endif %}
                                         </div>
                                         <div class="header-text">
                                             <h3>
-                                                {% for type_value, type_label in evaluation_types %}
-                                                    {% if type_value == eval_type %}
-                                                        {{ type_label }}
-                                                    {% endif %}
-                                                {% endfor %}
+                                                {{ data.label }}
                                             </h3>
                                             <span class="report-count">
-                                                {{ reports|length }} Report{% if reports|length != 1 %}s{% endif %}
+                                                {{ data.reports|length }} Evaluation{% if data.reports|length != 1 %}s{% endif %}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    {% if reports %}
+                                    {% if data.reports %}
                                         <div class="reports-list">
-                                            {% for report in reports %}
+                                            {% for report in data.reports %}
                                                 <div class="report-item">
                                                     <div class="report-info">
                                                         <div class="date-info">
                                                             <i class="fas fa-calendar"></i>
-                                                            <span>{{ report.uploaded_at|date:"M d, Y" }}</span>
+                                                            <span>{{ report.created_at|date:"M d, Y" }}</span>
                                                         </div>
                                                     </div>
                                                     <div class="scores-container">
                                                         <div class="score-item">
                                                             <span class="score-label">1st</span>
-                                                            <span class="score-pill">{{ report.eval1_score }}</span>
+                                                            <span class="score-pill">{{ report.first_eval_score }}</span>
                                                         </div>
                                                         <div class="score-item">
                                                             <span class="score-label">2nd</span>
-                                                            <span class="score-pill">{{ report.eval2_score }}</span>
+                                                            <span class="score-pill">{{ report.second_eval_score }}</span>
                                                         </div>
                                                         <div class="score-item">
                                                             <span class="score-label">3rd</span>
-                                                            <span class="score-pill">{{ report.eval3_score }}</span>
+                                                            <span class="score-pill">{{ report.third_eval_score }}</span>
                                                         </div>
                                                     </div>
                                                     <div class="report-actions">
-                                                        <a href="{{ report.file.url }}" class="action-button pulse-on-hover" target="_blank">
-                                                            <i class="fas fa-file-pdf"></i>
-                                                            View Report
-                                                        </a>
+                                                        {% if report.data %}
+                                                            <button class="action-button view-data-btn pulse-on-hover" onclick="showFormData(this)" 
+                                                                data-form-data="{{ report.data|safe }}"
+                                                                data-child-name="{{ student_name }}"
+                                                                data-eval-type="{{ data.label }}"
+                                                                data-eval-date="{{ report.created_at|date:'Y-m-d' }}"
+                                                                data-first-score="{{ report.first_eval_score }}"
+                                                                data-second-score="{{ report.second_eval_score }}"
+                                                                data-third-score="{{ report.third_eval_score }}">
+                                                                <i class="fas fa-eye"></i>
+                                                                View Details
+                                                            </button>
+                                                        {% endif %}
                                                     </div>
                                                 </div>
                                             {% endfor %}
@@ -132,7 +139,7 @@
                                     {% else %}
                                         <div class="empty-state">
                                             <i class="fas fa-file-alt"></i>
-                                            <p>No reports found</p>
+                                            <p>No evaluations found</p>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -143,7 +150,7 @@
             {% else %}
                 <div class="empty-state large">
                     <i class="fas fa-file-alt"></i>
-                    <p>No evaluation reports available at this time</p>
+                    <p>No evaluation data available at this time</p>
                     <span class="helper-text">Check back later as your teacher uploads evaluation reports</span>
                 </div>
             {% endif %}
@@ -151,8 +158,102 @@
     </div>
 </div>
 
+<!-- Modal for displaying form data -->
+<div id="formDataModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Evaluation Details</h2>
+        <form id="evaluationForm" class="evaluation-form">
+            <div class="form-header">
+                <div class="form-field">
+                    <label>Child Name:</label>
+                    <span id="childNameField"></span>
+                </div>
+                <div class="form-field">
+                    <label>Evaluation Type:</label>
+                    <span id="evalTypeField"></span>
+                </div>
+                <div class="form-field">
+                    <label>Evaluator:</label>
+                    <span id="evaluatorField"></span>
+                </div>
+                <div class="form-field">
+                    <label>Date:</label>
+                    <span id="dateField"></span>
+                </div>
+            </div>
+            
+            <div class="evaluation-scores">
+                <div class="score-box">
+                    <label>1st Evaluation Score</label>
+                    <div class="score-display" id="firstEvalScore"></div>
+                </div>
+                <div class="score-box">
+                    <label>2nd Evaluation Score</label>
+                    <div class="score-display" id="secondEvalScore"></div>
+                </div>
+                <div class="score-box">
+                    <label>3rd Evaluation Score</label>
+                    <div class="score-display" id="thirdEvalScore"></div>
+                </div>
+            </div>
+            
+            <table class="evaluation-table">
+                <thead>
+                    <tr>
+                        <th>Criteria</th>
+                        <th>1st Evaluation</th>
+                        <th>2nd Evaluation</th>
+                        <th>3rd Evaluation</th>
+                    </tr>
+                </thead>
+                <tbody id="criteriaTableBody">
+                    <!-- Criteria rows will be populated here -->
+                </tbody>
+            </table>
+            
+            <div class="form-footer">
+                <div id="notesSection" class="notes-section">
+                    <h3>Notes</h3>
+                    <div id="notesContent"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Debug: Log all evaluation data
+        console.log('Page loaded successfully');
+        
+        // Safely examine data in button elements
+        const dataButtons = document.querySelectorAll('.view-data-btn');
+        console.log('Found evaluation buttons:', dataButtons.length);
+        
+        // Check if there are buttons and log the first one's data
+        if (dataButtons.length > 0) {
+            console.log('First button data attributes:', {
+                childName: dataButtons[0].getAttribute('data-child-name'),
+                evalType: dataButtons[0].getAttribute('data-eval-type'),
+                firstScore: dataButtons[0].getAttribute('data-first-score'),
+                secondScore: dataButtons[0].getAttribute('data-second-score'),
+                thirdScore: dataButtons[0].getAttribute('data-third-score')
+            });
+            
+            // Attempt to parse the data-form-data attribute
+            try {
+                const rawData = dataButtons[0].getAttribute('data-form-data');
+                console.log('Raw data:', rawData);
+                if (rawData) {
+                    const parsedData = JSON.parse(rawData);
+                    console.log('Parsed data:', parsedData);
+                }
+            } catch (e) {
+                console.error('Error parsing data:', e);
+            }
+        }
+        
         // Toggle sidebar in mobile view
         const toggleSidebarBtn = document.getElementById('toggleSidebar');
         const sidebar = document.getElementById('sidebar');
@@ -162,7 +263,141 @@
                 sidebar.classList.toggle('active');
             });
         }
+        
+        // Modal functionality
+        const modal = document.getElementById('formDataModal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+        
+        // When the user clicks on the close button, close the modal
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+        
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
     });
+    
+    // Function to show form data in the modal
+    function showFormData(button) {
+        try {
+            console.log("Debug - Starting showFormData function");
+            const formDataStr = button.getAttribute('data-form-data');
+            console.log("Debug - Raw data attribute:", formDataStr);
+            
+            let formData;
+            try {
+                // Try to parse the data-form-data attribute
+                formData = JSON.parse(formDataStr);
+                console.log("Debug - Successfully parsed JSON data:", formData);
+            } catch (jsonError) {
+                console.error("Debug - JSON parsing failed:", jsonError);
+        
+                // Check if the data is already an object (double-parsed)
+                if (typeof formDataStr === 'object' && formDataStr !== null) {
+                    formData = formDataStr;
+                    console.log("Debug - Using data directly as object");
+                } else {
+                    // Create a simple object with rows if parsing failed
+                    formData = {
+                        rows: [{ name: "Data could not be parsed", eval1: false, eval2: false, eval3: false }],
+                        notes: "Error parsing JSON data. Please contact support."
+                    };
+                }
+            }
+            
+            const modal = document.getElementById('formDataModal');
+            const criteriaTableBody = document.getElementById('criteriaTableBody');
+            
+            // Clear previous content
+            criteriaTableBody.innerHTML = '';
+            
+            // Set form header information from data attributes
+            document.getElementById('childNameField').textContent = button.getAttribute('data-child-name') || '';
+            document.getElementById('evalTypeField').textContent = button.getAttribute('data-eval-type') || '';
+            document.getElementById('evaluatorField').textContent = (formData.evaluator_type || 'Teacher');
+            document.getElementById('dateField').textContent = button.getAttribute('data-eval-date') || '';
+            
+            // Set evaluation scores from data attributes
+            document.getElementById('firstEvalScore').textContent = button.getAttribute('data-first-score') || '0';
+            document.getElementById('secondEvalScore').textContent = button.getAttribute('data-second-score') || '0';
+            document.getElementById('thirdEvalScore').textContent = button.getAttribute('data-third-score') || '0';
+            
+            // Debug information
+            console.log("Debug - Header information set");
+            console.log("Debug - Child Name:", button.getAttribute('data-child-name'));
+            console.log("Debug - Eval Type:", button.getAttribute('data-eval-type'));
+            console.log("Debug - Evaluator:", formData.evaluator_type || 'Teacher');
+            console.log("Debug - Date:", button.getAttribute('data-eval-date'));
+            
+            // Populate criteria table
+            if (formData.rows && Array.isArray(formData.rows)) {
+                console.log("Debug - Processing rows:", formData.rows.length);
+                formData.rows.forEach((row, index) => {
+                    console.log(`Debug - Processing row ${index}:`, row);
+                    const tr = document.createElement('tr');
+                    
+                    // Add criteria cell
+                    const criteriaCell = document.createElement('td');
+                    criteriaCell.textContent = row.name || '';
+                    criteriaCell.className = 'criteria-cell';
+                    tr.appendChild(criteriaCell);
+                    
+                    // Add cells for each evaluation
+                    const eval1Cell = document.createElement('td');
+                    eval1Cell.innerHTML = row.eval1 ? '✓' : '✗';
+                    eval1Cell.className = row.eval1 ? 'passed' : 'failed';
+                    tr.appendChild(eval1Cell);
+                    
+                    const eval2Cell = document.createElement('td');
+                    eval2Cell.innerHTML = row.eval2 ? '✓' : '✗';
+                    eval2Cell.className = row.eval2 ? 'passed' : 'failed';
+                    tr.appendChild(eval2Cell);
+                    
+                    const eval3Cell = document.createElement('td');
+                    eval3Cell.innerHTML = row.eval3 ? '✓' : '✗';
+                    eval3Cell.className = row.eval3 ? 'passed' : 'failed';
+                    tr.appendChild(eval3Cell);
+                    
+                    criteriaTableBody.appendChild(tr);
+                });
+            } else {
+                console.warn("Debug - No rows data found or rows is not an array:", formData);
+                // Add a placeholder row for missing data
+                const tr = document.createElement('tr');
+                const messageCell = document.createElement('td');
+                messageCell.colSpan = 4;
+                messageCell.textContent = "No detailed evaluation criteria available";
+                messageCell.style.textAlign = "center";
+                messageCell.style.padding = "20px";
+                tr.appendChild(messageCell);
+                criteriaTableBody.appendChild(tr);
+            }
+            
+            // Display notes if available
+            const notesSection = document.getElementById('notesSection');
+            const notesContent = document.getElementById('notesContent');
+            
+            if (formData.notes) {
+                console.log("Debug - Notes found:", formData.notes);
+                notesContent.textContent = formData.notes;
+                notesSection.style.display = 'block';
+        } else {
+                console.log("Debug - No notes found");
+                notesSection.style.display = 'none';
+        }
+        
+        // Display the modal
+        modal.style.display = "block";
+            console.log("Debug - Modal displayed");
+        } catch (error) {
+            console.error("Error in showFormData:", error);
+            alert("There was an error displaying the evaluation data. Please try again or contact support.");
+        }
+    }
 </script>
 
 <style>
@@ -411,6 +646,8 @@
         text-decoration: none;
         font-size: 0.9rem;
         transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
     }
     
     .action-button:hover {
@@ -419,10 +656,187 @@
         color: white;
     }
     
+    /* Modal styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 800px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    
+    /* Evaluation table styling */
+    .evaluation-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .evaluation-table th,
+    .evaluation-table td {
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        text-align: center;
+    }
+    
+    .evaluation-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .evaluation-table .criteria-cell {
+        text-align: left;
+        font-weight: 500;
+    }
+    
+    .evaluation-table .passed {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .evaluation-table .failed {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .results-grid {
             grid-template-columns: 1fr;
+        }
+        
+        .modal-content {
+            width: 95%;
+            margin: 10% auto;
+        }
+    }
+    
+    /* Form styling for evaluation modal */
+    .evaluation-form {
+        padding: 15px 0;
+    }
+    
+    .form-header {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .form-field {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-field label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .form-field span {
+        font-weight: 600;
+        color: #212529;
+    }
+    
+    .evaluation-scores {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 25px;
+    }
+    
+    .score-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 30%;
+    }
+    
+    .score-box label {
+        font-size: 0.9rem;
+        color: #495057;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+    
+    .score-display {
+        background-color: #e9ecef;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2d6a4f;
+    }
+    
+    .notes-section {
+        margin-top: 25px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .notes-section h3 {
+        font-size: 1rem;
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #495057;
+    }
+    
+    #notesContent {
+        white-space: pre-line;
+        line-height: 1.5;
+    }
+    
+    /* Mobile responsiveness for form */
+    @media (max-width: 768px) {
+        .form-header {
+            grid-template-columns: 1fr;
+        }
+        
+        .evaluation-scores {
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .score-box {
+            width: 80%;
         }
     }
 </style>

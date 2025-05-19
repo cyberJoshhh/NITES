@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Pupil's Session</title>
+    {% csrf_token %}
     <!-- Add Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Add Google Fonts -->
@@ -158,7 +159,7 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="page-header">
-            <h1 class="page-title">Manage Pupil's Session</h1>
+            <h1 class="page-title">Pupil's Management</h1>
         </div>
         
         <div class="content-body">
@@ -172,42 +173,15 @@
             <div class="alert alert-danger">
                 {{ error_message }}
             </div>
-            {% endif %}
-            
-            <div class="card">
-                <div class="card-header">
-                    <h2>Pupil's Information</h2>
-                </div>
-                <div class="card-body">
-                    {% if student %}
-                        <p><strong>Pupil's Name:</strong> {{ student.child_name }}</p>
-                        <p><strong>Current Session:</strong> {{ student.session_no }}</p>
-                        
-                        <form method="post" action="{% url 'manage_student_session' %}">
-                            {% csrf_token %}
-                            <div class="form-group">
-                                <label for="session_no">Update Session Number:</label>
-                                <select class="form-control" id="session_no" name="session_no">
-                                    <option value="1" {% if student.session_no == 1 %}selected{% endif %}>Session 1</option>
-                                    <option value="2" {% if student.session_no == 2 %}selected{% endif %}>Session 2</option>
-                                    <option value="3" {% if student.session_no == 3 %}selected{% endif %}>Session 3</option>
-                                </select>
-                            </div>
-                            
-                            <button type="submit" class="btn-primary">Update Session</button>
-                        </form>
-                    {% else %}
-                        <div class="alert alert-info">
-                            <p>This account is not associated with a pupil's profile.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            
+            {% endif %}    
             {% if is_staff %}
             <div class="card">
                 <div class="card-header">
                     <h2>Manage All Pupils</h2>
+                    <a href="{% url 'add_student' %}" class="btn-primary" style="float: right;">
+                        <i class="fas fa-user-plus"></i>
+                        Add New Pupil
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="form-group">
@@ -223,7 +197,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for student in all_students %}
+                            {% for student in all_students|dictsort:"child_name" %}
                             <tr>
                                 <td>{{ student.child_name }}</td>
                                 <td>{{ student.username }}</td>
@@ -237,8 +211,12 @@
                                             <option value="2" {% if student.session_no == 2 %}selected{% endif %}>2</option>
                                             <option value="3" {% if student.session_no == 3 %}selected{% endif %}>3</option>
                                         </select>
-                                        <button type="submit" class="btn-primary btn-sm">Update</button>
+                                        <button type="submit" class="btn-primary btn-sm">Update session</button>
                                     </form>
+                                    <button type="button" onclick="openEditModal('{{ student.child_name|escapejs }}')" class="btn-primary btn-sm" style="margin-left: 5px;">
+                                        <i class="fas fa-edit"></i>
+                                        Edit Info
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -250,8 +228,210 @@
         </div>
     </div>
 
+    <!-- Edit Student Modal -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1" role="dialog" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editStudentModalLabel">Edit Student Information</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editStudentForm" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" id="student_id" name="student_id">
+                        
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <h4>Basic Information</h4>
+                                <div class="form-group">
+                                    <label for="child_name">Child's Name</label>
+                                    <input type="text" class="form-control" id="child_name" name="child_name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sex">Sex</label>
+                                    <select class="form-control" id="sex" name="sex" required>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dob">Date of Birth</label>
+                                    <input type="date" class="form-control" id="dob" name="dob" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="handedness">Handedness</label>
+                                    <select class="form-control" id="handedness" name="handedness" required>
+                                        <option value="Right">Right</option>
+                                        <option value="Left">Left</option>
+                                        <option value="Ambidextrous">Ambidextrous</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="studying">Currently Studying</label>
+                                    <select class="form-control" id="studying" name="studying" required>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Family Information -->
+                            <div class="col-md-6">
+                                <h4>Family Information</h4>
+                                <div class="form-group">
+                                    <label for="num_siblings">Number of Siblings</label>
+                                    <input type="number" class="form-control" id="num_siblings" name="num_siblings" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="birth_order">Birth Order</label>
+                                    <input type="text" class="form-control" id="birth_order" name="birth_order" required>
+                                </div>
+                                
+                                <h5>Father's Information</h5>
+                                <div class="form-group">
+                                    <label for="father_name">Father's Name</label>
+                                    <input type="text" class="form-control" id="father_name" name="father_name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="father_age">Father's Age</label>
+                                    <input type="number" class="form-control" id="father_age" name="father_age" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="father_occupation">Father's Occupation</label>
+                                    <input type="text" class="form-control" id="father_occupation" name="father_occupation" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="father_education">Father's Education</label>
+                                    <input type="text" class="form-control" id="father_education" name="father_education" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <!-- Mother's Information -->
+                            <div class="col-md-6">
+                                <h5>Mother's Information</h5>
+                                <div class="form-group">
+                                    <label for="mother_name">Mother's Name</label>
+                                    <input type="text" class="form-control" id="mother_name" name="mother_name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mother_age">Mother's Age</label>
+                                    <input type="number" class="form-control" id="mother_age" name="mother_age" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mother_occupation">Mother's Occupation</label>
+                                    <input type="text" class="form-control" id="mother_occupation" name="mother_occupation" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mother_education">Mother's Education</label>
+                                    <input type="text" class="form-control" id="mother_education" name="mother_education" required>
+                                </div>
+                            </div>
+                            
+                            <!-- Address Information -->
+                            <div class="col-md-6">
+                                <h4>Address Information</h4>
+                                <div class="form-group">
+                                    <label for="address">Address</label>
+                                    <input type="text" class="form-control" id="address" name="address" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="barangay">Barangay</label>
+                                    <input type="text" class="form-control" id="barangay" name="barangay" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="municipality">Municipality</label>
+                                    <input type="text" class="form-control" id="municipality" name="municipality" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="province">Province</label>
+                                    <input type="text" class="form-control" id="province" name="province" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="region">Region</label>
+                                    <input type="text" class="form-control" id="region" name="region" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <!-- Account Information -->
+                            <div class="col-md-6">
+                                <h4>Account Information</h4>
+                                <div class="form-group">
+                                    <label for="gmail">Gmail</label>
+                                    <input type="email" class="form-control" id="gmail" name="gmail" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="username">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveStudentChanges()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Tables Modal -->
+    <div class="modal fade" id="evaluationTablesModal" tabindex="-1" role="dialog" aria-labelledby="evaluationTablesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="evaluationTablesModalLabel">Evaluation Tables</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="evaluationTablesList">
+                        <!-- Tables will be loaded here dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Table Modal -->
+    <div class="modal fade" id="viewTableModal" tabindex="-1" role="dialog" aria-labelledby="viewTableModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewTableModalLabel">View Evaluation Table</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="viewTableContent">
+                        <!-- Table content will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveTableChanges()">Submit Evaluation</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS and dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js"></script>
     
     <!-- Real-time search functionality -->
     <script>
@@ -278,5 +458,506 @@
             });
         });
     </script>
+
+    <!-- Add this script section at the bottom of the file -->
+    <script>
+    function openEditModal(studentName) {
+        // Add console log to verify the student name
+        console.log('Opening edit modal for student:', studentName);
+        
+        // Fetch student data with proper error handling - using the correct URL
+        fetch(`/system/edit-student/?name=${encodeURIComponent(studentName)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                console.log('Response received:', response);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Student data received:', data);
+                if (data.status === 'error') {
+                    throw new Error(data.message || 'Failed to fetch student data');
+                }
+                
+                // Populate form fields with null checks
+                const setFieldValue = (fieldId, value) => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.value = value || '';
+                    } else {
+                        console.warn(`Field ${fieldId} not found`);
+                    }
+                };
+
+                setFieldValue('student_id', studentName);
+                setFieldValue('child_name', data.child_name);
+                setFieldValue('sex', data.sex);
+                setFieldValue('dob', data.dob);
+                setFieldValue('handedness', data.handedness);
+                setFieldValue('studying', data.studying);
+                setFieldValue('num_siblings', data.num_siblings);
+                setFieldValue('birth_order', data.birth_order);
+                setFieldValue('father_name', data.father_name);
+                setFieldValue('father_age', data.father_age);
+                setFieldValue('father_occupation', data.father_occupation);
+                setFieldValue('father_education', data.father_education);
+                setFieldValue('mother_name', data.mother_name);
+                setFieldValue('mother_age', data.mother_age);
+                setFieldValue('mother_occupation', data.mother_occupation);
+                setFieldValue('mother_education', data.mother_education);
+                setFieldValue('address', data.address);
+                setFieldValue('barangay', data.barangay);
+                setFieldValue('municipality', data.municipality);
+                setFieldValue('province', data.province);
+                setFieldValue('region', data.region);
+                setFieldValue('gmail', data.gmail);
+                setFieldValue('username', data.username);
+                
+                // Show the modal
+                $('#editStudentModal').modal('show');
+            })
+            .catch(error => {
+                console.error('Error fetching student data:', error);
+                alert(`Failed to fetch student data: ${error.message}`);
+            });
+    }
+
+    function saveStudentChanges() {
+        const formData = new FormData(document.getElementById('editStudentForm'));
+        const studentName = document.getElementById('student_id').value;
+        
+        // Add the student name to the form data
+        formData.append('student_name', studentName);
+        
+        fetch('/system/edit-student/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text().then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If the response is not JSON (e.g., a redirect), just return
+                    return { redirected: true };
+                }
+            });
+        })
+        .then(data => {
+            if (data.redirected) {
+                // Show success message before reload
+                showSuccessMessage('Student information updated successfully!');
+                // Wait a moment to show the message before reloading
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else if (data.status === 'success') {
+                showSuccessMessage('Student information updated successfully!');
+                $('#editStudentModal').modal('hide');
+                // Wait a moment to show the message before reloading
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showErrorMessage(data.message || 'Failed to update student information');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorMessage('Failed to update student information: ' + error.message);
+        });
+    }
+
+    // Add these helper functions for showing messages
+    function showSuccessMessage(message) {
+        // Remove any existing message
+        removeExistingMessages();
+        
+        // Create success alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success fade show';
+        alertDiv.role = 'alert';
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.style.textAlign = 'center';
+        alertDiv.innerHTML = `<strong>Success!</strong> ${message}`;
+        
+        // Add to document
+        document.body.appendChild(alertDiv);
+        
+        // Auto dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 3000);
+    }
+
+    function showErrorMessage(message) {
+        // Remove any existing message
+        removeExistingMessages();
+        
+        // Create error alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger fade show';
+        alertDiv.role = 'alert';
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.style.textAlign = 'center';
+        alertDiv.innerHTML = `<strong>Error!</strong> ${message}`;
+        
+        // Add to document
+        document.body.appendChild(alertDiv);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+    }
+
+    function removeExistingMessages() {
+        // Remove any existing alerts
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        });
+    }
+
+    function openEvaluationTables(studentName) {
+        // Fetch evaluation tables
+        fetch(`/system/get-evaluation-tables/?student=${encodeURIComponent(studentName)}`)
+            .then(response => response.json())
+            .then(data => {
+                const tablesList = document.getElementById('evaluationTablesList');
+                tablesList.innerHTML = ''; // Clear existing content
+
+                if (data.tables && data.tables.length > 0) {
+                    // Filter tables to only show those with evaluator_type = TEACHER
+                    const teacherTables = data.tables.filter(table => 
+                        table.evaluator_type && table.evaluator_type.toUpperCase() === 'TEACHER'
+                    );
+                    
+                    if (teacherTables.length > 0) {
+                        teacherTables.forEach(table => {
+                            const tableCard = document.createElement('div');
+                            tableCard.className = 'card mb-3';
+                            tableCard.innerHTML = `
+                                <div class="card-body">
+                                    <h5 class="card-title">${table.name}</h5>
+                                    <p class="card-text">Last updated: ${new Date(table.updated_at).toLocaleString()}</p>
+                                    <button onclick="viewTable('${table.id}', '${studentName}')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-eye"></i> View Table
+                                    </button>
+                                </div>
+                            `;
+                            tablesList.appendChild(tableCard);
+                        });
+                    } else {
+                        tablesList.innerHTML = '<p class="text-center">No teacher evaluation tables available.</p>';
+                    }
+                } else {
+                    tablesList.innerHTML = '<p class="text-center">No evaluation tables available.</p>';
+                }
+
+                // Show the modal
+                $('#evaluationTablesModal').modal('show');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to fetch evaluation tables');
+            });
+    }
+
+    function viewTable(tableId, studentName) {
+        // Hide the evaluation tables modal
+        $('#evaluationTablesModal').modal('hide');
+
+        // Fetch table data
+        fetch(`/system/view-evaluation-table/${tableId}/?student_name=${encodeURIComponent(studentName)}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+
+            const table = data.table;
+            const content = document.getElementById('viewTableContent');
+            if (!content) {
+                console.error('viewTableContent element not found');
+                return;
+            }
+            
+            // Set student name in the modal for later use
+            document.getElementById('viewTableModalLabel').dataset.studentName = studentName;
+            document.getElementById('viewTableModalLabel').textContent = `Evaluating: ${studentName} - ${table.name}`;
+            
+            // Show message if viewing existing evaluation
+            if (table.has_existing_evaluation) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+                    <strong>Existing Evaluation Found!</strong> 
+                    You are viewing an existing evaluation for ${studentName}.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                content.insertBefore(alertDiv, content.firstChild);
+            }
+            
+            // Store evaluation type for later use
+            content.dataset.evaluationType = table.evaluation_type;
+            
+            // Create the evaluation form
+            let html = `<h4>${table.name}</h4>`;
+            html += '<div id="evaluationForm">';
+            html += '<table class="table table-bordered">';
+            
+            // Add headers
+            if (table.data.headers && table.data.headers.length > 0) {
+                html += '<tr>';
+                table.data.headers.forEach(header => {
+                    html += `<th>${header}</th>`;
+                });
+                html += '</tr>';
+            }
+            
+            // Add data rows
+            if (table.data.rows && table.data.rows.length > 0) {
+                table.data.rows.forEach(row => {
+                    html += '<tr>';
+                    row.forEach((cell, index) => {
+                        if (typeof cell === 'boolean') {
+                            html += `<td><input type="checkbox" class="form-check-input" ${cell ? 'checked' : ''}></td>`;
+                        } else {
+                            html += `<td>${cell}</td>`;
+                        }
+                    });
+                    html += '</tr>';
+                });
+            }
+            
+            // Add total row
+            html += '<tr class="table-info"><td colspan="2">Total Score</td>';
+            const evalColumns = [];
+            if (table.data.rows && table.data.rows.length > 0) {
+                table.data.rows[0].forEach((cell, index) => {
+                    if (typeof cell === 'boolean') {
+                        evalColumns.push(index);
+                        html += '<td class="total-score">-</td>';
+                    }
+                });
+            }
+            html += '<td></td></tr>';
+            
+            html += '</table>';
+            html += '</div>';
+            
+            // Store eval columns for score calculation
+            content.dataset.evalColumns = JSON.stringify(evalColumns);
+            content.dataset.tableId = table.id;
+            
+            // Set the HTML and show modal
+            content.innerHTML = html;
+            $('#viewTableModal').modal('show');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading table: ' + error.message);
+        });
+    }
+
+    function saveTableChanges() {
+        const tableId = document.getElementById('viewTableContent').dataset.tableId;
+        const tableName = document.querySelector('#viewTableContent h4').textContent.trim();
+        const childName = document.querySelector('#viewTableModalLabel').dataset.studentName || '';
+        const evaluationType = document.getElementById('viewTableContent').dataset.evaluationType;
+        const rows = [];
+        
+        // Get the current table data
+        const table = document.querySelector('#evaluationForm table');
+        const headerCount = table.rows[0].cells.length;
+        
+        // Process each row except the total row
+        for (let i = 1; i < table.rows.length - 1; i++) {
+            const row = table.rows[i];
+            const rowData = [];
+            
+            // Process each cell
+            for (let j = 0; j < headerCount; j++) {
+                const cell = row.cells[j];
+                const checkbox = cell.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    rowData.push(checkbox.checked);
+                } else {
+                    rowData.push(cell.textContent.trim());
+                }
+            }
+            rows.push(rowData);
+        }
+
+        // Calculate total scores manually without using updateTotalScores
+        const evalColumns = JSON.parse(document.getElementById('viewTableContent').dataset.evalColumns);
+        const evalScores = new Array(evalColumns.length).fill(0);
+        rows.forEach(row => {
+            evalColumns.forEach((colIndex, evalIndex) => {
+                if (row[colIndex] === true) {
+                    evalScores[evalIndex]++;
+                }
+            });
+        });
+
+        // Save changes to server
+        fetch(`/system/view-evaluation-table/${tableId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                data: {
+                    headers: Array.from(table.rows[0].cells).map(cell => cell.textContent.trim()),
+                    rows: rows
+                },
+                evaluation_data: {
+                    child_name: childName,
+                    evaluation_type: evaluationType,
+                    evaluator_type: 'TEACHER',
+                    first_eval_score: evalScores[0] || 0,
+                    second_eval_score: evalScores[1] || 0,
+                    third_eval_score: evalScores[2] || 0,
+                    date_evaluated: new Date().toISOString().split('T')[0]
+                }
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+                    <strong>Success!</strong> 
+                    Evaluation saved for ${childName}.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.getElementById('viewTableContent').insertBefore(alertDiv, document.getElementById('evaluationForm'));
+            } else {
+                throw new Error(data.message || 'Failed to save evaluation');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving changes: ' + error.message);
+        });
+    }
+
+    // Add this function to handle session update form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const sessionForms = document.querySelectorAll('form[action="/system/manage-student-session/"]');
+        
+        sessionForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    // Show success message
+                    showSessionMessage('Session updated successfully!', 'success');
+                    // Reload after a delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showSessionMessage('Failed to update session: ' + error.message, 'error');
+                });
+            });
+        });
+    });
+
+    // Add function for showing session update messages
+    function showSessionMessage(message, type) {
+        // Remove any existing message
+        removeExistingMessages();
+        
+        // Create alert div
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} fade show`;
+        alertDiv.role = 'alert';
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.style.textAlign = 'center';
+        alertDiv.innerHTML = `<strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}`;
+        
+        // Add to document
+        document.body.appendChild(alertDiv);
+        
+        // Auto dismiss after delay
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, type === 'success' ? 3000 : 5000);
+    }
+
+    // Update the existing removeExistingMessages function to handle both types of alerts
+    function removeExistingMessages() {
+        // Remove any existing alerts
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        });
+    }
+    </script>
 </body>
-</html> 
+</html>

@@ -1,0 +1,963 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Parent Evaluation Tables{% endblock %}
+
+{% block extra_css %}
+<!-- Add Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* Dashboard and Sidebar Styles */
+    .dashboard-container {
+        display: flex;
+        min-height: 100vh;
+        background-color: #f8f9fa;
+    }
+
+    .main-content {
+        flex: 1;
+        padding: 20px;
+        margin-left: 250px; /* Width of the sidebar */
+        transition: margin-left 0.3s ease;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+        width: 250px;
+        height: 100vh;
+        background: linear-gradient(180deg, #2d6a4f 0%, #1b4332 100%);
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-header h3 {
+        color: white;
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .sidebar-content {
+        padding: 20px 0;
+    }
+
+    .sidebar-btn {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .sidebar-btn:hover, .sidebar-btn.active {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        border-left-color: #4ade80;
+    }
+
+    .sidebar-btn i {
+        width: 24px;
+        margin-right: 10px;
+    }
+
+    .logout-btn {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        width: 100%;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .logout-btn i {
+        width: 24px;
+        margin-right: 10px;
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-menu-toggle {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1001;
+        background: #2d6a4f;
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    /* Sidebar Overlay */
+    #sidebarOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        .mobile-menu-toggle {
+            display: block;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .main-content {
+            margin-left: 0;
+            padding-top: 70px;
+        }
+
+        #sidebarOverlay.active {
+            display: block;
+        }
+    }
+
+    /* Your existing styles */
+    :root {
+        --primary-green: #2ecc71;
+        --primary-green-dark: #27ae60;
+        --primary-green-light: #a9dfbf;
+        --text-dark: #2c3e50;
+        --text-light: #7f8c8d;
+        --background-light: #f8f9fa;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .parent-evaluation-page {
+        background-color: var(--background-light);
+        color: var(--text-dark);
+        font-family: 'Poppins', sans-serif;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .parent-evaluation-page .table-card {
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 25px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        overflow: hidden;
+    }
+    
+    .parent-evaluation-page .table-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .parent-evaluation-page .table-card-header {
+        background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+        color: white;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .parent-evaluation-page .table-card-header::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: translate(50%, -50%);
+    }
+    
+    .parent-evaluation-page .table-card-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .parent-evaluation-page .table-card-body {
+        padding: 25px;
+        background-color: white;
+    }
+    
+    .parent-evaluation-page .btn-view {
+        background: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 12px 24px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+    
+    .parent-evaluation-page .btn-view:hover {
+        background: var(--primary-green-dark) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
+    
+    .parent-evaluation-page .page-header {
+        margin-bottom: 40px;
+        padding-bottom: 15px;
+        position: relative;
+        color: var(--text-dark);
+        font-weight: 700;
+    }
+
+    .parent-evaluation-page .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: var(--primary-green);
+        border-radius: 2px;
+    }
+    
+    .parent-evaluation-page .no-tables-message {
+        text-align: center;
+        padding: 60px 30px;
+        background-color: white;
+        border-radius: 16px;
+        margin-top: 40px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .parent-evaluation-page .no-tables-message h3 {
+        color: var(--text-dark);
+        margin-bottom: 15px;
+    }
+
+    .parent-evaluation-page .no-tables-message p {
+        color: var(--text-light);
+    }
+
+    /* Modal Styles */
+    .parent-evaluation-page .modal-content {
+        border-radius: 16px;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .parent-evaluation-page .modal-header {
+        background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+        color: white;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        padding: 20px;
+    }
+
+    .parent-evaluation-page .modal-title {
+        font-weight: 600;
+    }
+
+    .parent-evaluation-page .modal-body {
+        padding: 25px;
+    }
+
+    .parent-evaluation-page .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 1rem;
+    }
+
+    .parent-evaluation-page .table th {
+        background-color: var(--primary-green-light);
+        color: var(--text-dark);
+        font-weight: 600;
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .parent-evaluation-page .table td {
+        background-color: white;
+        padding: 12px;
+        vertical-align: middle;
+        text-align: center;
+        border: 1px solid #dee2e6;
+    }
+
+    .parent-evaluation-page .table td textarea {
+        width: 100%;
+        min-height: 40px;
+        max-height: 60px;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
+    .parent-evaluation-page .table td textarea:focus {
+        border-color: var(--primary-green);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+    }
+
+    .parent-evaluation-page .table td input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: var(--primary-green);
+        vertical-align: middle;
+    }
+
+    .parent-evaluation-page .table tbody tr:hover td {
+        background-color: rgba(46, 204, 113, 0.05);
+    }
+
+    .parent-evaluation-page .row-score {
+        font-weight: 600;
+        color: var(--primary-green-dark);
+        background: white !important;
+        white-space: nowrap;
+    }
+
+    .parent-evaluation-page .modal-dialog {
+        max-width: 90%;
+        margin: 1.75rem auto;
+    }
+
+    .parent-evaluation-page .modal-body {
+        padding: 1.5rem;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .parent-evaluation-page .table-responsive {
+        margin: 0;
+        padding: 0;
+        border: none;
+    }
+
+    .parent-evaluation-page .score-summary {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .parent-evaluation-page .score-summary h5 {
+        color: var(--text-dark);
+        margin-bottom: 10px;
+    }
+
+    .parent-evaluation-page .score-summary .score-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-green);
+    }
+
+    .parent-evaluation-page .save-changes {
+        background: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        margin-top: 15px !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .parent-evaluation-page .save-changes:hover {
+        background: var(--primary-green-dark) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .parent-evaluation-page .table-card {
+            margin-bottom: 20px;
+        }
+        
+        .parent-evaluation-page .table-card-header {
+            padding: 15px;
+        }
+        
+        .parent-evaluation-page .table-card-body {
+            padding: 20px;
+        }
+
+        .parent-evaluation-page .modal-dialog {
+            max-width: 95%;
+            margin: 1rem auto;
+        }
+
+        .parent-evaluation-page .table th,
+        .parent-evaluation-page .table td {
+            padding: 8px;
+            font-size: 0.9rem;
+        }
+
+        .parent-evaluation-page .table td textarea {
+            min-height: 30px;
+            max-height: 40px;
+        }
+    }
+
+    .parent-evaluation-page .table-card-body .score-display {
+        background: var(--background-light);
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .parent-evaluation-page .table-card-body .score-display .score-label {
+        color: var(--text-dark);
+        font-weight: 500;
+    }
+
+    .parent-evaluation-page .table-card-body .score-display .score-value {
+        color: var(--primary-green);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .parent-evaluation-page .table-card-body .score-display .score-max {
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .parent-evaluation-page .table-card-body .score-display .score-percentage {
+        color: var(--primary-green);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .parent-evaluation-page .table td.disabled,
+    .parent-evaluation-page .table th.disabled {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #6c757d;
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+    }
+
+    .parent-evaluation-page .table td.disabled .checkbox-wrapper {
+        pointer-events: none !important;
+        cursor: not-allowed !important;
+    }
+
+    .parent-evaluation-page .table td.disabled input[type="checkbox"] {
+        pointer-events: none !important;
+        cursor: not-allowed !important;
+        opacity: 0.5 !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        background-color: #e9ecef !important;
+        border-color: #ced4da !important;
+    }
+
+    .parent-evaluation-page .table td.disabled input[type="checkbox"]:checked {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+    }
+
+    .parent-evaluation-page .table td.disabled input[type="checkbox"]:hover {
+        cursor: not-allowed !important;
+    }
+
+    .parent-evaluation-page .table td.disabled input[type="checkbox"]:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .parent-evaluation-page .table .total-score-row {
+        background-color: #f8f9fa;
+        font-weight: 500;
+    }
+
+    .parent-evaluation-page .table .total-score-row td {
+        padding: 12px;
+        text-align: center;
+        border-top: 2px solid #dee2e6;
+    }
+
+    .parent-evaluation-page .table .total-score-row td.disabled {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Include the parent sidebar -->
+{% include 'sidebar_parent.html' %}
+
+<div class="dashboard-container">
+    <div class="main-content">
+        <div class="parent-evaluation-page">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <h1 class="page-header">Parent Evaluation Tables</h1>
+                        
+                        <!-- Add hidden input for student name -->
+                        <input type="hidden" id="student_name" value="{{ student_name }}">
+                        
+                        {% if tables %}
+                            <div class="row">
+                                {% for table in tables %}
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="table-card">
+                                            <div class="table-card-header">
+                                                <h4>{{ table.name }}</h4>
+                                            </div>
+                                            <div class="table-card-body">
+                                                <p><strong>Updated:</strong> {{ table.updated_at|date:"F d, Y" }}</p>
+                                                <div class="score-display">
+                                                    <span class="score-label">Score:</span>
+                                                    <div>
+                                                        <span class="score-value" id="score-{{ table.id }}">0</span>
+                                                        <span class="score-max">/ <span id="max-score-{{ table.id }}">0</span></span>
+                                                        <span class="score-percentage" id="percentage-{{ table.id }}">(0%)</span>
+                                                    </div>
+                                                </div>
+                                                <button class="btn-view" onclick="viewTable({{ table.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                    Start Evaluation
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="no-tables-message">
+                                <h3>No evaluation tables available</h3>
+                                <p>There are currently no parent evaluation tables configured in the system.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal for viewing table -->
+            <div class="modal fade" id="viewTableModal" tabindex="-1" aria-labelledby="viewTableModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="viewTableModalLabel">Evaluation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <h4 id="tableName"></h4>
+                            <div class="table-responsive">
+                                <div id="tableContainer"></div>
+                            </div>
+                            <div class="score-summary">
+                                <h5>Total Score: <span class="score-value" id="totalScore">0</span> / <span id="maxScore">0</span> (<span id="scorePercentage">0%</span>)</h5>
+                            </div>
+                            <button class="save-changes" onclick="saveEvaluation()">
+                                <i class="fas fa-save"></i> Submit Evaluation
+                            </button>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentTableId = null;
+    let evaluationData = null;
+    let originalTableData = null; // Store original table data structure
+
+    function viewTable(tableId) {
+        currentTableId = tableId;
+        
+        // First, get the table structure
+        fetch(`/system/view-evaluation-table/${tableId}/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Make a deep copy of the original table data
+                originalTableData = JSON.parse(JSON.stringify(data.table.data));
+                // Start with the original table structure
+                evaluationData = JSON.parse(JSON.stringify(originalTableData));
+                
+                console.log("Original table structure:", {
+                    headers: originalTableData.headers,
+                    rowCount: originalTableData.rows ? originalTableData.rows.length : 0,
+                    disabled: originalTableData.disabled_columns
+                });
+                
+                // Save the evaluation table name in a data attribute
+                const tableName = data.table.name;
+                document.getElementById('tableName').textContent = tableName;
+                document.getElementById('tableName').dataset.originalName = tableName;
+                
+                // Then, load any existing evaluation data
+                return fetch(`/system/load-evaluation-data/${tableId}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+            } else {
+                throw new Error('Failed to load table structure');
+            }
+        })
+        .then(response => response.json())
+        .then(evalData => {
+            // If we have existing evaluation data
+            if (evalData.status === 'success' && evalData.data && evalData.data.rows) {
+                console.log("Loaded existing evaluation data with", evalData.data.rows.length, "rows");
+                
+                // Update only the rows that exist in the saved data
+                // This preserves any new rows from the original table structure
+                const existingRows = evalData.data.rows;
+                for (let i = 0; i < existingRows.length && i < evaluationData.rows.length; i++) {
+                    evaluationData.rows[i] = existingRows[i];
+                }
+                
+                console.log("After merging:", {
+                    originalRows: originalTableData.rows.length,
+                    currentRows: evaluationData.rows.length
+                });
+            } else {
+                console.log("No existing evaluation data found, using original table structure");
+            }
+            
+            // Now render the table
+            let tableHtml = '<table class="table">';
+            
+            // Add headers
+            tableHtml += '<thead><tr>';
+            evaluationData.headers.forEach((header, index) => {
+                const isEvalCol = header.includes('Eval');
+                const isDisabled = isEvalCol && evaluationData.disabled_columns && 
+                    evaluationData.disabled_columns.some(col => {
+                        const evalNum = parseInt(header.match(/\d+/)[0]);
+                        return col.index === evalNum - 1 && col.disabled;
+                    });
+                tableHtml += `<th class="${isDisabled ? 'disabled' : ''}">${header}</th>`;
+            });
+            tableHtml += '</tr></thead>';
+            
+            // Add rows
+            tableHtml += '<tbody>';
+            let totalCheckboxes = 0;
+            let checkedCheckboxes = 0;
+            
+            evaluationData.rows.forEach((row, rowIndex) => {
+                tableHtml += '<tr>';
+                row.forEach((cell, cellIndex) => {
+                    if (typeof cell === 'boolean') {
+                        const headerCell = evaluationData.headers[cellIndex];
+                        const isEvalCol = headerCell && headerCell.includes('Eval');
+                        const isDisabled = isEvalCol && evaluationData.disabled_columns && 
+                            evaluationData.disabled_columns.some(col => {
+                                const evalNum = parseInt(headerCell.match(/\d+/)[0]);
+                                return col.index === evalNum - 1 && col.disabled;
+                            });
+                        
+                        if (!isDisabled) {
+                            totalCheckboxes++;
+                            if (cell) checkedCheckboxes++;
+                        }
+                        
+                        tableHtml += `<td class="${isDisabled ? 'disabled' : ''}">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" 
+                                    class="evaluation-checkbox" 
+                                    data-row="${rowIndex}" 
+                                    data-col="${cellIndex}"
+                                    ${cell ? 'checked' : ''} 
+                                    ${isDisabled ? 'disabled' : ''}
+                                    onchange="updateScore()">
+                            </div>
+                        </td>`;
+                    } else if (cellIndex === row.length - 1) {
+                        tableHtml += `<td>
+                            <textarea class="evaluation-comment" 
+                                data-row="${rowIndex}" 
+                                data-col="${cellIndex}" 
+                                placeholder="Add your comments here...">${cell || ''}</textarea>
+                        </td>`;
+                    } else {
+                        tableHtml += `<td>${cell}</td>`;
+                    }
+                });
+                tableHtml += '</tr>';
+            });
+            
+            tableHtml += '</tbody></table>';
+            
+            document.getElementById('tableContainer').innerHTML = tableHtml;
+            
+            // Update scores
+            const percentage = Math.round((checkedCheckboxes / totalCheckboxes) * 100);
+            document.getElementById('totalScore').textContent = checkedCheckboxes;
+            document.getElementById('maxScore').textContent = totalCheckboxes;
+            document.getElementById('scorePercentage').textContent = `${percentage}%`;
+            
+            // Update card scores
+            document.getElementById(`score-${currentTableId}`).textContent = checkedCheckboxes;
+            document.getElementById(`max-score-${currentTableId}`).textContent = totalCheckboxes;
+            document.getElementById(`percentage-${currentTableId}`).textContent = `(${percentage}%)`;
+            
+            // Show the modal
+            const viewTableModal = new bootstrap.Modal(document.getElementById('viewTableModal'));
+            viewTableModal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while loading the evaluation: ' + error.message);
+        });
+    }
+
+    function updateScore() {
+        // Count all checkboxes, even disabled ones for consistency with save function
+        const checkedCheckboxes = document.querySelectorAll('.evaluation-checkbox:checked').length;
+        const totalCheckboxes = document.querySelectorAll('.evaluation-checkbox').length;
+        const percentage = Math.round((checkedCheckboxes / totalCheckboxes) * 100);
+
+        // Update modal score
+        document.getElementById('totalScore').textContent = checkedCheckboxes;
+        document.getElementById('maxScore').textContent = totalCheckboxes;
+        document.getElementById('scorePercentage').textContent = `${percentage}%`;
+
+        // Update card score if we're in a modal
+        if (currentTableId) {
+            document.getElementById(`score-${currentTableId}`).textContent = checkedCheckboxes;
+            document.getElementById(`max-score-${currentTableId}`).textContent = totalCheckboxes;
+            document.getElementById(`percentage-${currentTableId}`).textContent = `(${percentage}%)`;
+        }
+
+        // Update column totals
+        const evalColumns = evaluationData.headers.filter(h => h.includes('Eval')).length;
+        const evalColumnTotals = new Array(evalColumns).fill(0);
+        const evalColumnMax = new Array(evalColumns).fill(0);
+
+        // Count all checkboxes for each evaluation column, including disabled ones
+        document.querySelectorAll('.evaluation-checkbox').forEach(checkbox => {
+            const evalIndex = parseInt(checkbox.dataset.eval);
+            if (!isNaN(evalIndex)) {
+                evalColumnMax[evalIndex]++;
+                if (checkbox.checked) {
+                    evalColumnTotals[evalIndex]++;
+                }
+            }
+        });
+
+        // Update the total score row
+        evalColumnTotals.forEach((total, index) => {
+            const totalCell = document.getElementById(`eval-total-${index}`);
+            if (totalCell) {
+                const percentage = evalColumnMax[index] ? 
+                    Math.round((total / evalColumnMax[index]) * 100) : 0;
+                totalCell.innerHTML = `<strong>${total}/${evalColumnMax[index]} (${percentage}%)</strong>`;
+            }
+        });
+    }
+
+    function saveEvaluation() {
+        if (!currentTableId || !evaluationData) return;
+
+        // Get student name from hidden input
+        const studentName = document.getElementById('student_name').value;
+        if (!studentName) {
+            alert('Error: Student name not found');
+            return;
+        }
+
+        // Get the table name and convert to evaluation type
+        const tableNameElement = document.getElementById('tableName');
+        const tableName = tableNameElement.dataset.originalName || tableNameElement.textContent;
+        
+        // Set evaluation type based on the table name
+        const evaluationType = tableName.toUpperCase().replace(/\s+/g, '_');
+        console.log('Using table name for evaluation type:', tableName, '->', evaluationType);
+
+        // Collect all checkbox states and comments
+        const checkboxes = document.querySelectorAll('.evaluation-checkbox');
+        const comments = document.querySelectorAll('.evaluation-comment');
+        
+        // Calculate scores for each evaluation
+        const evalScores = [0, 0, 0]; // For first, second, and third evaluations
+        const evalMaxScores = [0, 0, 0]; // Maximum possible scores for each evaluation
+        
+        // Get all headers to identify which column is which evaluation
+        const evalColumns = [];
+        evaluationData.headers.forEach((header, index) => {
+            if (header.toLowerCase().includes('eval')) {
+                const evalNum = parseInt(header.match(/\d+/)[0]) - 1;
+                evalColumns.push({index: index, evalNum: evalNum});
+            }
+        });
+        
+        // Calculate scores - include all checkboxes, even disabled ones
+        checkboxes.forEach(checkbox => {
+            const col = parseInt(checkbox.dataset.col);
+            
+            // Find which evaluation this checkbox belongs to
+            const evalColumn = evalColumns.find(ec => ec.index === col);
+            if (evalColumn) {
+                evalMaxScores[evalColumn.evalNum]++;
+                if (checkbox.checked) {
+                    evalScores[evalColumn.evalNum]++;
+                }
+            }
+        });
+
+        // Update the evaluation data rows with current checkbox states
+        // Include all checkboxes, even if they're disabled
+        checkboxes.forEach(checkbox => {
+            const row = parseInt(checkbox.dataset.row);
+            const col = parseInt(checkbox.dataset.col);
+            
+            // Make sure the row and column exist in evaluationData
+            if (evaluationData.rows[row] && col < evaluationData.rows[row].length) {
+                evaluationData.rows[row][col] = checkbox.checked;
+            }
+        });
+
+        // Update comments
+        comments.forEach(comment => {
+            const row = parseInt(comment.dataset.row);
+            const col = parseInt(comment.dataset.col);
+            
+            // Make sure the row and column exist in evaluationData
+            if (evaluationData.rows[row] && col < evaluationData.rows[row].length) {
+                evaluationData.rows[row][col] = comment.value;
+            }
+        });
+
+        // Prepare the data for the EvaluationData model
+        const evaluationDataToSave = {
+            child_name: studentName,
+            evaluation_type: evaluationType,
+            evaluator_type: 'PARENT',
+            first_eval_score: evalScores[0],
+            second_eval_score: evalScores[1],
+            third_eval_score: evalScores[2],
+            data: evaluationData, // Store the complete form data
+            check_existing: true // Flag to indicate we should check for existing records
+        };
+
+        console.log('Submitting evaluation data:', evaluationDataToSave);
+
+        // Send the updated data to the server
+        fetch(`/system/save-evaluation/${currentTableId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                data: evaluationDataToSave
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                if (data.updated) {
+                    alert('Existing evaluation updated successfully!');
+                } else {
+                    alert('Evaluation saved successfully!');
+                }
+                // Close the modal after successful save
+                const modal = bootstrap.Modal.getInstance(document.getElementById('viewTableModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            } else {
+                alert('Failed to save evaluation: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the evaluation: ' + error.message);
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %} 

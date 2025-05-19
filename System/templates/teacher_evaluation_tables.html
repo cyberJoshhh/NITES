@@ -1,0 +1,1181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Teacher Evaluation Tables{% endblock %}
+
+{% block extra_css %}
+<!-- Add Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* Dashboard and Sidebar Styles */
+    .dashboard-container {
+        display: flex;
+        min-height: 100vh;
+        background-color: #f8f9fa;
+    }
+
+    .main-content {
+        flex: 1;
+        padding: 20px;
+        margin-left: 250px; /* Width of the sidebar */
+        transition: margin-left 0.3s ease;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+        width: 250px;
+        height: 100vh;
+        background: linear-gradient(180deg, #2d6a4f 0%, #1b4332 100%);
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-header h3 {
+        color: white;
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .sidebar-content {
+        padding: 20px 0;
+    }
+
+    .sidebar-btn {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .sidebar-btn:hover, .sidebar-btn.active {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        border-left-color: #4ade80;
+    }
+
+    .sidebar-btn i {
+        width: 24px;
+        margin-right: 10px;
+    }
+
+    .logout-btn {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        width: 100%;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .logout-btn i {
+        width: 24px;
+        margin-right: 10px;
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-menu-toggle {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1001;
+        background: #2d6a4f;
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    /* Sidebar Overlay */
+    #sidebarOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        .mobile-menu-toggle {
+            display: block;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .main-content {
+            margin-left: 0;
+            padding-top: 70px;
+        }
+
+        #sidebarOverlay.active {
+            display: block;
+        }
+    }
+
+    /* Your existing styles */
+    :root {
+        --primary-green: #2ecc71;
+        --primary-green-dark: #27ae60;
+        --primary-green-light: #a9dfbf;
+        --text-dark: #2c3e50;
+        --text-light: #7f8c8d;
+        --background-light: #f8f9fa;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .teacher-evaluation-page {
+        background-color: var(--background-light);
+        color: var(--text-dark);
+        font-family: 'Poppins', sans-serif;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .teacher-evaluation-page .table-card {
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 25px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        overflow: hidden;
+    }
+    
+    .teacher-evaluation-page .table-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .teacher-evaluation-page .table-card-header {
+        background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+        color: white;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .teacher-evaluation-page .table-card-header::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: translate(50%, -50%);
+    }
+    
+    .teacher-evaluation-page .table-card-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .teacher-evaluation-page .table-card-body {
+        padding: 25px;
+        background-color: white;
+    }
+    
+    .teacher-evaluation-page .btn-view {
+        background: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 12px 24px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+    
+    .teacher-evaluation-page .btn-view:hover {
+        background: var(--primary-green-dark) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
+    
+    .teacher-evaluation-page .page-header {
+        margin-bottom: 40px;
+        padding-bottom: 15px;
+        position: relative;
+        color: var(--text-dark);
+        font-weight: 700;
+    }
+
+    .teacher-evaluation-page .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: var(--primary-green);
+        border-radius: 2px;
+    }
+    
+    .teacher-evaluation-page .no-tables-message {
+        text-align: center;
+        padding: 60px 30px;
+        background-color: white;
+        border-radius: 16px;
+        margin-top: 40px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .teacher-evaluation-page .no-tables-message h3 {
+        color: var(--text-dark);
+        margin-bottom: 15px;
+    }
+
+    .teacher-evaluation-page .no-tables-message p {
+        color: var(--text-light);
+    }
+
+    /* Modal Styles */
+    .teacher-evaluation-page .modal-content {
+        border-radius: 16px;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .teacher-evaluation-page .modal-header {
+        background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+        color: white;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        padding: 20px;
+    }
+
+    .teacher-evaluation-page .modal-title {
+        font-weight: 600;
+    }
+
+    .teacher-evaluation-page .modal-body {
+        padding: 25px;
+    }
+
+    .teacher-evaluation-page .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 1rem;
+    }
+
+    .teacher-evaluation-page .table th {
+        background-color: var(--primary-green-light);
+        color: var(--text-dark);
+        font-weight: 600;
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .teacher-evaluation-page .table td {
+        background-color: white;
+        padding: 12px;
+        vertical-align: middle;
+        text-align: center;
+        border: 1px solid #dee2e6;
+    }
+
+    .teacher-evaluation-page .table td textarea {
+        width: 100%;
+        min-height: 40px;
+        max-height: 60px;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
+    .teacher-evaluation-page .table td textarea:focus {
+        border-color: var(--primary-green);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+    }
+
+    .teacher-evaluation-page .table td input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: var(--primary-green);
+        vertical-align: middle;
+    }
+
+    .teacher-evaluation-page .table tbody tr:hover td {
+        background-color: rgba(46, 204, 113, 0.05);
+    }
+
+    .teacher-evaluation-page .score-summary {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .teacher-evaluation-page .score-summary h5 {
+        color: var(--text-dark);
+        margin-bottom: 10px;
+    }
+
+    .teacher-evaluation-page .score-summary .score-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-green);
+    }
+
+    .teacher-evaluation-page .save-changes {
+        background: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        margin-top: 15px !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .teacher-evaluation-page .save-changes:hover {
+        background: var(--primary-green-dark) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .form-select {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        appearance: none;
+    }
+
+    .form-select:focus {
+        border-color: var(--primary-green);
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(46, 204, 113, 0.25);
+    }
+
+    .form-label {
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .teacher-evaluation-page .table th.disabled,
+    .teacher-evaluation-page .table td.disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        position: relative;
+    }
+
+    .teacher-evaluation-page .table th.disabled::after,
+    .teacher-evaluation-page .table td.disabled::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+            45deg,
+            rgba(0, 0, 0, 0.05),
+            rgba(0, 0, 0, 0.05) 10px,
+            rgba(0, 0, 0, 0.02) 10px,
+            rgba(0, 0, 0, 0.02) 20px
+        );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .teacher-evaluation-page .table td.disabled input[type="checkbox"] {
+        opacity: 0.6;
+        background-color: #e9ecef !important;
+        border-color: #ced4da !important;
+    }
+
+    .teacher-evaluation-page .table td.disabled input[type="checkbox"]:checked {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+    }
+
+    .teacher-evaluation-page .table td.disabled input[type="checkbox"]:hover {
+        cursor: not-allowed !important;
+    }
+
+    .teacher-evaluation-page .table td.disabled input[type="checkbox"]:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Include the teacher sidebar -->
+{% include 'sidebar.html' %}
+
+<div class="dashboard-container">
+    <div class="main-content">
+        <div class="teacher-evaluation-page">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <h1 class="page-header">Teacher Evaluation Tables</h1>
+                        
+                        <div id="studentSelector" class="mb-4">
+                            <label for="studentSelect" class="form-label">Select Pupil to Evaluate:</label>
+                            <select id="studentSelect" class="form-select">
+                                <option value="">-- Select a pupil --</option>
+                                <!-- Student options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        
+                        {% if tables %}
+                            <div class="row" id="tableCards">
+                                <!-- Table cards will be displayed here -->
+                            </div>
+                        {% else %}
+                            <div class="no-tables-message">
+                                <h3>No evaluation tables available</h3>
+                                <p>There are currently no teacher evaluation tables configured in the system.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal for viewing table -->
+            <div class="modal fade" id="viewTableModal" tabindex="-1" aria-labelledby="viewTableModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="viewTableModalLabel">Evaluation Table</h5>
+                            <h6 class="ms-3 mb-0" id="tableName"></h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-responsive">
+                                <div id="tableContainer">
+                                    <!-- Table will be loaded here dynamically -->
+                                </div>
+                            </div>
+                            <div class="score-summary mt-3">
+                                <h5>Total Score: <span class="score-value" id="totalScore">0</span> / <span id="maxScore">0</span> (<span id="scorePercentage">0%</span>)</h5>
+                            </div>
+                            <div class="info-message mt-3 p-3 bg-light border-start border-4 border-success rounded">
+                                <i class="fas fa-info-circle text-success"></i>
+                                <span class="ms-2 text-muted">
+                                    Disabled columns (shaded with diagonal lines) contain previous evaluation data. These values are preserved when saving.
+                                </span>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" onclick="saveEvaluation()">
+                                <i class="fas fa-save"></i> Save Evaluation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentTableId = null;
+    let evaluationData = null;
+    let selectedStudentName = null;
+
+    // Initialize the student select dropdown when the DOM loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStudents();
+        
+        // Add change event listener for student dropdown
+        document.getElementById('studentSelect').addEventListener('change', function() {
+            const studentName = this.value;
+            selectedStudentName = studentName;
+            
+            if (studentName) {
+                // Load tables for selected student
+                loadTablesForStudent(studentName);
+            } else {
+                // Clear tables if no student selected
+                document.getElementById('tableCards').innerHTML = '';
+            }
+        });
+    });
+
+    // Function to load all students
+    function loadStudents() {
+        console.log('Loading students...');
+        
+        // Get CSRF token from cookie
+        const csrftoken = getCookie('csrftoken');
+        
+        fetch('/system/get-all-students/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrftoken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received student data:', data);
+            if (data.status === 'success' && Array.isArray(data.students)) {
+                const studentSelect = document.getElementById('studentSelect');
+                
+                // Clear existing options except the first one
+                while (studentSelect.options.length > 1) {
+                    studentSelect.remove(1);
+                }
+                
+                // Add student options
+                data.students.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student.name;
+                    option.textContent = student.name;
+                    studentSelect.appendChild(option);
+                });
+                
+                console.log('Loaded students:', data.students.length);
+            } else {
+                console.error('Failed to load students:', data.message || 'Invalid data format');
+                alert('Failed to load students. Please refresh the page and try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading students:', error);
+            alert('Error loading students. Please refresh the page and try again.');
+        });
+    }
+
+    // Function to load tables for a selected student
+    function loadTablesForStudent(studentName) {
+        if (!studentName) return;
+        
+        console.log('Loading tables for student:', studentName);
+        
+        // Get all evaluation tables
+        fetch('/system/get-evaluation-tables/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response:', data);
+            if (data.status === 'success') {
+                console.log('Received tables data:', data.tables ? data.tables.length : 0, 'tables');
+                const tableCardsContainer = document.getElementById('tableCards');
+                tableCardsContainer.innerHTML = '';
+                
+                if (data.tables && data.tables.length > 0) {
+                    // Filter tables for teacher evaluator type
+                    const teacherTables = data.tables.filter(table => table.evaluator_type === 'TEACHER');
+                    console.log('Found teacher tables:', teacherTables.length);
+                    
+                    if (teacherTables.length > 0) {
+                        // Generate table cards
+                        teacherTables.forEach(table => {
+                            const cardHtml = `
+                            <div class="col-md-6 col-lg-4">
+                                <div class="table-card" id="table-card-${table.id}">
+                                    <div class="table-card-header">
+                                        <h4>${table.name}</h4>
+                                    </div>
+                                    <div class="table-card-body">
+                                        <div class="score-display">
+                                            <span class="score-label">Score:</span>
+                                            <div>
+                                                <span class="score-value" id="score-${table.id}">-</span>
+                                                <span class="score-max">/ <span id="max-score-${table.id}">-</span></span>
+                                                <span class="score-percentage" id="percentage-${table.id}">(-)</span>
+                                            </div>
+                                        </div>
+                                        <button class="btn-view" onclick="viewTable(${table.id})">
+                                            <i class="fas fa-edit"></i>
+                                            Start Evaluation
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                            tableCardsContainer.innerHTML += cardHtml;
+                            
+                            // Fetch existing evaluation data for each table
+                            fetch(`/system/load-evaluation-data/${table.id}/?student=${encodeURIComponent(studentName)}&evaluator_type=TEACHER`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                },
+                                credentials: 'same-origin'
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    return { status: 'error', data: null };
+                                }
+                                return response.json();
+                            })
+                            .then(evalData => {
+                                if (evalData.status === 'success' && evalData.data) {
+                                    // Get the total checkboxes from the saved data
+                                    const totalCheckboxes = evalData.data.total_checkboxes ? 
+                                        evalData.data.total_checkboxes[0] : // Use first evaluation's total
+                                        countCheckboxes(evalData.data);
+
+                                    // Update scores display with raw scores
+                                    document.getElementById(`score-${table.id}`).textContent = evalData.first_eval_score || '0';
+                                    document.getElementById(`max-score-${table.id}`).textContent = totalCheckboxes;
+                                    const percentage = totalCheckboxes > 0 ? 
+                                        Math.round((evalData.first_eval_score / totalCheckboxes) * 100) : 0;
+                                    document.getElementById(`percentage-${table.id}`).textContent = `(${percentage}%)`;
+                                } else {
+                                    // No existing data, show zeros
+                                    document.getElementById(`score-${table.id}`).textContent = '0';
+                                    document.getElementById(`max-score-${table.id}`).textContent = '0';
+                                    document.getElementById(`percentage-${table.id}`).textContent = '(0%)';
+                                }
+                            })
+                            .catch(error => {
+                                console.error(`Error loading evaluation data for table ${table.id}:`, error);
+                                // Show zeros in case of error
+                                document.getElementById(`score-${table.id}`).textContent = '0';
+                                document.getElementById(`max-score-${table.id}`).textContent = '0';
+                                document.getElementById(`percentage-${table.id}`).textContent = '(0%)';
+                            });
+                        });
+                    } else {
+                        tableCardsContainer.innerHTML = `
+                        <div class="col-12">
+                            <div class="no-tables-message">
+                                <h3>No teacher evaluation tables available</h3>
+                                <p>There are currently no evaluation tables configured for teachers in the system.</p>
+                            </div>
+                        </div>
+                        `;
+                    }
+                } else {
+                    tableCardsContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="no-tables-message">
+                            <h3>No evaluation tables available</h3>
+                            <p>There are currently no evaluation tables configured in the system.</p>
+                        </div>
+                    </div>
+                    `;
+                }
+            } else {
+                console.error('Failed to load tables:', data.message || 'Unknown error');
+                document.getElementById('tableCards').innerHTML = `
+                <div class="col-12">
+                    <div class="no-tables-message">
+                        <h3>Error loading evaluation tables</h3>
+                        <p>There was an error loading the evaluation tables. Please try again later.</p>
+                    </div>
+                </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tables:', error);
+            document.getElementById('tableCards').innerHTML = `
+            <div class="col-12">
+                <div class="no-tables-message">
+                    <h3>Error loading evaluation tables</h3>
+                    <p>There was an error loading the evaluation tables. Please try again later.</p>
+                </div>
+            </div>
+            `;
+        });
+    }
+
+    function viewTable(tableId) {
+        if (!selectedStudentName) {
+            alert('Please select a student first');
+            return;
+        }
+        
+        console.log('Viewing table:', tableId, 'for student:', selectedStudentName);
+        currentTableId = tableId;
+        
+        // First, get the table structure
+        fetch(`/system/view-evaluation-table/${tableId}/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Table structure response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `Server responded with status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Table structure data:', data);
+            if (data.status === 'success' && data.table && data.table.data) {
+                // Save the original table structure
+                evaluationData = JSON.parse(JSON.stringify(data.table.data));
+                console.log('Parsed evaluation data:', evaluationData);
+                
+                // Save the evaluation table name
+                const tableName = data.table.name;
+                document.getElementById('tableName').textContent = tableName;
+                
+                // Then, load any existing evaluation data for this student
+                return fetch(`/system/load-evaluation-data/${tableId}/?student=${encodeURIComponent(selectedStudentName)}&evaluator_type=TEACHER`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'same-origin'
+                });
+            } else {
+                console.error('Invalid table structure data:', data);
+                throw new Error('Invalid table structure data received from server');
+            }
+        })
+        .then(response => {
+            console.log('Evaluation data response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `Server responded with status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(evalData => {
+            console.log('Evaluation data:', evalData);
+            if (evalData.status === 'success') {
+                if (evalData.data && evalData.data.rows) {
+                    // Merge existing evaluation data with the table structure
+                    evalData.data.rows.forEach((savedRow, rowIndex) => {
+                        if (rowIndex < evaluationData.rows.length) {
+                            savedRow.forEach((savedCell, cellIndex) => {
+                                if (cellIndex < evaluationData.rows[rowIndex].length) {
+                                    if (typeof savedCell === 'boolean' || 
+                                        (typeof savedCell === 'string' && cellIndex === savedRow.length - 1)) {
+                                        evaluationData.rows[rowIndex][cellIndex] = savedCell;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Render the table
+                renderEvaluationTable();
+                
+                // Show the modal
+                const viewTableModal = new bootstrap.Modal(document.getElementById('viewTableModal'));
+                viewTableModal.show();
+            } else {
+                console.error('Invalid evaluation data:', evalData);
+                throw new Error('Invalid evaluation data received from server');
+            }
+        })
+        .catch(error => {
+            console.error('Error in viewTable:', error);
+            alert(`Failed to load evaluation table: ${error.message}`);
+        });
+    }
+
+    function renderEvaluationTable() {
+        console.log('Rendering evaluation table with data:', evaluationData);
+        // Now render the table
+        let tableHtml = '<table class="table">';
+        
+        // Add headers
+        tableHtml += '<thead><tr>';
+        evaluationData.headers.forEach((header, index) => {
+            const isEvalCol = header.includes('Eval');
+            const isDisabled = isEvalCol && evaluationData.disabled_columns && 
+                evaluationData.disabled_columns.some(col => {
+                    const evalNum = parseInt(header.match(/\d+/)[0]);
+                    return col.index === evalNum - 1 && col.disabled;
+                });
+            tableHtml += `<th class="${isDisabled ? 'disabled' : ''}">${header}</th>`;
+        });
+        tableHtml += '</tr></thead>';
+        
+        // Add rows
+        tableHtml += '<tbody>';
+        let totalCheckboxes = 0;
+        let checkedCheckboxes = 0;
+        let visibleCheckboxes = 0;
+        let visibleChecked = 0;
+        
+        evaluationData.rows.forEach((row, rowIndex) => {
+            tableHtml += '<tr>';
+            row.forEach((cell, cellIndex) => {
+                if (typeof cell === 'boolean') {
+                    const headerCell = evaluationData.headers[cellIndex];
+                    const isEvalCol = headerCell && headerCell.includes('Eval');
+                    const isDisabled = isEvalCol && evaluationData.disabled_columns && 
+                        evaluationData.disabled_columns.some(col => {
+                            const evalNum = parseInt(headerCell.match(/\d+/)[0]);
+                            return col.index === evalNum - 1 && col.disabled;
+                        });
+                    
+                    totalCheckboxes++;
+                    if (cell) checkedCheckboxes++;
+                    
+                    if (!isDisabled) {
+                        visibleCheckboxes++;
+                        if (cell) visibleChecked++;
+                    }
+                    
+                    tableHtml += `<td class="${isDisabled ? 'disabled' : ''}">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" 
+                                class="evaluation-checkbox" 
+                                data-row="${rowIndex}" 
+                                data-col="${cellIndex}"
+                                ${cell ? 'checked' : ''} 
+                                ${isDisabled ? 'disabled' : ''}
+                                onchange="updateScore()">
+                        </div>
+                    </td>`;
+                } else if (cellIndex === row.length - 1) {
+                    tableHtml += `<td>
+                        <textarea class="evaluation-comment" 
+                            data-row="${rowIndex}" 
+                            data-col="${cellIndex}" 
+                            placeholder="Add your comments here...">${cell || ''}</textarea>
+                    </td>`;
+                } else {
+                    tableHtml += `<td>${cell}</td>`;
+                }
+            });
+            tableHtml += '</tr>';
+        });
+        
+        tableHtml += '</tbody></table>';
+        
+        document.getElementById('tableContainer').innerHTML = tableHtml;
+        
+        // Update scores display with visible (enabled) scores only
+        const visiblePercentage = visibleCheckboxes > 0 ? Math.round((visibleChecked / visibleCheckboxes) * 100) : 0;
+        
+        document.getElementById('totalScore').textContent = visibleChecked;
+        document.getElementById('maxScore').textContent = visibleCheckboxes;
+        document.getElementById('scorePercentage').textContent = `${visiblePercentage}%`;
+        
+        // Update card scores with visible scores
+        document.getElementById(`score-${currentTableId}`).textContent = visibleChecked;
+        document.getElementById(`max-score-${currentTableId}`).textContent = visibleCheckboxes;
+        document.getElementById(`percentage-${currentTableId}`).textContent = `(${visiblePercentage}%)`;
+        
+        // Show the modal
+        const viewTableModal = new bootstrap.Modal(document.getElementById('viewTableModal'));
+        viewTableModal.show();
+    }
+
+    function updateScore() {
+        // Count checkboxes for display (only count enabled ones)
+        const visibleCheckboxes = document.querySelectorAll('.evaluation-checkbox:not([disabled])').length;
+        const visibleChecked = document.querySelectorAll('.evaluation-checkbox:not([disabled]):checked').length;
+        const visiblePercentage = visibleCheckboxes > 0 ? Math.round((visibleChecked / visibleCheckboxes) * 100) : 0;
+
+        // Update modal score with visible scores
+        document.getElementById('totalScore').textContent = visibleChecked;
+        document.getElementById('maxScore').textContent = visibleCheckboxes;
+        document.getElementById('scorePercentage').textContent = `${visiblePercentage}%`;
+
+        // Update card score with visible scores
+        if (currentTableId) {
+            document.getElementById(`score-${currentTableId}`).textContent = visibleChecked;
+            document.getElementById(`max-score-${currentTableId}`).textContent = visibleCheckboxes;
+            document.getElementById(`percentage-${currentTableId}`).textContent = `(${visiblePercentage}%)`;
+        }
+        
+        // Also update the evaluation data in memory for all checkboxes (even disabled ones)
+        const checkboxes = document.querySelectorAll('.evaluation-checkbox');
+        checkboxes.forEach(checkbox => {
+            const row = parseInt(checkbox.dataset.row);
+            const col = parseInt(checkbox.dataset.col);
+            
+            // Only update enabled checkboxes in the data structure
+            if (!checkbox.disabled && evaluationData.rows[row] && col < evaluationData.rows[row].length) {
+                evaluationData.rows[row][col] = checkbox.checked;
+            }
+        });
+    }
+
+    function saveEvaluation() {
+        if (!evaluationData || !selectedStudentName) {
+            alert('Missing required data. Please ensure a student is selected and the evaluation is loaded.');
+            return;
+        }
+
+        console.log('Saving evaluation for student:', selectedStudentName);
+        
+        // Get the evaluation table name from the modal header
+        const tableName = document.getElementById('tableName').textContent;
+        
+        // Initialize arrays to store evaluation scores, totals, and comments
+        let evalScores = [0, 0, 0];  // Stores actual checked boxes for each evaluation (1st, 2nd, 3rd)
+        let evalTotals = [0, 0, 0];  // Stores total possible checkboxes for each evaluation
+        let rowComments = [];  // Array to store comments for each row
+
+        // Calculate scores for each evaluation column and collect comments
+        evaluationData.rows.forEach((row, rowIndex) => {
+            let rowComment = '';  // Store comment for current row
+            
+            row.forEach((cell, cellIndex) => {
+                // Process boolean cells (checkboxes)
+                if (typeof cell === 'boolean') {
+                    const headerCell = evaluationData.headers[cellIndex];
+                    if (headerCell && headerCell.includes('Eval')) {
+                        // Extract evaluation number (1, 2, or 3) and adjust to 0-based index
+                        const evalNum = parseInt(headerCell.match(/\d+/)[0]) - 1;
+                        if (evalNum >= 0 && evalNum < 3) {
+                            evalTotals[evalNum]++;  // Increment total possible score
+                            if (cell) evalScores[evalNum]++;  // Increment actual score if checked
+                        }
+                    }
+                } 
+                // Process comment column (last column)
+                else if (cellIndex === row.length - 1) {
+                    rowComment = cell || '';  // Store the comment
+                }
+            });
+            
+            // Add comment to comments array
+            rowComments.push(rowComment);
+        });
+
+        // Update evaluation data from current form state
+        // Process all checkbox inputs
+        document.querySelectorAll('.evaluation-checkbox').forEach(checkbox => {
+            const row = parseInt(checkbox.dataset.row);
+            const col = parseInt(checkbox.dataset.col);
+            if (evaluationData.rows[row] && col < evaluationData.rows[row].length) {
+                evaluationData.rows[row][col] = checkbox.checked;
+            }
+        });
+
+        // Update comments from textarea inputs
+        document.querySelectorAll('.evaluation-comment').forEach(textarea => {
+            const row = parseInt(textarea.dataset.row);
+            const col = parseInt(textarea.dataset.col);
+            if (evaluationData.rows[row] && col < evaluationData.rows[row].length) {
+                evaluationData.rows[row][col] = textarea.value.trim();
+                rowComments[row] = textarea.value.trim();  // Update comments array
+            }
+        });
+
+        // Log calculated scores and comments for debugging
+        console.log('Evaluation Summary:', {
+            scores: evalScores,
+            totals: evalTotals,
+            comments: rowComments
+        });
+
+        // Prepare the evaluation data object for saving
+        const evaluationDataToSave = {
+            child_name: selectedStudentName,
+            evaluation_type: tableName.toUpperCase().replace(/\s+/g, '_'),  // Convert table name to uppercase with underscores
+            evaluator_type: 'TEACHER',
+            first_eval_score: evalScores[0],      // Raw score for first evaluation
+            second_eval_score: evalScores[1],     // Raw score for second evaluation
+            third_eval_score: evalScores[2],      // Raw score for third evaluation
+            data: {
+                ...evaluationData,
+                total_checkboxes: evalTotals,     // Store total possible scores for reference
+                comments: rowComments             // Include comments array in saved data
+            }
+        };
+
+        console.log('Saving evaluation data:', evaluationDataToSave);
+
+        // Send the evaluation data to the server
+        fetch(`/system/save-evaluation/${currentTableId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                data: evaluationDataToSave
+            })
+        })
+        .then(response => {
+            // Check if the response is successful, if not get error details
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `Network response was not ok: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Evaluation saved successfully!');
+                
+                // Clean up modal and UI state
+                const modalElement = document.getElementById('viewTableModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Remove modal backdrop if present
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+                
+                // Reset body styles after modal close
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                
+                // Refresh table cards to show updated scores
+                loadTablesForStudent(selectedStudentName);
+            } else {
+                throw new Error(data.message || 'Failed to save evaluation');
+            }
+        })
+        .catch(error => {
+            // Handle and display any errors that occurred during saving
+            console.error('Error saving evaluation:', error);
+            alert('An error occurred while saving the evaluation: ' + error.message);
+        });
+    }
+
+    // Add event listener for modal hidden event
+    document.getElementById('viewTableModal').addEventListener('hidden.bs.modal', function () {
+        // Remove modal backdrop if it exists
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+        
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    });
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Helper function to count total checkboxes in a table
+    function countCheckboxes(tableData) {
+        let total = 0;
+        if (tableData && tableData.rows) {
+            tableData.rows.forEach(row => {
+                row.forEach((cell, index) => {
+                    if (typeof cell === 'boolean') {
+                        const headerCell = tableData.headers[index];
+                        if (headerCell && headerCell.includes('Eval1')) { // Only count first evaluation
+                            total++;
+                        }
+                    }
+                });
+            });
+        }
+        return total;
+    }
+</script>
+{% endblock %}

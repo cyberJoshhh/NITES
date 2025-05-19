@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import random
+import string
+from django.db.models import Sum
 
 class Student(models.Model):
     child_name = models.CharField(max_length=255)
@@ -24,23 +27,76 @@ class Student(models.Model):
     mother_education = models.CharField(max_length=255)
     num_siblings = models.IntegerField()
     birth_order = models.CharField(max_length=50)
-    username = models.CharField(max_length=100, unique=True, null=True, blank=True)
-    password = models.CharField(max_length=128, null=True, blank=True)
+    gmail = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    username = models.CharField(max_length=255, null=True, blank=True)
     session_no = models.IntegerField(default=1)
+
     
     
     def __str__(self):
         return self.child_name
 
+    def get_highest_score(self):
+        """Get the highest score across all evaluations for sorting"""
+        scores = self.get_total_evaluation_score()
+        return max(
+            scores['eval1_total'],
+            scores['eval2_total'],
+            scores['eval3_total']
+        )
+
+    def get_total_evaluation_score(self):
+        """Calculate total evaluation scores for each evaluation period"""
+        from django.db.models import Sum
+        
+        # Get all teacher evaluations
+        teacher_evaluations = EvaluationDataTeacher.objects.filter(child_name=self.child_name)
+        teacher_totals = teacher_evaluations.aggregate(
+            eval1=Sum('first_eval_score'),
+            eval2=Sum('second_eval_score'),
+            eval3=Sum('third_eval_score')
+        )
+        
+        # Get all parent evaluations
+        parent_evaluations = EvaluationData.objects.filter(child_name=self.child_name)
+        parent_totals = parent_evaluations.aggregate(
+            eval1=Sum('first_eval_score'),
+            eval2=Sum('second_eval_score'),
+            eval3=Sum('third_eval_score')
+        )
+
+        # Add teacher and parent scores for each evaluation
+        eval1_total = (teacher_totals['eval1'] or 0) + (parent_totals['eval1'] or 0)
+        eval2_total = (teacher_totals['eval2'] or 0) + (parent_totals['eval2'] or 0)
+        eval3_total = (teacher_totals['eval3'] or 0) + (parent_totals['eval3'] or 0)
+
+        return {
+            'eval1_total': eval1_total,
+            'eval2_total': eval2_total,
+            'eval3_total': eval3_total
+        }
+
 @receiver(post_save, sender=Student)
 def create_user_for_student(sender, instance, created, **kwargs):
-    if created:
-        # Create user based on the username and password fields
-        if not User.objects.filter(username=instance.username).exists():
-            User.objects.create_user(
-                username=instance.username,
-                password=instance.password
+    if created and instance.gmail:
+        # Create user based on the email field if not exists
+        if not User.objects.filter(username=instance.gmail).exists():
+            # Generate a random password that will be reset via email
+            random_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            
+            # Create user with email as username in Django's auth system
+            user = User.objects.create_user(
+                username=instance.gmail,
+                email=instance.gmail,
+                password=random_password
             )
+            
+            # Set the first_name to be the student's name for display purposes
+            if instance.username:
+                user.first_name = instance.username
+                user.save()
+            
+            # TODO: Send email with login instructions and password reset link
 
 class EvaluationRecord(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -58,139 +114,18 @@ class EvaluationRecord(models.Model):
 
     class Meta:
         unique_together = ['student', 'evaluation_number']
-        
+
+
+
+
+
+
  #teacher's evaluation
-class CognitiveEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-    
-class ExpressiveEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-    
-class FineEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-
-class GrossEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-    
-class ReceptiveEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-    
-class SelfHelpEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-
-class SocialEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
 
 
 #parent's evaluation
-class ParentSocialEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-
-class ParentSelfHelpEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-
-class ParentGrossEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-
-class ParentCognitiveEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
-
-class ParentExpressiveEvaluation(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
         
-class TotalScores(models.Model):
-    student_name = models.CharField(max_length=255)
-    eval1_total = models.IntegerField()
-    eval2_total = models.IntegerField()
-    eval3_total = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.student_name} - {self.created_at}"
 
 class PDFFile(models.Model):
     name = models.CharField(max_length=255)
@@ -210,147 +145,6 @@ class PDFFile(models.Model):
     def __str__(self):
         return self.name
 
-class EvaluationPDF(models.Model):
-    """
-    Model to link evaluation records with their generated PDF files.
-    This model helps track which evaluations have associated PDF documents.
-    """
-    student_name = models.CharField(max_length=255)
-    evaluation_type = models.CharField(max_length=50, choices=[
-        ('gross_motor', 'Gross Motor'),
-        ('fine_motor', 'Fine Motor'),
-        ('self_help', 'Self Help'),
-        ('cognitive', 'Cognitive'),
-        ('expressive', 'Expressive Language'),
-        ('receptive', 'Receptive Language'),
-        ('social', 'Social-Emotional')
-    ])
-    pdf_file = models.ForeignKey(PDFFile, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.evaluation_type} - {self.student_name} - {self.created_at.strftime('%Y-%m-%d')}"
-
-class GrossMotorPDF(models.Model):
-    """
-    Dedicated model to store Gross Motor PDF files directly.
-    This is a standalone model that doesn't require linking to PDFFile.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='gross_motor_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Gross Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class GrossMotorPDFTeacher(models.Model):
-    """
-    Model to store teacher's Gross Motor evaluation PDF files.
-    Created automatically when submitting an evaluation from the gross_motor.html form.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='gross_motor_teacher_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Teacher Gross Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class FinePDFTeacher(models.Model):
-    """
-    Model to store teacher's Fine Motor evaluation PDF files.
-    Created automatically when submitting an evaluation from the fine_motor.html form.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='fine_motor_teacher_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Teacher Fine Motor PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class CognitivePDFTeacher(models.Model):
-    """
-    Model to store teacher's Cognitive evaluation PDF files.
-    Created automatically when submitting an evaluation from the cognitive.html form.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='cognitive_teacher_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Teacher Cognitive PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class SelfHelpPDF(models.Model):
-    """
-    Dedicated model to store Self-Help PDF files directly.
-    This is a standalone model that doesn't require linking to PDFFile.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='self_help_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Self-Help PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class SocialPDF(models.Model):
-    """
-    Dedicated model to store Social-Emotional PDF files directly.
-    This is a standalone model that doesn't require linking to PDFFile.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='social_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Social-Emotional PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class ExpressivePDF(models.Model):
-    """
-    Dedicated model to store Expressive Language PDF files directly.
-    This is a standalone model that doesn't require linking to PDFFile.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='expressive_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Expressive Language PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
-class CognitivePDF(models.Model):
-    """
-    Dedicated model to store Cognitive PDF files directly.
-    This is a standalone model that doesn't require linking to PDFFile.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='cognitive_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Cognitive PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
-
 class Announcement(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
@@ -364,48 +158,143 @@ class Announcement(models.Model):
     def __str__(self):
         return self.title
 
-class SelfHelpPDFTeacher(models.Model):
-    """
-    Model to store teacher's Self-Help evaluation PDF files.
-    Created automatically when submitting an evaluation from the self_help.html form.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='self_help_teacher_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Teacher Self-Help PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+class Event(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    color = models.CharField(max_length=20, default='#2d6a4f')  # Default to primary color
 
-class ReceptivePDFTeacher(models.Model):
-    """
-    Model to store teacher's Receptive Language evaluation PDF files.
-    Created automatically when submitting an evaluation from the receptive_language.html form.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='receptive_teacher_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Teacher Receptive Language PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+    class Meta:
+        ordering = ['start_date']
 
-class ExpressivePDFTeacher(models.Model):
-    """
-    Model to store teacher's Expressive Language evaluation PDF files.
-    Created automatically when submitting an evaluation from the expressive_language.html form.
-    """
-    student_name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='expressive_teacher_pdfs/')
-    eval1_score = models.IntegerField()
-    eval2_score = models.IntegerField()
-    eval3_score = models.IntegerField()
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
     def __str__(self):
-        return f"Teacher Expressive Language PDF - {self.student_name} - {self.uploaded_at.strftime('%Y-%m-%d')}"
+        return self.title
+
+class EvaluationForm(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class EvaluationRow(models.Model):
+    form = models.ForeignKey(EvaluationForm, on_delete=models.CASCADE, related_name='rows')
+    name = models.CharField(max_length=255)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.form.name} - {self.name}"
+
+class EvaluationColumn(models.Model):
+    COLUMN_TYPES = [
+        ('text', 'Text'),
+        ('checkbox', 'Checkbox'),
+    ]
+    
+    row = models.ForeignKey(EvaluationRow, on_delete=models.CASCADE, related_name='columns')
+    name = models.CharField(max_length=255)
+    column_type = models.CharField(max_length=20, choices=COLUMN_TYPES, default='text')
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.row.name} - {self.name} ({self.column_type})"
+
+class EditableEvaluationTable(models.Model):
+    EVALUATOR_CHOICES = [
+        ('TEACHER', 'Teacher'),
+        ('PARENT', 'Parent'),
+    ]
+    
+    name = models.CharField(max_length=255)
+    evaluator_type = models.CharField(
+        max_length=10,
+        choices=EVALUATOR_CHOICES,
+        default='TEACHER',
+        null=False,
+        blank=False
+    )
+    data = models.JSONField() # Stores the full table as JSON
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.evaluator_type})"
+
+class EvaluationData(models.Model):
+    EVALUATOR_CHOICES = [
+        ('TEACHER', 'Teacher'),
+        ('PARENT', 'Parent'),
+    ]
+    
+    EVALUATION_TYPES = [
+        ('GROSS_MOTOR', 'Gross Motor'),
+        ('FINE_MOTOR', 'Fine Motor'),
+        ('SELF_HELP', 'Self Help'),
+        ('COGNITIVE', 'Cognitive'),
+        ('EXPRESSIVE', 'Expressive Language'),
+        ('RECEPTIVE', 'Receptive Language'),
+        ('SOCIAL', 'Social-Emotional'),
+    ]
+
+    child_name = models.CharField(max_length=255)
+    evaluation_type = models.CharField(max_length=50, choices=EVALUATION_TYPES)
+    evaluator_type = models.CharField(max_length=10, choices=EVALUATOR_CHOICES)
+    first_eval_score = models.IntegerField()
+    second_eval_score = models.IntegerField()
+    third_eval_score = models.IntegerField()
+    data = models.JSONField(null=True, blank=True)  # For storing additional form data
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['child_name', 'evaluation_type', 'evaluator_type']
+
+    def __str__(self):
+        return f"{self.child_name} - {self.evaluation_type} ({self.evaluator_type})"
+    
+class EvaluationDataTeacher(models.Model):
+    EVALUATOR_CHOICES = [
+        ('TEACHER', 'Teacher'),
+        ('PARENT', 'Parent'),
+    ]
+    
+    EVALUATION_TYPES = [
+        ('GROSS_MOTOR', 'Gross Motor'),
+        ('FINE_MOTOR', 'Fine Motor'),
+        ('SELF_HELP', 'Self Help'),
+        ('COGNITIVE', 'Cognitive'),
+        ('EXPRESSIVE', 'Expressive Language'),
+        ('RECEPTIVE', 'Receptive Language'),
+        ('SOCIAL', 'Social-Emotional'),
+    ]
+
+    child_name = models.CharField(max_length=255)
+    evaluation_type = models.CharField(max_length=50, choices=EVALUATION_TYPES)
+    evaluator_type = models.CharField(max_length=10, choices=EVALUATOR_CHOICES)
+    first_eval_score = models.IntegerField()
+    second_eval_score = models.IntegerField()
+    third_eval_score = models.IntegerField()
+    data = models.JSONField(null=True, blank=True)  # For storing additional form data
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['child_name', 'evaluation_type', 'evaluator_type']
+
+    def __str__(self):
+        return f"{self.child_name} - {self.evaluation_type} ({self.evaluator_type})"
+    
 

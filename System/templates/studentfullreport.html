@@ -1,0 +1,845 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% load static %}
+<!-- Add Font Awesome and Google Fonts -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="{% static 'css/pdash.css' %}">
+
+<style>
+    .full-report-container {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 10px;
+    }
+    
+    .report-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .report-controls {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+    
+    .report-table th {
+        background-color: var(--primary);
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-weight: 500;
+    }
+    
+    .report-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e0e0e0;
+        text-align: center;
+    }
+    
+    .report-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    
+    .domain-header {
+        background-color: #f5f5f5;
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .score-cell {
+        text-align: center;
+        font-weight: 500;
+        min-width: 60px;
+    }
+    
+    .teacher-score {
+        color: #2196F3;
+    }
+    
+    .parent-score {
+        color: #FF9800;
+    }
+    
+    .domain-cell {
+        text-align: left;
+        font-weight: 500;
+    }
+    
+    .domain-icon {
+        margin-right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chart-container {
+        height: 400px;
+        margin-top: 20px;
+    }
+    
+    @media print {
+        .sidebar, .welcome-header, .report-controls {
+            display: none;
+        }
+        
+        .main-content {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .full-report-container {
+            box-shadow: none;
+        }
+    }
+
+    .welcome-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Add styles for interpretation modal and button */
+    .interpretation-btn {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+    }
+
+    .interpretation-btn:hover {
+        background-color: #235c3f;
+    }
+
+    .interpretation-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .interpretation-modal-content {
+        background-color: #fff;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 800px;
+        position: relative;
+    }
+
+    .interpretation-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .interpretation-table th {
+        background-color: var(--primary);
+        color: white;
+        padding: 12px;
+        text-align: left;
+    }
+
+    .interpretation-table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        background-color: white;
+    }
+
+    .interpretation-table tr:hover td {
+        background-color: #f5f5f5;
+    }
+
+    .close-btn {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+    }
+
+    .close-btn:hover {
+        color: #000;
+    }
+</style>
+
+<div class="dashboard-container">
+    <!-- Add this button for mobile menu toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Add this for the sidebar overlay -->
+    <div id="sidebarOverlay"></div>
+
+    <!-- Create the sidebar structure -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3 style="color: white;">OB Pagsasarili</h3>
+        </div>
+        <div class="sidebar-content">
+            <a href="{% url 'dashboard' %}" class="sidebar-btn">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'student_full_report' %}" class="sidebar-btn active">
+                <i class="fas fa-chart-line"></i>
+                <span>Performance Report</span>
+            </a>
+            {% if student_name %}
+            <a href="{% url 'student_full_report' %}?student_name={{ student_name }}" class="sidebar-btn active">
+                <i class="fas fa-file-alt"></i>
+                <span>{{ student_name }}'s Report</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'message_home' %}" class="sidebar-btn">
+                <i class="fas fa-envelope"></i>
+                <span>Messages</span>
+                <span class="notification-badge"></span>
+            </a>
+            <a href="{% url 'parent_evaluation_tables' %}" class="sidebar-btn">
+                <i class="fas fa-chart-bar"></i>
+                <span>Evaluation</span>
+            </a>
+            <a href="{% url 'teacher_evaluations' %}" class="sidebar-btn">
+                <i class="fas fa-file-pdf"></i>
+                <span>Teacher Evaluations</span>
+            </a>
+            <a href="{% url 'account_settings' %}" class="sidebar-btn">
+                <i class="fas fa-user-cog"></i>
+                <span>Manage Account</span>
+            </a>
+            <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main-content">
+        <!-- Welcome header -->
+        <div class="welcome-header">
+            <div class="welcome-text">
+                {% if student_name %}
+                <span id="student-name">{{ student_name }}</span>'s Full Performance Report
+                {% else %}
+                <span id="student-name">Select a student</span>'s Full Performance Report
+                {% endif %}
+            </div>
+            <button class="interpretation-btn" onclick="showInterpretationModal()">
+                <i class="fas fa-info-circle"></i>
+                Score Interpretation Guide
+            </button>
+        </div>
+
+        <!-- Add the Interpretation Modal -->
+        <div id="interpretationModal" class="interpretation-modal">
+            <div class="interpretation-modal-content">
+                <span class="close-btn" onclick="closeInterpretationModal()">&times;</span>
+                <h2><i class="fas fa-info-circle"></i> Interpretation of Standard Score</h2>
+                <table class="interpretation-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Standard Score</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>69 and below</td>
+                            <td>Overall development must be monitored after 3 months</td>
+                        </tr>
+                        <tr>
+                            <td>70-79</td>
+                            <td>Overall development must be monitored after 6 months</td>
+                        </tr>
+                        <tr>
+                            <td>80-119</td>
+                            <td>Average overall development</td>
+                        </tr>
+                        <tr>
+                            <td>120-129</td>
+                            <td>Slightly advanced overall development</td>
+                        </tr>
+                        <tr>
+                            <td>130 and above</td>
+                            <td>Highly advanced overall development</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Full Report Container -->
+        <div class="full-report-container">
+            <div class="report-header">
+                <div class="report-controls">
+                </div>
+            </div> 
+            <!-- Performance Summary Table -->
+            <div class="table-responsive">
+                <table class="report-table" id="performance-table">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th colspan="3">Teacher Evaluation</th>
+                            <th colspan="3">Parent Evaluation</th>
+                            <th>Total</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th>1st</th>
+                            <th>2nd</th>
+                            <th>3rd</th>
+                            <th>1st</th>
+                            <th>2nd</th>
+                            <th>3rd</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be populated by JavaScript -->             
+                    </tbody>
+                </table>    
+            </div>
+            
+            <!-- Progress Chart -->
+            <div class="chart-container">
+                <div style="padding: 10px; text-align: center; margin-bottom: 10px;">
+                    <h4 style="margin-bottom: 15px; color: var(--primary); font-weight: 600;">Teacher and Parent Evaluation Comparison</h4>
+                    <div class="chart-legend" style="display: flex; justify-content: center; gap: 20px; font-size: 0.9rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center;">
+                            <span style="display: inline-block; width: 30px; height: 3px; background-color: #2196F3; margin-right: 8px;"></span>
+                            <span>Teacher Evaluation</span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span style="display: inline-block; width: 30px; height: 3px; background-color: #2196F3; margin-right: 8px; border-top: 3px dashed #2196F3;"></span>
+                            <span>Parent Evaluation</span>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/sidebar.js' %}"></script>
+<script>
+// Global variables for data sharing between functions
+let tableData = {};
+let domains = {
+    'gross_motor': { name: 'Gross Motor', icon: 'fas fa-running', color: 'rgb(255, 99, 132)' },
+    'fine_motor': { name: 'Fine Motor', icon: 'fas fa-hand-paper', color: 'rgb(54, 162, 235)' },
+    'self_help': { name: 'Self Help', icon: 'fas fa-hands-helping', color: 'rgb(75, 192, 192)' },
+    'receptive': { name: 'Receptive Language', icon: 'fas fa-ear-listen', color: 'rgb(153, 102, 255)' },
+    'expressive': { name: 'Expressive Language', icon: 'fas fa-comments', color: 'rgb(255, 159, 64)' },
+    'cognitive': { name: 'Cognitive', icon: 'fas fa-brain', color: 'rgb(255, 205, 86)' },
+    'social': { name: 'Social-Emotional', icon: 'fas fa-users', color: 'rgb(201, 203, 207)' }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get student name from the page if already set from Django context
+    let studentName = document.getElementById('student-name').textContent.trim();
+    
+    // If not set from Django or is the placeholder text, try to get from URL
+    if (!studentName || studentName === 'Select a student') {
+        const urlParams = new URLSearchParams(window.location.search);
+        studentName = urlParams.get('student_name');
+        
+        if (studentName) {
+            studentName = studentName.trim();
+            document.getElementById('student-name').textContent = studentName;
+        }
+    }
+    
+    console.log("Page loaded. Student name:", studentName);
+    
+    if (studentName && studentName !== 'Select a student') {
+        // Fetch student performance data
+        fetchStudentData(studentName);
+    } else {
+        console.error("No valid student name found");
+        // Show a user-friendly message on the page
+        const tableBody = document.querySelector('#performance-table tbody');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 20px;">
+                        <div style="max-width: 600px; margin: 0 auto;">
+                            <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">No student selected or found for your account.</p>
+                            <p style="margin-bottom: 10px;">To view a student report:</p>
+                            <ul style="text-align: left; margin-bottom: 15px;">
+                                <li>Go to the Performance Report page and select a student</li>
+                                <li>Check if your account is correctly linked to a student record</li>
+                                <li>Contact your administrator if you believe this is an error</li>
+                            </ul>
+                            <a href="{% url 'student_profile' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Go to Profile</a>
+                        </div>
+                    </td>
+                </tr>`;
+        }
+    }
+    
+    // Mobile menu toggle functionality
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (mobileMenuToggle && sidebar && sidebarOverlay) {
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+        
+        // Add click event to mobile menu toggle
+        mobileMenuToggle.addEventListener('click', toggleSidebar);
+        
+        // Close sidebar when clicking overlay
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    } else {
+        console.error("Mobile menu elements not found");
+    }
+    
+    // PDF export
+    const exportBtn = document.getElementById('exportPdfBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            console.log("Export PDF button clicked");
+            window.print();
+        });
+    } else {
+        console.error("Export button not found");
+    }
+});
+
+function fetchStudentData(studentName) {
+    // Ensure student name is trimmed
+    studentName = studentName.trim();
+    console.log(`Fetching data for student: "${studentName}"`);
+    
+    // Get the URL from Django's URL tag
+    const apiUrl = "{% url 'get_student_performance_data' %}";
+    console.log(`Using API URL: ${apiUrl}`);
+    
+    fetch(`${apiUrl}?student_name=${encodeURIComponent(studentName)}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `Server responded with status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'success') {
+                // Store the processed data
+                tableData = data.table_data;
+                populateTable(data.table_data, data.totals);
+                createChart(data.chart_data);
+            } else if (data.status === 'warning') {
+                // Handle warning (no data found but not an error)
+                console.warn('Warning:', data.message);
+                const tableBody = document.querySelector('#performance-table tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px;">
+                                <div style="max-width: 600px; margin: 0 auto;">
+                                    <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">${data.message}</p>
+                                    <p style="margin-bottom: 10px;">No evaluation data has been recorded yet for this student.</p>
+                                    <a href="{% url 'teacher_evaluation_tables' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Go to Evaluations</a>
+                                </div>
+                            </td>
+                        </tr>`;
+                }
+            } else {
+                console.error('Error in data:', data.message);
+                const tableBody = document.querySelector('#performance-table tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px;">
+                                <div style="max-width: 600px; margin: 0 auto;">
+                                    <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">Error: ${data.message}</p>
+                                    <p style="margin-bottom: 10px;">To view a student report:</p>
+                                    <ul style="text-align: left; margin-bottom: 15px;">
+                                        <li>Make sure your account is linked to a student record</li>
+                                        <li>Check that evaluations have been completed for this student</li>
+                                        <li>Contact your administrator if you believe this is an error</li>
+                                    </ul>
+                                    <a href="{% url 'student_profile' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Update Profile</a>
+                                </div>
+                            </td>
+                        </tr>`;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const tableBody = document.querySelector('#performance-table tbody');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            <div style="max-width: 600px; margin: 0 auto;">
+                                <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">Error: ${error.message}</p>
+                                <p style="margin-bottom: 10px;">Please check that:</p>
+                                <ul style="text-align: left; margin-bottom: 15px;">
+                                    <li>Your account is linked to a student record</li>
+                                    <li>The student name is spelled correctly</li>
+                                    <li>You have the necessary permissions to view this data</li>
+                                </ul>
+                                <a href="{% url 'dashboard' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Return to Dashboard</a>
+                            </div>
+                        </td>
+                    </tr>`;
+            }
+        });
+}
+
+// Helper function to format scores
+function formatScore(score) {
+    if (score === 'N/A' || score === null || score === undefined || score === 0) return '-';
+    return isNaN(parseInt(score)) ? '-' : parseInt(score);
+}
+
+function populateTable(tableData, totals) {
+    const tableBody = document.querySelector('#performance-table tbody');
+    tableBody.innerHTML = '';
+    
+    for (const domain in tableData) {
+        if (!domains[domain]) continue; // Skip if not in our domains list
+        
+        const row = document.createElement('tr');
+        
+        // Domain name with icon
+        const domainCell = document.createElement('td');
+        domainCell.className = 'domain-cell';
+        domainCell.innerHTML = `<i class="${domains[domain].icon}" style="color: ${domains[domain].color};"></i> ${domains[domain].name}`;
+        row.appendChild(domainCell);
+        
+        // Teacher and parent evaluation scores
+        const data = tableData[domain];
+        
+        // Teacher evaluations
+        let cell = document.createElement('td');
+        cell.className = 'score-cell teacher-score';
+        cell.textContent = formatScore(data.teacher_eval1);
+        row.appendChild(cell);
+        
+        cell = document.createElement('td');
+        cell.className = 'score-cell teacher-score';
+        cell.textContent = formatScore(data.teacher_eval2);
+        row.appendChild(cell);
+        
+        cell = document.createElement('td');
+        cell.className = 'score-cell teacher-score';
+        cell.textContent = formatScore(data.teacher_eval3);
+        row.appendChild(cell);
+        
+        // Parent evaluations
+        cell = document.createElement('td');
+        cell.className = 'score-cell parent-score';
+        cell.textContent = formatScore(data.parent_eval1);
+        row.appendChild(cell);
+        
+        cell = document.createElement('td');
+        cell.className = 'score-cell parent-score';
+        cell.textContent = formatScore(data.parent_eval2);
+        row.appendChild(cell);
+        
+        cell = document.createElement('td');
+        cell.className = 'score-cell parent-score';
+        cell.textContent = formatScore(data.parent_eval3);
+        row.appendChild(cell);
+        
+        // Total
+        cell = document.createElement('td');
+        cell.className = 'score-cell';
+        cell.style.fontWeight = '600';
+        cell.textContent = totals[domain] > 0 ? totals[domain] : '-';
+        row.appendChild(cell);
+        
+        tableBody.appendChild(row);
+    }
+}
+
+function createChart(chartData) {
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    
+    // Validate that we have the required data
+    if (!chartData || !chartData.datasets || !Array.isArray(chartData.datasets) || !tableData) {
+        console.error('Invalid chart data or table data is missing');
+        return;
+    }
+    
+    // Create new datasets that include both teacher and parent data
+    const enhancedDatasets = [];
+    
+    // Process the original datasets (teacher data)
+    console.log('Original datasets:', chartData.datasets);
+    
+    chartData.datasets.forEach(dataset => {
+        try {
+            // Check if teacher data exists and has non-zero values
+            const teacherScores = dataset.data.map(score => 
+                (score === null || score === undefined || isNaN(score)) ? 0 : Number(score)
+            );
+            const hasTeacherData = teacherScores.some(score => score > 0);
+            
+            console.log(`Domain: ${dataset.label}, Teacher scores:`, teacherScores, 'Has data:', hasTeacherData);
+            
+            // Only add teacher dataset if it has actual data
+            if (hasTeacherData) {
+                enhancedDatasets.push({
+                    ...dataset,
+                    label: `Teacher - ${dataset.label}`,
+                    data: teacherScores
+                });
+            }
+            
+            // Create corresponding parent dataset from table_data
+            const domainKey = Object.keys(domains).find(key => 
+                domains[key].name === dataset.label
+            );
+            
+            if (domainKey && tableData[domainKey]) {
+                const domain = tableData[domainKey];
+                // Get parent scores and convert to numbers
+                const parentScores = [
+                    domain.parent_eval1,
+                    domain.parent_eval2,
+                    domain.parent_eval3
+                ].map(score => {
+                    if (score === 'N/A' || score === null || score === undefined || score === '-' || isNaN(score)) {
+                        return 0;
+                    }
+                    return Number(score);
+                });
+                
+                const hasParentData = parentScores.some(score => score > 0);
+                
+                console.log(`Domain: ${dataset.label}, Parent scores:`, parentScores, 'Has data:', hasParentData);
+                
+                if (hasParentData) {
+                    enhancedDatasets.push({
+                        label: `Parent - ${dataset.label}`,
+                        data: parentScores,
+                        borderColor: dataset.borderColor.replace(')', ', 0.6)').replace('rgb', 'rgba'),
+                        backgroundColor: dataset.backgroundColor,
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.3,
+                        pointBackgroundColor: dataset.borderColor.replace(')', ', 0.6)').replace('rgb', 'rgba'),
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error processing dataset:', error);
+        }
+    });
+    
+    // Filter out any datasets that don't have valid data
+    const filteredDatasets = enhancedDatasets.filter(dataset => {
+        const hasValidData = dataset.data.some(score => score > 0);
+        console.log(`Dataset: ${dataset.label}, Has valid data:`, hasValidData);
+        return hasValidData;
+    });
+    
+    console.log('Final filtered datasets:', filteredDatasets);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: filteredDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Score'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Evaluation Period'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        padding: 20,
+                        filter: function(legendItem, data) {
+                            // Only show legend items that have actual data
+                            const dataset = data.datasets[legendItem.datasetIndex];
+                            return dataset.data.some(score => score > 0);
+                        }
+                    }
+                },
+                verticalLines: {
+                    beforeDraw: function(chart) {
+                        if (chart.config.options.plugins.verticalLines.display !== false) {
+                            const ctx = chart.ctx;
+                            const chartArea = chart.chartArea;
+                            
+                            // Save context state
+                            ctx.save();
+                            
+                            // Set line style
+                            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                            ctx.lineWidth = 2;
+                            
+                            // Draw start line
+                            ctx.beginPath();
+                            ctx.moveTo(chartArea.left, chartArea.top);
+                            ctx.lineTo(chartArea.left, chartArea.bottom);
+                            ctx.stroke();
+                            
+                            // Draw end line
+                            ctx.beginPath();
+                            ctx.moveTo(chartArea.right, chartArea.top);
+                            ctx.lineTo(chartArea.right, chartArea.bottom);
+                            ctx.stroke();
+                            
+                            // Restore context state
+                            ctx.restore();
+                        }
+                    },
+                    display: true
+                },
+                title: {
+                    display: true,
+                    text: 'Teacher and Parent Evaluation Comparison',
+                    font: {
+                        size: 16
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            return `${tooltipItems[0].label}`;
+                        },
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw || 'No data'}`;
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [{
+            id: 'verticalLines',
+            beforeDraw: function(chart) {
+                if (chart.config.options.plugins.verticalLines.display !== false) {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    
+                    // Save context state
+                    ctx.save();
+                    
+                    // Set line style
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                    ctx.lineWidth = 2;
+                    
+                    // Draw start line
+                    ctx.beginPath();
+                    ctx.moveTo(chartArea.left, chartArea.top);
+                    ctx.lineTo(chartArea.left, chartArea.bottom);
+                    ctx.stroke();
+                    
+                    // Draw end line
+                    ctx.beginPath();
+                    ctx.moveTo(chartArea.right, chartArea.top);
+                    ctx.lineTo(chartArea.right, chartArea.bottom);
+                    ctx.stroke();
+                    
+                    // Restore context state
+                    ctx.restore();
+                }
+            }
+        }]
+    });
+}
+
+// Add these functions at the beginning of your script
+function showInterpretationModal() {
+    document.getElementById('interpretationModal').style.display = 'block';
+}
+
+function closeInterpretationModal() {
+    document.getElementById('interpretationModal').style.display = 'none';
+}
+
+// Add this to your existing window click handler
+window.onclick = function(event) {
+    var interpretationModal = document.getElementById('interpretationModal');
+    if (event.target == interpretationModal) {
+        interpretationModal.style.display = 'none';
+    }
+}
+</script>
+{% endblock %} 

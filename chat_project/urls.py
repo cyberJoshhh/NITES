@@ -26,13 +26,13 @@ def redirect_to_system(request):
 
 urlpatterns = [
     path('', redirect_to_system, name='home'),
-    path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('system/', include('System.urls')),
-    # Include all Messaging URLs
     path('messaging/', include('Messaging.urls')),
 ]
 
 # Serve media files in development
 if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

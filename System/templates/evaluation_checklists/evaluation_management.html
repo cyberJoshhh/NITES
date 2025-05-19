@@ -1,0 +1,1516 @@
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="{% static 'css/tdash.css' %}">
+<div class="eval-main-wrapper">
+    {% include 'sidebar.html' %}
+    <title>Evaluation Management</title>
+    <div class="eval-main-content">
+        <div class="evaluation-container">
+            <h1 class="domain-title">Evaluation Management</h1>
+            
+            <div class="form-controls">
+                <button type="button" id="addFormBtn" class="add-form-button">
+                    <i class="fas fa-plus"></i> Add New Form
+                </button>
+                <button type="button" id="openSavedFormsBtn" class="add-form-button">
+                    <i class="fas fa-file-alt"></i> Open Saved Forms
+                </button>
+            </div>
+
+            <div id="formsContainer">
+                <form id="evaluationManagementForm" method="POST" action="" class="evaluation-form">
+                    {% csrf_token %}
+                    <div class="table-controls">
+                        <button type="button" id="addRowBtn">Add Row</button>
+                        <button type="button" id="removeRowBtn">Remove Row</button>
+                        <button type="button" id="addColBtn">Add Eval Column</button>
+                        <button type="button" id="removeColBtn">Remove Eval Column</button>
+                        <div class="eval-toggles">
+                            <!-- Evaluation toggles will be added here dynamically -->
+                        </div>
+                    </div>
+                    <div class="evaluation-table">
+                        <table id="editableTable">
+                            <thead>
+                                <tr>
+                                    <th contenteditable="true" class="gross-motor-header"></th>
+                                    <th>Material / Procedure</th>
+                                    <th class="eval-col">1st Eval</th>
+                                    <th class="eval-col">2nd Eval</th>
+                                    <th class="eval-col">3rd Eval</th>
+                                    <th>Comments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td contenteditable="true" class="gross-motor-cell">New Item</td>
+                                    <td contenteditable="true"></td>
+                                    <td class="eval-col"><input type="checkbox" name="checkbox_1_eval1" value="1"></td>
+                                    <td class="eval-col"><input type="checkbox" name="checkbox_1_eval2" value="1"></td>
+                                    <td class="eval-col"><input type="checkbox" name="checkbox_1_eval3" value="1"></td>
+                                    <td><input type="text" name="comment_1" class="comment-input"></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td contenteditable="false">--</td>
+                                    <td contenteditable="false"><strong>TOTAL SCORE</strong></td>
+                                    <td id="total1">0</td>
+                                    <td id="total2">0</td>
+                                    <td id="total3">0</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <input type="hidden" name="eval1_score" id="eval1Score" value="0">
+                    <input type="hidden" name="eval2_score" id="eval2Score" value="0">
+                    <input type="hidden" name="eval3_score" id="eval3Score" value="0">
+                    <input type="hidden" id="currentFormId" value="">
+                    <div class="submit-button-container">
+                        <button type="button" class="submit-button" id="saveTableBtn">
+                            <i class="fas fa-save"></i> Save as New Form
+                        </button>
+                        <button type="button" class="submit-button update-button" id="updateFormBtn" style="display: none;">
+                            <i class="fas fa-sync-alt"></i> Update Form
+                        </button>
+                        <div id="loading-spinner" class="loading-spinner" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i> Processing...
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Saved Forms Modal -->
+<div id="savedFormsModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 class="modal-title">Saved Evaluation Forms</h2>
+        <div id="savedFormsList">
+            <table class="saved-forms-table">
+                <thead>
+                    <tr>
+                        <th>Form Name</th>
+                        <th>Evaluator Type</th>
+                        <th>Date Created</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="savedFormsTableBody">
+                    <!-- Forms will be loaded here -->
+                </tbody>
+            </table>
+            <div id="noFormsMessage" style="display: none;">
+                <p>No saved forms found. Create a new form first.</p>
+            </div>
+            <div id="formsLoadingSpinner" class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Name Modal -->
+<div id="formNameModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 class="modal-title">Enter Form Details</h2>
+        <div class="form-group">
+            <label for="formNameInput">Form Name:</label>
+            <input type="text" id="formNameInput" class="form-control" placeholder="Enter a name for this form">
+            <p class="form-note">This will help you identify the form later.</p>
+        </div>
+        <div class="form-group">
+            <label for="evaluatorTypeSelect">Evaluator Type:</label>
+            <select id="evaluatorTypeSelect" class="form-control">
+                <option value="TEACHER">Teacher</option>
+                <option value="PARENT">Parent</option>
+            </select>
+        </div>
+        <button type="button" id="saveWithNameBtn" class="submit-button">
+            <i class="fas fa-save"></i> Save Form
+        </button>
+    </div>
+</div>
+
+<style>
+.eval-main-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+.eval-main-content {
+    flex: 1;
+    padding: 2rem 2rem 2rem 2.5rem;
+    background: #f8f9fa;
+    min-height: 100vh;
+    margin-left: 250px; /* Add margin to prevent sidebar overlap */
+}
+@media (max-width: 900px) {
+    .eval-main-wrapper {
+        flex-direction: column;
+    }
+    .eval-main-content {
+        padding: 1rem;
+        margin-left: 0; /* Remove margin on mobile */
+    }
+}
+.evaluation-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.domain-title {
+    color: #2d6a4f;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+}
+.evaluation-table {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow-x: auto;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+}
+th {
+    background-color: #2d6a4f;
+    color: white;
+    font-weight: 500;
+}
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #2d6a4f;
+}
+.comment-input {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+.submit-button-container {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.submit-button {
+    background-color: #2d6a4f;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.submit-button:hover {
+    background-color: #1b4332;
+}
+.update-button {
+    background-color: #40916c;
+}
+.update-button:hover {
+    background-color: #2d6a4f;
+}
+.loading-spinner {
+    color: #2d6a4f;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.table-controls {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+.table-controls button {
+    background: #2d6a4f;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+}
+.form-controls {
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+}
+.add-form-button {
+    background: #2d6a4f;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s;
+}
+.add-form-button:hover {
+    background-color: #1b4332;
+}
+
+/* Saved Forms Modal Styles */
+.saved-forms-table {
+    width: 100%;
+    margin-top: 1.5rem;
+}
+.saved-forms-table thead th {
+    text-align: left;
+    background-color: #2d6a4f;
+    color: white;
+    padding: 0.75rem 1rem;
+}
+.saved-forms-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+.form-action-btn {
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.form-action-btn:hover {
+    background-color: #1b4332;
+}
+.form-delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.form-delete-btn:hover {
+    background-color: #bd2130;
+}
+#noFormsMessage {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+.form-group {
+    margin-bottom: 1.5rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2d6a4f;
+    font-weight: 500;
+}
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+.form-control:focus {
+    border-color: #2d6a4f;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+}
+.form-note {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+.radio-group {
+    margin-top: 10px;
+}
+.radio-label {
+    display: inline-block;
+    margin-right: 20px;
+    cursor: pointer;
+}
+.radio-label input[type="radio"] {
+    margin-right: 5px;
+}
+
+/* Replace the radio group styles with select styles */
+.radio-group {
+    margin-top: 10px;
+}
+.radio-label {
+    display: inline-block;
+    margin-right: 20px;
+    cursor: pointer;
+}
+.radio-label input[type="radio"] {
+    margin-right: 5px;
+}
+
+/* Add select styles */
+select.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: white;
+    cursor: pointer;
+}
+
+select.form-control:focus {
+    border-color: #2d6a4f;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+}
+
+.toggle-button {
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-button.disabled {
+    background: #dc3545;
+}
+
+.toggle-button i {
+    transition: transform 0.3s ease;
+}
+
+.toggle-button.disabled i {
+    transform: rotate(180deg);
+}
+
+.eval-col.disabled input[type="checkbox"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.eval-toggles {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.eval-toggle {
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.eval-toggle.disabled {
+    background: #dc3545;
+}
+
+.eval-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.eval-toggle.disabled i {
+    transform: rotate(180deg);
+}
+
+.eval-col.disabled {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.eval-col.disabled input[type="checkbox"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: #f8f9fa;
+}
+
+.eval-col input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.eval-col input[type="checkbox"]:not(:disabled):hover {
+    transform: scale(1.1);
+}
+
+.eval-toggles {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+    flex-wrap: wrap;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // If there is saved table data, render it
+    const savedTable = JSON.parse('{{ saved_table_json|default:"null"|escapejs }}');
+    if (savedTable) {
+        const table = document.getElementById('editableTable');
+        // Clear existing table body
+        table.tBodies[0].innerHTML = '';
+        // Set headers
+        if (savedTable.headers && savedTable.headers.length) {
+            const ths = table.tHead.rows[0].cells;
+            for (let i = 0; i < savedTable.headers.length; i++) {
+                if (ths[i]) ths[i].textContent = savedTable.headers[i];
+            }
+        }
+        // Add rows
+        savedTable.rows.forEach((rowData, rowIdx) => {
+            const tr = document.createElement('tr');
+            rowData.forEach((cellData, colIdx) => {
+                let td = document.createElement('td');
+                // If it's an eval-col (checkbox)
+                if (table.tHead.rows[0].cells[colIdx] && table.tHead.rows[0].cells[colIdx].classList.contains('eval-col')) {
+                    td.className = 'eval-col';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    if (cellData === true) cb.checked = true;
+                    td.appendChild(cb);
+                } else if (table.tHead.rows[0].cells[colIdx] && table.tHead.rows[0].cells[colIdx].textContent === 'Comments') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'comment-input';
+                    input.value = cellData;
+                    td.appendChild(input);
+                } else {
+                    td.contentEditable = true;
+                    td.innerHTML = cellData;
+                }
+                tr.appendChild(td);
+            });
+            table.tBodies[0].appendChild(tr);
+        });
+    } else {
+        // Clear the initial row if no saved data
+        const table = document.getElementById('editableTable');
+        table.tBodies[0].innerHTML = '';
+    }
+
+    // Add event listeners for Add/Remove Row buttons
+    document.getElementById('addRowBtn').addEventListener('click', function() {
+        const table = document.getElementById('editableTable');
+        const headerRow = table.tHead.rows[0];
+        const newRow = table.tBodies[0].insertRow();
+        
+        // Get the number of columns from the header
+        const columnCount = headerRow.cells.length;
+        
+        // Create cells based on the header structure
+        for (let i = 0; i < columnCount; i++) {
+            const cell = newRow.insertCell();
+            const headerCell = headerRow.cells[i];
+            
+            if (headerCell.classList.contains('eval-col')) {
+                // Evaluation column (checkbox)
+                cell.className = 'eval-col';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.addEventListener('change', calculateScores);
+                if (evaluationsDisabled) {
+                    cell.classList.add('disabled');
+                    cb.disabled = true;
+                }
+                cell.appendChild(cb);
+            } else if (headerCell.textContent === 'Comments') {
+                // Comments column
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'comment-input';
+                input.name = `comment_${table.tBodies[0].rows.length}`;
+                input.placeholder = 'Enter comment...';
+                input.style.width = '100%';
+                input.style.padding = '8px';
+                input.style.border = '1px solid #e0e0e0';
+                input.style.borderRadius = '4px';
+                input.style.boxSizing = 'border-box';
+                cell.appendChild(input);
+            } else {
+                // Regular editable cell
+                cell.contentEditable = true;
+                if (i === 0) {
+                    cell.className = 'gross-motor-cell';
+                    cell.textContent = 'New Item';
+                }
+            }
+        }
+        
+        calculateScores();
+    });
+    
+    document.getElementById('removeRowBtn').addEventListener('click', function() {
+        const table = document.getElementById('editableTable');
+        const rowCount = table.tBodies[0].rows.length;
+        if (rowCount > 1) {
+            table.tBodies[0].deleteRow(rowCount - 1);
+            calculateScores();
+        }
+    });
+
+    // Add event listeners for Add/Remove Column buttons
+    document.getElementById('addColBtn').addEventListener('click', addEvalColumn);
+    document.getElementById('removeColBtn').addEventListener('click', removeEvalColumn);
+
+    // Function to create evaluation toggle buttons
+    function createEvalToggles() {
+        const table = document.getElementById('editableTable');
+        const evalToggles = document.querySelector('.eval-toggles');
+        evalToggles.innerHTML = ''; // Clear existing toggles
+        
+        const evalColumns = table.tHead.rows[0].querySelectorAll('.eval-col');
+        evalColumns.forEach((col, index) => {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'eval-toggle';
+            toggleBtn.innerHTML = `<i class="fas fa-lock"></i> ${col.textContent}`;
+            toggleBtn.dataset.columnIndex = index;
+            toggleBtn.type = 'button'; // Prevent form submission
+            
+            // Check if this column is already disabled
+            if (col.classList.contains('disabled')) {
+                toggleBtn.classList.add('disabled');
+                toggleBtn.innerHTML = `<i class="fas fa-lock-open"></i> ${col.textContent}`;
+            }
+            
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default button behavior
+                const columnIndex = parseInt(this.dataset.columnIndex);
+                const isDisabled = this.classList.contains('disabled');
+                
+                // Toggle the disabled state for this specific column
+                const evalCells = table.querySelectorAll(`.eval-col:nth-child(${columnIndex + 3})`);
+                evalCells.forEach(cell => {
+                    if (isDisabled) {
+                        cell.classList.remove('disabled');
+                        const checkbox = cell.querySelector('input[type="checkbox"]');
+                        if (checkbox) {
+                            checkbox.disabled = false;
+                            checkbox.style.pointerEvents = 'auto';
+                            checkbox.style.opacity = '1';
+                            checkbox.style.cursor = 'pointer';
+                        }
+                    } else {
+                        cell.classList.add('disabled');
+                        const checkbox = cell.querySelector('input[type="checkbox"]');
+                        if (checkbox) {
+                            checkbox.disabled = true;
+                            checkbox.style.pointerEvents = 'none';
+                            checkbox.style.opacity = '0.5';
+                            checkbox.style.cursor = 'not-allowed';
+                        }
+                    }
+                });
+                
+                // Update button state
+                this.classList.toggle('disabled');
+                this.innerHTML = isDisabled ? 
+                    `<i class="fas fa-lock"></i> ${col.textContent}` :
+                    `<i class="fas fa-lock-open"></i> ${col.textContent}`;
+                
+                // Update header cell state
+                const headerCell = table.tHead.rows[0].querySelectorAll('.eval-col')[columnIndex];
+                if (headerCell) {
+                    headerCell.classList.toggle('disabled', !isDisabled);
+                }
+            });
+            
+            evalToggles.appendChild(toggleBtn);
+        });
+    }
+
+    // Modify addEvalColumn function to add toggle button
+    function addEvalColumn() {
+        const table = document.getElementById('editableTable');
+        const headerRow = table.tHead.rows[0];
+        const evalColumnCount = headerRow.querySelectorAll('.eval-col').length;
+        const columnCount = headerRow.cells.length;
+        
+        // Insert new header before the Comments column
+        const newHeaderCell = document.createElement('th');
+        newHeaderCell.className = 'eval-col';
+        newHeaderCell.textContent = `${evalColumnCount + 1}${getOrdinalSuffix(evalColumnCount + 1)} Eval`;
+        headerRow.insertBefore(newHeaderCell, headerRow.cells[columnCount - 1]);
+        
+        // Add a checkbox cell to each row
+        for (let i = 0; i < table.tBodies[0].rows.length; i++) {
+            const row = table.tBodies[0].rows[i];
+            const newCell = document.createElement('td');
+            newCell.className = 'eval-col';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.addEventListener('change', calculateScores);
+            newCell.appendChild(checkbox);
+            
+            row.insertBefore(newCell, row.cells[row.cells.length - 1]);
+        }
+        
+        // Add a new cell to the footer row for the total
+        const footerRow = table.tFoot.rows[0];
+        const newTotalCell = document.createElement('td');
+        newTotalCell.id = `total${evalColumnCount + 1}`;
+        newTotalCell.textContent = '0';
+        footerRow.insertBefore(newTotalCell, footerRow.cells[footerRow.cells.length - 1]);
+        
+        // Add a new hidden input for the score
+        const newScoreInput = document.createElement('input');
+        newScoreInput.type = 'hidden';
+        newScoreInput.name = `eval${evalColumnCount + 1}_score`;
+        newScoreInput.id = `eval${evalColumnCount + 1}Score`;
+        newScoreInput.value = '0';
+        document.getElementById('evaluationManagementForm').appendChild(newScoreInput);
+        
+        // Create new toggle buttons
+        createEvalToggles();
+        
+        calculateScores();
+    }
+
+    // Modify removeEvalColumn function to update toggle buttons
+    function removeEvalColumn() {
+        const table = document.getElementById('editableTable');
+        const headerRow = table.tHead.rows[0];
+        const evalColumns = headerRow.querySelectorAll('.eval-col');
+        
+        if (evalColumns.length <= 3) {
+            alert('You must have at least 3 evaluation columns.');
+            return;
+        }
+        
+        const lastEvalColumnIndex = Array.from(headerRow.cells).findIndex(cell => {
+            return cell.classList.contains('eval-col') && 
+                   cell === evalColumns[evalColumns.length - 1];
+        });
+        
+        for (let i = 0; i < table.rows.length; i++) {
+            if (table.rows[i].cells.length > lastEvalColumnIndex) {
+                table.rows[i].deleteCell(lastEvalColumnIndex);
+            }
+        }
+        
+        const evalColumnCount = headerRow.querySelectorAll('.eval-col').length;
+        const inputToRemove = document.getElementById(`eval${evalColumnCount + 1}Score`);
+        if (inputToRemove) {
+            inputToRemove.remove();
+        }
+        
+        // Update toggle buttons
+        createEvalToggles();
+        
+        calculateScores();
+    }
+    
+    // Helper function to get ordinal suffix for numbers
+    function getOrdinalSuffix(num) {
+        const j = num % 10;
+        const k = num % 100;
+        if (j === 1 && k !== 11) {
+            return 'st';
+        }
+        if (j === 2 && k !== 12) {
+            return 'nd';
+        }
+        if (j === 3 && k !== 13) {
+            return 'rd';
+        }
+        return 'th';
+    }
+
+    function calculateScores() {
+        const table = document.getElementById('editableTable');
+        const evalColumnCount = table.tHead.rows[0].querySelectorAll('.eval-col').length;
+        let evalTotals = new Array(evalColumnCount).fill(0);
+        
+        for (let row of table.tBodies[0].rows) {
+            const evalCells = row.querySelectorAll('.eval-col');
+            for (let i = 0; i < evalCells.length; i++) {
+                if (evalCells[i].querySelector('input[type="checkbox"]:checked')) {
+                    evalTotals[i]++;
+                }
+            }
+        }
+        
+        // Update the totals in the footer and hidden inputs
+        for (let i = 0; i < evalTotals.length; i++) {
+            const totalElement = document.getElementById(`total${i + 1}`);
+            if (totalElement) {
+                totalElement.textContent = evalTotals[i];
+            }
+            
+            const scoreInput = document.getElementById(`eval${i + 1}Score`);
+            if (scoreInput) {
+                scoreInput.value = evalTotals[i];
+            }
+        }
+    }
+    
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', calculateScores);
+    });
+    calculateScores();
+
+    // Saved Forms Modal functionality
+    const savedFormsModal = document.getElementById('savedFormsModal');
+    const openSavedFormsBtn = document.getElementById('openSavedFormsBtn');
+    const closeBtn = savedFormsModal.querySelector('.close');
+    const savedFormsTableBody = document.getElementById('savedFormsTableBody');
+    const noFormsMessage = document.getElementById('noFormsMessage');
+    const formsLoadingSpinner = document.getElementById('formsLoadingSpinner');
+
+    // Form Name Modal functionality
+    const formNameModal = document.getElementById('formNameModal');
+    const formNameInput = document.getElementById('formNameInput');
+    const saveWithNameBtn = document.getElementById('saveWithNameBtn');
+    const formNameCloseBtn = formNameModal.querySelector('.close');
+
+    // Update form button
+    const updateFormBtn = document.getElementById('updateFormBtn');
+    const currentFormId = document.getElementById('currentFormId');
+
+    // Open saved forms modal when clicking the button
+    openSavedFormsBtn.addEventListener('click', function() {
+        savedFormsModal.style.display = 'block';
+        loadSavedForms();
+    });
+
+    // Close saved forms modal when clicking the X
+    closeBtn.addEventListener('click', function() {
+        savedFormsModal.style.display = 'none';
+    });
+
+    // Close form name modal when clicking the X
+    formNameCloseBtn.addEventListener('click', function() {
+        formNameModal.style.display = 'none';
+    });
+
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === savedFormsModal) {
+            savedFormsModal.style.display = 'none';
+        }
+        if (event.target === formNameModal) {
+            formNameModal.style.display = 'none';
+        }
+    });
+
+    // Function to load saved forms
+    function loadSavedForms() {
+        savedFormsTableBody.innerHTML = '';
+        noFormsMessage.style.display = 'none';
+        formsLoadingSpinner.style.display = 'flex';
+
+        fetch('{% url "get_saved_evaluation_forms" %}')
+            .then(response => response.json())
+            .then(data => {
+                formsLoadingSpinner.style.display = 'none';
+                
+                if (data.status === 'success' && data.forms.length > 0) {
+                    data.forms.forEach(form => {
+                        const row = document.createElement('tr');
+                        
+                        // Format name cell
+                        const nameCell = document.createElement('td');
+                        nameCell.textContent = form.name;
+                        
+                        const evaluatorCell = document.createElement('td');
+                        evaluatorCell.textContent = form.evaluator_type === 'TEACHER' ? 'Teacher' : 'Parent';
+                        
+                        // Format date cells
+                        const createdCell = document.createElement('td');
+                        const createdDate = new Date(form.created_at);
+                        createdCell.textContent = createdDate.toLocaleString();
+                        
+                        const updatedCell = document.createElement('td');
+                        const updatedDate = new Date(form.updated_at);
+                        updatedCell.textContent = updatedDate.toLocaleString();
+                        
+                        const actionsCell = document.createElement('td');
+                        
+                        const openBtn = document.createElement('button');
+                        openBtn.className = 'form-action-btn';
+                        openBtn.innerHTML = '<i class="fas fa-folder-open"></i> Open';
+                        openBtn.onclick = () => openForm(form.id);
+                        
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'form-action-btn delete';
+                        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+                        deleteBtn.onclick = () => deleteForm(form.id);
+                        
+                        actionsCell.appendChild(openBtn);
+                        actionsCell.appendChild(deleteBtn);
+                        
+                        row.appendChild(nameCell);
+                        row.appendChild(evaluatorCell);
+                        row.appendChild(createdCell);
+                        row.appendChild(updatedCell);
+                        row.appendChild(actionsCell);
+                        
+                        savedFormsTableBody.appendChild(row);
+                    });
+                } else {
+                    noFormsMessage.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading saved forms:', error);
+                formsLoadingSpinner.style.display = 'none';
+                noFormsMessage.style.display = 'block';
+                noFormsMessage.textContent = 'Error loading saved forms. Please try again.';
+            });
+    }
+
+    // Function to load a specific form
+    function loadFormData(formId) {
+        savedFormsModal.style.display = 'none';
+        const spinner = document.getElementById('loading-spinner');
+        spinner.style.display = 'block';
+        
+        fetch(`{% url "get_evaluation_form_data" form_id=0 %}`.replace('0', formId))
+            .then(response => response.json())
+            .then(data => {
+                spinner.style.display = 'none';
+                
+                if (data.status === 'success' && data.form) {
+                    console.log('Received form data:', data.form); // Debug log
+                    
+                    // Update form name first
+                    updateFormName(data.form.name);
+                    
+                    // First render the form data
+                    renderFormData(data.form.data);
+                    
+                    // Set current form ID and show update button
+                    currentFormId.value = data.form.id;
+                    
+                    // Set evaluator type in select
+                    const evaluatorSelect = document.getElementById('evaluatorTypeSelect');
+                    if (evaluatorSelect) {
+                        evaluatorSelect.value = data.form.evaluator_type;
+                    }
+                    
+                    updateFormBtn.style.display = 'inline-block';
+                    
+                    // Try updating form name again after a short delay
+                    setTimeout(() => updateFormName(data.form.name), 100);
+                    
+                    alert('Form loaded successfully!');
+                } else {
+                    alert('Error loading form data.');
+                }
+            })
+            .catch(error => {
+                spinner.style.display = 'none';
+                alert('Error loading form data. Please try again.');
+                console.error('Error loading form data:', error);
+            });
+    }
+
+    // Function to render form data in the table
+    function renderFormData(tableData) {
+        const table = document.getElementById('editableTable');
+        
+        // Clear existing table body
+        table.tBodies[0].innerHTML = '';
+        
+        // Reset the table first to ensure we have the right number of columns
+        resetTableStructure(tableData);
+        
+        // Store disabled columns state before rendering
+        const disabledColumns = tableData.disabled_columns || [];
+        
+        // Add rows
+        tableData.rows.forEach((rowData, rowIdx) => {
+            const tr = document.createElement('tr');
+            rowData.forEach((cellData, colIdx) => {
+                let td = document.createElement('td');
+                
+                // Check if this is an evaluation column based on the header
+                const headerCell = table.tHead.rows[0].cells[colIdx];
+                const isEvalCol = headerCell && headerCell.classList.contains('eval-col');
+                const isCommentCol = headerCell && headerCell.textContent === 'Comments';
+                
+                if (isEvalCol) {
+                    td.className = 'eval-col';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    if (cellData === true) cb.checked = true;
+                    cb.addEventListener('change', calculateScores);
+                    
+                    // Check if this column should be disabled
+                    const evalIndex = Array.from(table.tHead.rows[0].querySelectorAll('.eval-col')).indexOf(headerCell);
+                    const isDisabled = disabledColumns.some(col => col.index === evalIndex && col.disabled);
+                    
+                    if (isDisabled) {
+                        td.classList.add('disabled');
+                        cb.disabled = true;
+                        cb.style.pointerEvents = 'none';
+                        cb.style.opacity = '0.5';
+                        cb.style.cursor = 'not-allowed';
+                        headerCell.classList.add('disabled');
+                    }
+                    
+                    td.appendChild(cb);
+                } else if (isCommentCol) {
+                    // Comments column
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'comment-input';
+                    input.name = `comment_${rowIdx + 1}`;
+                    input.value = cellData || '';
+                    input.placeholder = 'Enter comment...';
+                    input.style.width = '100%';
+                    input.style.padding = '8px';
+                    input.style.border = '1px solid #e0e0e0';
+                    input.style.borderRadius = '4px';
+                    input.style.boxSizing = 'border-box';
+                    td.appendChild(input);
+                } else {
+                    // Regular editable cell
+                    td.contentEditable = true;
+                    td.className = colIdx === 0 ? 'gross-motor-cell' : '';
+                    td.textContent = cellData || '';
+                }
+                
+                tr.appendChild(td);
+            });
+            
+            table.tBodies[0].appendChild(tr);
+        });
+        
+        // After rendering, update toggle buttons
+        createEvalToggles();
+        
+        calculateScores();
+    }
+    
+    // Function to reset the table structure based on loaded data
+    function resetTableStructure(tableData) {
+        const table = document.getElementById('editableTable');
+        const headerRow = table.tHead.rows[0];
+        
+        // Determine how many evaluation columns we need
+        const evalColumnCount = tableData.headers.filter(
+            header => header.includes('Eval')
+        ).length;
+        
+        // Reset headers
+        // Keep the first two columns
+        while (headerRow.cells.length > 2) {
+            headerRow.deleteCell(2);
+        }
+        
+        // Set the main headers text
+        if (tableData.headers && tableData.headers.length >= 2) {
+            headerRow.cells[0].textContent = tableData.headers[0];
+            headerRow.cells[1].textContent = tableData.headers[1];
+        }
+        
+        // Add the eval columns
+        for (let i = 0; i < evalColumnCount; i++) {
+            const evalHeader = document.createElement('th');
+            evalHeader.className = 'eval-col';
+            evalHeader.textContent = tableData.headers[i + 2]; // +2 to skip first two columns
+            headerRow.appendChild(evalHeader);
+        }
+        
+        // Add the Comments column
+        const commentsHeader = document.createElement('th');
+        commentsHeader.textContent = 'Comments';
+        headerRow.appendChild(commentsHeader);
+        
+        // Reset footer row
+        const footerRow = table.tFoot.rows[0];
+        // Keep only first two cells
+        while (footerRow.cells.length > 2) {
+            footerRow.deleteCell(2);
+        }
+        
+        // Add total cells for each eval column
+        for (let i = 0; i < evalColumnCount; i++) {
+            const totalCell = document.createElement('td');
+            totalCell.id = `total${i + 1}`;
+            totalCell.textContent = '0';
+            footerRow.appendChild(totalCell);
+        }
+        
+        // Add empty cell for comments column in footer
+        const emptyCell = document.createElement('td');
+        footerRow.appendChild(emptyCell);
+        
+        // Reset hidden score inputs
+        const form = document.getElementById('evaluationManagementForm');
+        const existingInputs = form.querySelectorAll('input[id^="eval"][id$="Score"]');
+        existingInputs.forEach(input => input.remove());
+        
+        // Add new score inputs
+        for (let i = 0; i < evalColumnCount; i++) {
+            const scoreInput = document.createElement('input');
+            scoreInput.type = 'hidden';
+            scoreInput.name = `eval${i + 1}_score`;
+            scoreInput.id = `eval${i + 1}Score`;
+            scoreInput.value = '0';
+            form.appendChild(scoreInput);
+        }
+    }
+
+    // Clear current form ID when adding a new form
+    document.getElementById('addFormBtn').addEventListener('click', function() {
+        // Reset the form
+        const table = document.getElementById('editableTable');
+        table.tBodies[0].innerHTML = '';
+        
+        // Add a default row
+        const tr = document.createElement('tr');
+        
+        const cell1 = document.createElement('td');
+        cell1.contentEditable = true;
+        cell1.className = 'gross-motor-cell';
+        cell1.textContent = 'New Item';
+        tr.appendChild(cell1);
+        
+        const cell2 = document.createElement('td');
+        cell2.contentEditable = true;
+        tr.appendChild(cell2);
+        
+        // Add checkbox cells
+        for (let i = 0; i < 3; i++) {
+            const evalCell = document.createElement('td');
+            evalCell.className = 'eval-col';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.addEventListener('change', calculateScores);
+            evalCell.appendChild(cb);
+            tr.appendChild(evalCell);
+        }
+        
+        // Add comment cell
+        const commentCell = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'comment-input';
+        commentCell.appendChild(input);
+        tr.appendChild(commentCell);
+        
+        table.tBodies[0].appendChild(tr);
+        
+        // Reset header
+        const ths = table.tHead.rows[0].cells;
+        ths[0].textContent = '';
+        
+        // Hide update button and clear form ID
+        currentFormId.value = '';
+        updateFormBtn.style.display = 'none';
+        
+        // Set default value for evaluator type dropdown
+        const evaluatorSelect = document.getElementById('evaluatorTypeSelect');
+        if (evaluatorSelect) {
+            evaluatorSelect.value = 'TEACHER'; // Set default to Teacher
+        }
+        
+        calculateScores();
+    });
+
+    // Save button click handler - show the form name modal
+    document.getElementById('saveTableBtn').addEventListener('click', function() {
+        formNameInput.value = '';  // Clear any previous value
+        
+        // Set default value for evaluator type dropdown
+        const evaluatorSelect = document.getElementById('evaluatorTypeSelect');
+        if (evaluatorSelect) {
+            evaluatorSelect.value = 'TEACHER'; // Set default to Teacher
+        }
+        
+        formNameModal.style.display = 'block';
+    });
+
+    // Save with name button click handler
+    saveWithNameBtn.addEventListener('click', function() {
+        const formName = formNameInput.value.trim();
+        if (!formName) {
+            alert('Please enter a name for the form');
+            return;
+        }
+        
+        const evaluatorType = document.getElementById('evaluatorTypeSelect').value;
+        console.log('Selected evaluator type for saving:', evaluatorType);
+        
+        if (!evaluatorType) {
+            alert('Please select an evaluator type (Teacher or Parent)');
+            return;
+        }
+        
+        saveFormWithName(formName);
+        formNameModal.style.display = 'none';
+    });
+
+    // Update form button click handler
+    updateFormBtn.addEventListener('click', function() {
+        const formId = currentFormId.value;
+        if (!formId) {
+            alert('No form is currently loaded. Please load a form first.');
+            return;
+        }
+        
+        updateForm(formId);
+    });
+
+    // Function to save form with a given name
+    function saveFormWithName(formName) {
+        const spinner = document.getElementById('loading-spinner');
+        const evaluatorType = document.getElementById('evaluatorTypeSelect').value;
+        
+        // Validate form name and evaluator type
+        if (!formName.trim()) {
+            alert('Please enter a form name');
+            return;
+        }
+        
+        if (!evaluatorType) {
+            alert('Please select an evaluator type (Teacher or Parent)');
+            return;
+        }
+        
+        spinner.style.display = 'block';
+        const tableData = serializeTable();
+        
+        // Debug logging
+        console.log('Form name:', formName);
+        console.log('Selected evaluator type:', evaluatorType);
+        
+        const requestData = {
+            table: tableData,
+            name: formName,
+            evaluator_type: evaluatorType
+        };
+        
+        console.log('Request data being sent to server:', requestData);
+        
+        fetch("{% url 'save_evaluation_management' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            spinner.style.display = 'none';
+            console.log('Server response:', data);
+            if (data.status === 'success') {
+                alert(data.message || 'Saved!');
+                formNameModal.style.display = 'none';
+                loadSavedForms();
+            } else {
+                alert(data.message || 'Error saving form!');
+            }
+        })
+        .catch(error => {
+            spinner.style.display = 'none';
+            console.error('Error:', error);
+            alert('Error saving!');
+        });
+    }
+
+    // Function to update an existing form
+    function updateForm(formId) {
+        const spinner = document.getElementById('loading-spinner');
+        spinner.style.display = 'block';
+        const tableData = serializeTable();
+        const evaluatorType = document.getElementById('evaluatorTypeSelect').value;
+        
+        console.log('Updating form with data:', tableData);
+        
+        fetch(`{% url "update_evaluation_form" form_id=0 %}`.replace('0', formId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                table: tableData,
+                name: formNameInput.value.trim() || undefined,
+                evaluator_type: evaluatorType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            spinner.style.display = 'none';
+            if (data.status === 'success') {
+                alert(data.message || 'Form updated successfully!');
+                // Refresh the forms list
+                loadSavedForms();
+            } else {
+                alert(data.message || 'Error updating form!');
+            }
+        })
+        .catch(error => {
+            spinner.style.display = 'none';
+            console.error('Error:', error);
+            alert('Error updating form!');
+        });
+    }
+
+    // Add event listener to log dropdown changes
+    document.addEventListener('DOMContentLoaded', function() {
+        // Existing code...
+        
+        // Add event listener to evaluator type dropdown to log changes
+        const evaluatorSelect = document.getElementById('evaluatorTypeSelect');
+        if (evaluatorSelect) {
+            evaluatorSelect.addEventListener('change', function() {
+                console.log('Evaluator type changed to:', this.value);
+            });
+        }
+        
+        // Rest of the existing code...
+    });
+
+    // Add this function to initialize comment inputs
+    function initializeCommentInputs() {
+        const table = document.getElementById('editableTable');
+        const commentInputs = table.querySelectorAll('.comment-input');
+        
+        commentInputs.forEach(input => {
+            // Remove any existing event listeners
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            
+            // Add event listeners
+            newInput.addEventListener('input', function(e) {
+                console.log('Comment input changed:', e.target.value);
+            });
+            
+            newInput.addEventListener('focus', function(e) {
+                console.log('Comment input focused');
+            });
+            
+            newInput.addEventListener('blur', function(e) {
+                console.log('Comment input blurred:', e.target.value);
+            });
+        });
+    }
+
+    // Add event listener for when the form is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize comment inputs
+        initializeCommentInputs();
+        
+        // Add event listener for when the form is loaded via AJAX
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    initializeCommentInputs();
+                }
+            });
+        });
+        
+        const table = document.getElementById('editableTable');
+        if (table) {
+            observer.observe(table, { childList: true, subtree: true });
+        }
+    });
+
+    // Add toggle evaluations functionality
+    const toggleEvalBtn = document.getElementById('toggleEvalBtn');
+    let evaluationsDisabled = false;
+
+    toggleEvalBtn.addEventListener('click', function() {
+        evaluationsDisabled = !evaluationsDisabled;
+        const table = document.getElementById('editableTable');
+        const evalColumns = table.querySelectorAll('.eval-col');
+        
+        if (evaluationsDisabled) {
+            // Disable evaluations
+            evalColumns.forEach(col => {
+                col.classList.add('disabled');
+                const checkbox = col.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.disabled = true;
+                }
+            });
+            toggleEvalBtn.classList.add('disabled');
+            toggleEvalBtn.innerHTML = '<i class="fas fa-lock-open"></i> Enable Evaluations';
+        } else {
+            // Enable evaluations
+            evalColumns.forEach(col => {
+                col.classList.remove('disabled');
+                const checkbox = col.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.disabled = false;
+                }
+            });
+            toggleEvalBtn.classList.remove('disabled');
+            toggleEvalBtn.innerHTML = '<i class="fas fa-lock"></i> Disable Evaluations';
+        }
+    });
+
+    function updateFormName(formName) {
+        console.log('Updating form name to:', formName); // Debug log
+        const formNameInput = document.getElementById('formNameInput');
+        if (formNameInput) {
+            formNameInput.value = formName || '';
+            console.log('Form name updated successfully to:', formNameInput.value); // Debug log
+        } else {
+            console.error('Could not find formNameInput element when updating form name'); // Debug error
+        }
+    }
+
+    // Function to open a form
+    function openForm(formId) {
+        // Set the current form ID
+        document.getElementById('currentFormId').value = formId;
+        
+        // Show the update button and hide the save button
+        document.getElementById('updateFormBtn').style.display = 'inline-block';
+        document.getElementById('saveTableBtn').style.display = 'none';
+        
+        // Load the form data
+        fetch(`{% url 'get_evaluation_form_data' form_id=0 %}?source=template`.replace('0', formId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update form name input
+                    const formNameInput = document.getElementById('formNameInput');
+                    if (formNameInput) {
+                        formNameInput.value = data.form.name || '';
+                    }
+                    
+                    // Update evaluator type
+                    const evaluatorSelect = document.getElementById('evaluatorTypeSelect');
+                    if (evaluatorSelect) {
+                        evaluatorSelect.value = data.form.evaluator_type;
+                    }
+                    
+                    // Render the table data
+                    const table = document.getElementById('editableTable');
+                    renderFormData(data.form.data);
+                    
+                    // Close the saved forms modal
+                    savedFormsModal.style.display = 'none';
+                } else {
+                    alert('Error loading form: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error loading form:', error);
+                alert('Error loading form. Please try again.');
+            });
+    }
+
+    // Function to delete a form
+    function deleteForm(formId) {
+        if (confirm('Are you sure you want to delete this form? This action cannot be undone.')) {
+            fetch(`{% url 'update_evaluation_form' form_id=0 %}`.replace('0', formId), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Form deleted successfully!');
+                    loadSavedForms(); // Refresh the forms list
+                } else {
+                    alert('Error deleting form: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting form:', error);
+                alert('Error deleting form. Please try again.');
+            });
+        }
+    }
+});
+
+function serializeTable() {
+    const table = document.getElementById('editableTable');
+    const data = {
+        headers: [],
+        rows: [],
+        disabled_columns: []
+    };
+    
+    // Headers
+    table.tHead.rows[0].querySelectorAll('th').forEach(th => {
+        data.headers.push(th.textContent.trim());
+    });
+    
+    // Get disabled columns state
+    const evalColumns = table.tHead.rows[0].querySelectorAll('.eval-col');
+    data.disabled_columns = Array.from(evalColumns).map((col, index) => ({
+        index: index,
+        disabled: col.classList.contains('disabled')
+    }));
+    
+    // Rows
+    for (let row of table.tBodies[0].rows) {
+        let rowData = [];
+        for (let cell of row.cells) {
+            if (cell.classList.contains('eval-col')) {
+                // Checkbox
+                const cb = cell.querySelector('input[type=checkbox]');
+                rowData.push(cb ? cb.checked : false);
+            } else if (cell.querySelector('input.comment-input')) {
+                // Comment input
+                const input = cell.querySelector('input.comment-input');
+                rowData.push(input ? input.value : '');
+            } else {
+                // Regular cell
+                rowData.push(cell.textContent.trim());
+            }
+        }
+        data.rows.push(rowData);
+    }
+    
+    return data;
+}
+</script>
+{% endblock %} 

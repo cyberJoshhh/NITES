@@ -9,6 +9,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
     <link rel="stylesheet" href="{% static 'css/performance.css' %}">
+    <style>
+        .view-report-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .view-report-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
 <body>
     <!-- Main Content -->
@@ -24,6 +43,9 @@
                     <h3><i class="fas fa-user-graduate"></i> {{ student.child_name }}</h3>
                     <div class="card-actions">
                         <span class="badge">{{ student.sex }}</span>
+                        <a href="{% url 'student_full_report' %}?student_name={{ student.child_name }}" class="view-report-btn">
+                            <i class="fas fa-file-alt"></i> Full Report
+                        </a>
                     </div>
                 </div>
                 <div class="chart-container" id="chart-{{ forloop.counter }}">

@@ -5,6 +5,8 @@
 <!-- Add Font Awesome and Google Fonts -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Add FullCalendar CSS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <link rel="stylesheet" href="{% static 'css/pdash.css' %}">
 
 <div class="dashboard-container">
@@ -26,11 +28,7 @@
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="{% url 'student_profile' %}" class="sidebar-btn">
-                <i class="fas fa-user"></i>
-                <span>Pupil's Profile</span>
-            </a>
-            <a href="{% url 'student_performance' %}" class="sidebar-btn">
+            <a href="{% url 'student_full_report' %}" class="sidebar-btn">
                 <i class="fas fa-chart-line"></i>
                 <span>Performance Report</span>
             </a>
@@ -39,11 +37,11 @@
                 <span>Messages</span>
                 <span class="notification-badge"></span>
             </a>
-            <a href="{% url 'evaluation_gross' %}" class="sidebar-btn">
+            <a href="{% url 'parent_evaluation_tables' %}" class="sidebar-btn">
                 <i class="fas fa-chart-bar"></i>
                 <span>Evaluation</span>
             </a>
-            <a href="{% url 'teacher_evaluation_pdfs' %}" class="sidebar-btn">
+            <a href="{% url 'teacher_evaluations' %}" class="sidebar-btn">
                 <i class="fas fa-file-pdf"></i>
                 <span>Teacher Evaluations</span>
             </a>
@@ -74,34 +72,6 @@
 
         <!-- Dashboard content -->
         <div id="dashboardContent">
-            <div class="dashboard-overview">    
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <i class="fas fa-child"></i>
-                        <h3>Child Information</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="info-summary">
-                            <div class="info-item">
-                                <div class="info-label">Name</div>
-                                <div class="info-value">{{ student.child_name }}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Gender</div>
-                                <div class="info-value">{{ student.sex }}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Date of Birth</div>
-                                <div class="info-value">{{ student.dob|date:"F d, Y" }}</div>
-                            </div>
-                            <div class="view-more-btn">
-                                <a href="{% url 'student_profile' %}">View Complete Profile</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="dashboard-cards second-row">            
                 <div class="dashboard-card">
                     <div class="card-header">
@@ -109,34 +79,26 @@
                         <h3>Notifications</h3>
                     </div>
                     <div class="card-body">
-                        <div class="notification-list">
-                            {% if recent_announcements %}
-                                {% for announcement in recent_announcements %}
-                                <div class="notification-item">
-                                    <div class="notification-icon">
-                                        <i class="fas fa-bullhorn"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <div class="notification-title">{{ announcement.title }}</div>
-                                        <div class="notification-text">{{ announcement.content|truncatechars:100 }}</div>
-                                        <div class="notification-time">{{ announcement.created_at|timesince }} ago</div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="notification-item">
-                                    <div class="notification-icon">
-                                        <i class="fas fa-info-circle"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <div class="notification-title">No announcements</div>
-                                        <div class="notification-text">There are no recent announcements at this time.</div>
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </div>
+                        <div class="notification-header">
+                    <h3><i class="fas fa-bullhorn"></i> Announcements</h3>
+                    <span class="notification-count">0</span>
+                </div>
+                <div class="notification-list">
+                    <!-- Announcements will be dynamically loaded here -->
+                </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Calendar Section -->
+            <div class="calendar-section">
+                <div class="calendar-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-calendar"></i>
+                        Calendar of Events
+                    </h2>
+                </div>
+                <div id="calendar"></div>
             </div>
         </div>
     </div>
@@ -179,12 +141,13 @@
         padding: 15px 20px;
         color: white;
         text-decoration: none;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
         cursor: pointer;
     }
     
     .sidebar-btn:hover, .logout-btn:hover {
-        background-color: rgba(255,255,255,0.1);
+        background-color: rgba(255,255,255,0.15);
+        transform: translateX(5px);
     }
     
     .sidebar-btn i, .logout-btn i {
@@ -267,6 +230,7 @@
         padding: 20px;
         transition: margin-left 0.3s ease;
         width: calc(100% - 250px);
+        background-color: #f8f9fa;
     }
     
     @media (max-width: 768px) {
@@ -284,12 +248,29 @@
         flex-wrap: wrap;
         gap: 15px;
         margin-bottom: 25px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     }
     
     .welcome-text {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
         font-weight: 600;
         color: #2d6a4f;
+        position: relative;
+        padding-bottom: 5px;
+    }
+    
+    .welcome-text:after {
+        content: '';
+        position: absolute;
+        width: 50px;
+        height: 3px;
+        background-color: #52b788;
+        bottom: 0;
+        left: 0;
+        border-radius: 3px;
     }
     
     .welcome-text span {
@@ -298,12 +279,15 @@
     
     .date-display {
         background-color: rgba(45, 106, 79, 0.1);
-        padding: 8px 15px;
+        padding: 10px 20px;
         border-radius: 30px;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        color: #2d6a4f;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(45, 106, 79, 0.1);
     }
     
     /* Dashboard Cards */
@@ -321,34 +305,49 @@
     .dashboard-card {
         background-color: white;
         border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         overflow: hidden;
         flex: 1;
         min-width: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
     
     .card-header {
         background-color: rgba(45, 106, 79, 0.1);
-        padding: 15px 20px;
+        padding: 18px 20px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        border-bottom: 1px solid rgba(45, 106, 79, 0.1);
     }
     
     .card-header i {
         color: #2d6a4f;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
+        background-color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
     }
     
     .card-header h3 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 600;
         color: #2d6a4f;
     }
     
     .card-body {
-        padding: 20px;
+        padding: 25px;
     }
     
     /* Responsive Styles */
@@ -362,69 +361,111 @@
     .info-summary {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 15px;
+        gap: 20px;
     }
     
     .info-item {
-        padding: 10px;
+        padding: 15px;
         background-color: #f8f9fa;
-        border-radius: 8px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border-left: 3px solid #2d6a4f;
+    }
+    
+    .info-item:hover {
+        background-color: #e9f5f2;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 10px rgba(0,0,0,0.05);
     }
     
     .info-label {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         color: #6c757d;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
+        font-weight: 500;
     }
     
     .info-value {
-        font-size: 1rem;
-        font-weight: 500;
+        font-size: 1.1rem;
+        font-weight: 600;
         color: #2d6a4f;
     }
     
     .view-more-btn {
         grid-column: 1 / -1;
         text-align: center;
-        margin-top: 15px;
+        margin-top: 20px;
     }
     
     .view-more-btn a {
         display: inline-block;
-        padding: 8px 20px;
+        padding: 10px 25px;
         background-color: #2d6a4f;
         color: white;
         text-decoration: none;
         border-radius: 30px;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         font-weight: 500;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(45, 106, 79, 0.2);
     }
     
     .view-more-btn a:hover {
         background-color: #52b788;
-        transform: translateY(-2px);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(45, 106, 79, 0.3);
     }
     
     /* Notifications */
     .notification-list {
-        max-height: 300px;
+        max-height: 350px;
         overflow-y: auto;
+        padding-right: 5px;
+        scroll-behavior: smooth;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+        background: #2d6a4f;
+        border-radius: 10px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb:hover {
+        background: #1a4031;
     }
     
     .notification-item {
         display: flex;
-        padding: 15px 0;
+        padding: 15px;
         border-bottom: 1px solid #eee;
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        background-color: white;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
     .notification-item:last-child {
         border-bottom: none;
+        margin-bottom: 0;
     }
     
     .notification-icon {
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
         background-color: #e9f5f2;
         color: #2d6a4f;
         border-radius: 50%;
@@ -433,6 +474,8 @@
         justify-content: center;
         margin-right: 15px;
         flex-shrink: 0;
+        box-shadow: 0 3px 8px rgba(45, 106, 79, 0.1);
+        font-size: 1.1rem;
     }
     
     .notification-content {
@@ -441,18 +484,81 @@
     
     .notification-title {
         font-weight: 600;
-        margin-bottom: 3px;
+        margin-bottom: 5px;
+        color: #333;
+        font-size: 1rem;
     }
     
     .notification-text {
         font-size: 0.9rem;
         color: #6c757d;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        line-height: 1.4;
     }
     
     .notification-time {
         font-size: 0.8rem;
         color: #adb5bd;
+        display: flex;
+        align-items: center;
+    }
+    
+    .notification-time:before {
+        content: '\f017';
+        font-family: 'Font Awesome 5 Free';
+        margin-right: 5px;
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        background-color: #2d6a4f;
+        color: white;
+        border-radius: 10px;
+    }
+
+    .notification-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .notification-header h3 i {
+        margin-right: 8px;
+    }
+
+    .notification-count {
+        background-color: white;
+        color: #2d6a4f;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .load-more-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        text-align: center;
+        background-color: #f8f9fa;
+        border: none;
+        border-radius: 8px;
+        color: #2d6a4f;
+        font-weight: 600;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .load-more-btn:hover {
+        background-color: #e9f5f2;
     }
     
     @media (max-width: 576px) {
@@ -464,8 +570,79 @@
             flex-direction: column;
             align-items: flex-start;
         }
+        
+        .date-display {
+            align-self: flex-start;
+        }
+    }
+
+    /* Calendar Section Styles */
+    .calendar-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        color: #2d6a4f;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #calendar {
+        height: 600px;
+    }
+
+    /* FullCalendar Customization */
+    .fc {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d6a4f;
+    }
+
+    .fc .fc-button-primary {
+        background-color: #2d6a4f;
+        border-color: #2d6a4f;
+    }
+
+    .fc .fc-button-primary:hover {
+        background-color: #52b788;
+        border-color: #52b788;
+    }
+
+    .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #52b788;
+        border-color: #52b788;
+    }
+
+    .fc .fc-event {
+        background-color: #2d6a4f;
+        border-color: #2d6a4f;
+    }
+
+    .fc .fc-event:hover {
+        background-color: #52b788;
+        border-color: #52b788;
     }
 </style>
+
+<!-- Add FullCalendar JS -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -502,6 +679,108 @@
                 }
             });
         }
+
+        // Function to fetch and update announcements
+        function updateAnnouncements() {
+            fetch('{% url "get_recent_announcements" %}')
+                .then(response => response.json())
+                .then(announcements => {
+                    const notificationList = document.querySelector('.notification-list');
+                    const notificationCount = document.querySelector('.notification-count');
+                    
+                    if (announcements && announcements.length > 0) {
+                        let html = '';
+                        announcements.forEach(announcement => {
+                            html += `
+                                <div class="notification-item">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-bullhorn"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">${announcement.title}</div>
+                                        <div class="notification-text">${announcement.content}</div>
+                                        <div class="notification-time">${announcement.created_at} ago</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        // Update notification count
+                        notificationCount.textContent = announcements.length;
+                        
+                        // Use innerHTML to update the content
+                        notificationList.innerHTML = html;
+                    } else {
+                        // Show no announcements message
+                        notificationCount.textContent = '0';
+                        notificationList.innerHTML = `
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <div class="notification-title">No announcements</div>
+                                    <div class="notification-text">There are no recent announcements at this time.</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching announcements:', error);
+                    // Show error message in the notification list
+                    const notificationList = document.querySelector('.notification-list');
+                    const notificationCount = document.querySelector('.notification-count');
+                    notificationCount.textContent = '0';
+                    notificationList.innerHTML = `
+                        <div class="notification-item">
+                            <div class="notification-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">Error</div>
+                                <div class="notification-text">Failed to fetch announcements. Please try again later.</div>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        // Initial fetch and set up periodic refresh
+        updateAnnouncements();
+        setInterval(updateAnnouncements, 5000);
+
+        // Calendar initialization
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek,timeGridWeek,timeGridDay'
+            },
+            views: {
+                timeGridWeek: {
+                    titleFormat: { year: 'numeric', month: 'long', day: 'numeric' }
+                },
+                timeGridDay: {
+                    titleFormat: { year: 'numeric', month: 'long', day: 'numeric' }
+                }
+            },
+            events: {
+                url: '{% url "get_events" %}',
+                method: 'GET',
+                failure: function(error) {
+                    console.error('Error fetching events:', error);
+                    alert('Error loading events. Please refresh the page.');
+                }
+            },
+            eventDidMount: function(info) {
+                console.log('Event mounted:', info.event);
+            }
+        });
+        
+        calendar.render();
     });
 </script>
 {% endblock %}

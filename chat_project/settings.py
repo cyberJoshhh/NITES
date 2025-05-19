@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',  # Add WhiteNoise for static files
     'django.contrib.staticfiles',
     'System',
-    'Messaging'
+    'Messaging',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'chat_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'capstone',
+        'NAME': 'finaltesting',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',

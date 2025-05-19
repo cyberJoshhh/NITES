@@ -29,6 +29,15 @@
     body {
         font-family: 'Poppins', sans-serif;
         background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+    
+    .dashboard-container {
+        display: flex;
+        min-height: 100vh;
+        position: relative;
     }
     
     /* Chat interface layout */
@@ -190,22 +199,51 @@
     }
     
     /* Mobile menu toggle */
-    #mobileMenuToggle {
+    .mobile-menu-toggle {
         display: none;
         position: fixed;
-        top: 10px;
-        left: 10px;
-        z-index: 1100;
+        top: 15px;
+        left: 15px;
+        z-index: 2000;
         background-color: var(--primary-color);
         color: white;
         border: none;
-        border-radius: 50%;
         width: 45px;
         height: 45px;
-        font-size: 1.2rem;
+        border-radius: 50%;
         cursor: pointer;
-        box-shadow: var(--box-shadow);
-        pointer-events: auto !important;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: all 0.3s ease;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .mobile-menu-toggle:hover {
+        background-color: var(--secondary-color);
+        transform: scale(1.05);
+    }
+    
+    .mobile-menu-toggle:active {
+        transform: scale(0.95);
+    }
+    
+    /* Sidebar overlay */
+    #sidebarOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 99;
+    }
+    
+    #sidebarOverlay.active {
+        display: block;
     }
     
     /* Chat area */
@@ -397,25 +435,28 @@
     
     @media (max-width: 576px) {
         .messaging-content {
-            margin-left: 0;
-            width: 100%;
-            padding-top: 60px;
-            transition: margin-left 0.3s ease;
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding-top: 60px !important;
         }
         
-        body[data-is-staff="true"] #sidebar {
-            transform: translateX(-100%) !important;
+        .mobile-menu-toggle {
+            display: flex !important;
+        }
+        
+        #sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
             width: 250px !important;
-            transition: transform 0.3s ease !important;
-            left: 0 !important;
+            z-index: 1000;
         }
         
-        body[data-is-staff="true"] #sidebar.active {
-            transform: translateX(0) !important;
-        }
-        
-        #mobileMenuToggle {
-            display: block;
+        #sidebar.active {
+            transform: translateX(0);
         }
         
         .sidebar-header h2, .sidebar-header h3, .sidebar-btn span {
@@ -573,143 +614,153 @@
 {% endblock %}
 
 {% block content %}
-<!-- Add data attribute to the body tag through JavaScript to pass user role -->
-<script>
-    document.body.setAttribute('data-is-staff', '{% if user.is_staff %}true{% else %}false{% endif %}');
-    document.body.setAttribute('data-user-id', '{{ user.id }}');
-</script>
+<div class="dashboard-container">
+    <!-- Mobile menu toggle button -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
 
-<!-- Include the appropriate sidebar based on user role -->
-{% if user.is_staff %}
-    {% include 'sidebar.html' %}
-{% else %}
-    {% include 'sidebar_parent.html' %}
-{% endif %}
+    <!-- Sidebar overlay -->
+    <div id="sidebarOverlay"></div>
 
-<div class="container-fluid messaging-content">
-    <div class="row">
-        <!-- Contacts sidebar -->
-        <div class="col-md-3 border-right contacts-sidebar">
-            <div class="d-flex flex-column h-100 bg-white p-3 rounded shadow-sm">
-                <div class="contacts-header py-3">
-                    <h4 class="mb-0 font-weight-bold">Messages</h4>
-                    {% if user.is_staff %}
-                    <button class="btn btn-sm btn-primary mt-3" id="createGroupBtn">
-                        <i class="fas fa-users mr-1"></i> Create Group
-                    </button>
-                    {% endif %}
-                </div>
-                
-                <ul class="nav flex-column nav-pills mt-3" id="v-pills-tab" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active d-flex align-items-center" id="direct-messages-tab" data-toggle="pill" href="#direct-messages" role="tab" aria-controls="direct-messages" aria-selected="true">
-                            <i class="fas fa-user mr-2"></i> Direct Messages
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" id="group-messages-tab" data-toggle="pill" href="#group-messages" role="tab" aria-controls="group-messages" aria-selected="false">
-                            <i class="fas fa-users mr-2"></i> Group Chats
-                        </a>
-                    </li>
-                </ul>
-                
-                <div class="tab-content flex-grow-1 mt-3" id="v-pills-tabContent">
-                    <!-- Direct message contacts -->
-                    <div class="tab-pane fade show active" id="direct-messages" role="tabpanel" aria-labelledby="direct-messages-tab">
-                        <div class="list-group contact-list">
-                            {% for contact in users %}
-                            <a href="javascript:void(0);" class="list-group-item list-group-item-action contact-item" data-id="{{ contact.id }}">
-                                <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas fa-user-circle mr-2 text-primary"></i>
-                                        <span>{{ contact.username }}</span>
-                                    </div>
-                                    <span class="badge badge-primary badge-pill unread-badge d-none" data-user="{{ contact.id }}">0</span>
-                                </div>
-                            </a>
-                            {% empty %}
-                            <div class="text-center text-muted py-4 bg-light rounded">
-                                <i class="fas fa-user-slash mb-2" style="font-size: 2rem;"></i>
-                                <p>No contacts available</p>
-                            </div>
-                            {% endfor %}
-                        </div>
+    <!-- Add data attribute to the body tag through JavaScript to pass user role -->
+    <script>
+        document.body.setAttribute('data-is-staff', '{% if user.is_staff %}true{% else %}false{% endif %}');
+        document.body.setAttribute('data-user-id', '{{ user.id }}');
+    </script>
+
+    <!-- Include the appropriate sidebar based on user role -->
+    {% if user.is_staff %}
+        {% include 'sidebar.html' %}
+    {% else %}
+        {% include 'sidebar_parent.html' %}
+    {% endif %}
+
+    <div class="container-fluid messaging-content">
+        <div class="row">
+            <!-- Contacts sidebar -->
+            <div class="col-md-3 border-right contacts-sidebar">
+                <div class="d-flex flex-column h-100 bg-white p-3 rounded shadow-sm">
+                    <div class="contacts-header py-3">
+                        <h4 class="mb-0 font-weight-bold">Messages</h4>
+                        {% if user.is_staff %}
+                        <button class="btn btn-sm btn-primary mt-3" id="createGroupBtn">
+                            <i class="fas fa-users mr-1"></i> Create Group
+                        </button>
+                        {% endif %}
                     </div>
                     
-                    <!-- Group chats -->
-                    <div class="tab-pane fade" id="group-messages" role="tabpanel" aria-labelledby="group-messages-tab">
-                        <div class="list-group group-list">
-                            {% for group in chat_groups %}
-                            <a href="javascript:void(0);" class="list-group-item list-group-item-action group-item" data-id="{{ group.id }}">
-                                <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas fa-users mr-2 text-primary"></i>
-                                        <span>{{ group.name }}</span>
-                                    </div>
-                                </div>
+                    <ul class="nav flex-column nav-pills mt-3" id="v-pills-tab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active d-flex align-items-center" id="direct-messages-tab" data-toggle="pill" href="#direct-messages" role="tab" aria-controls="direct-messages" aria-selected="true">
+                                <i class="fas fa-user mr-2"></i> Direct Messages
                             </a>
-                            {% empty %}
-                            <div class="text-center text-muted py-4 bg-light rounded">
-                                <i class="fas fa-users-slash mb-2" style="font-size: 2rem;"></i>
-                                <p>No group chats available</p>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" id="group-messages-tab" data-toggle="pill" href="#group-messages" role="tab" aria-controls="group-messages" aria-selected="false">
+                                <i class="fas fa-users mr-2"></i> Group Chats
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content flex-grow-1 mt-3" id="v-pills-tabContent">
+                        <!-- Direct message contacts -->
+                        <div class="tab-pane fade show active" id="direct-messages" role="tabpanel" aria-labelledby="direct-messages-tab">
+                            <div class="list-group contact-list">
+                                {% for contact in users %}
+                                <a href="javascript:void(0);" class="list-group-item list-group-item-action contact-item" data-id="{{ contact.id }}">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-user-circle mr-2 text-primary"></i>
+                                            <span>{{ contact.username }}</span>
+                                        </div>
+                                        <span class="badge badge-primary badge-pill unread-badge d-none" data-user="{{ contact.id }}">0</span>
+                                    </div>
+                                </a>
+                                {% empty %}
+                                <div class="text-center text-muted py-4 bg-light rounded">
+                                    <i class="fas fa-user-slash mb-2" style="font-size: 2rem;"></i>
+                                    <p>No contacts available</p>
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Chat area -->
-        <div class="col-md-9 chat-area">
-            <div class="welcome-screen text-center py-5" id="welcomeScreen">
-                <div class="welcome-icon mb-4">
-                    <i class="fas fa-comments" style="font-size: 4rem;"></i>
-                </div>
-                <h3 class="font-weight-bold">Welcome to Messages</h3>
-                <p class="text-muted">Select a contact or group to start messaging</p>
-                <div class="welcome-hint mt-4">
-                    <div class="d-flex justify-content-center">
-                        <div class="hint-item mx-3 text-center">
-                            <i class="fas fa-user-circle mb-2" style="font-size: 2rem; color: var(--primary-color);"></i>
-                            <p>Direct Messages</p>
-                        </div>
-                        <div class="hint-item mx-3 text-center">
-                            <i class="fas fa-users mb-2" style="font-size: 2rem; color: var(--secondary-color);"></i>
-                            <p>Group Chats</p>
+                        
+                        <!-- Group chats -->
+                        <div class="tab-pane fade" id="group-messages" role="tabpanel" aria-labelledby="group-messages-tab">
+                            <div class="list-group group-list">
+                                {% for group in chat_groups %}
+                                <a href="javascript:void(0);" class="list-group-item list-group-item-action group-item" data-id="{{ group.id }}">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-users mr-2 text-primary"></i>
+                                            <span>{{ group.name }}</span>
+                                        </div>
+                                    </div>
+                                </a>
+                                {% empty %}
+                                <div class="text-center text-muted py-4 bg-light rounded">
+                                    <i class="fas fa-users-slash mb-2" style="font-size: 2rem;"></i>
+                                    <p>No group chats available</p>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="chat-interface d-none">
-                <div class="chat-header border-bottom p-3">
-                    <h5 id="chatName"></h5>
-                </div>
-                
-                <div class="chat-messages p-3" id="messageContainer">
-                    <!-- Messages will be loaded here -->
-                </div>
-                
-                <div class="chat-input border-top p-3">
-                    <div id="selectedFileDisplay">
-                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
-                        <span id="selectedFileName"></span>
-                        <button id="removeSelectedFile"><i class="fas fa-times"></i></button>
+            <!-- Chat area -->
+            <div class="col-md-9 chat-area">
+                <div class="welcome-screen text-center py-5" id="welcomeScreen">
+                    <div class="welcome-icon mb-4">
+                        <i class="fas fa-comments" style="font-size: 4rem;"></i>
                     </div>
-                    <form id="messageForm">
-                        <div class="input-group">
-                            <button type="button" class="attachment-btn" id="attachmentBtn" title="Attach PDF">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                            <input type="text" class="form-control" id="messageInput" placeholder="Type a message...">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
+                    <h3 class="font-weight-bold">Welcome to Messages</h3>
+                    <p class="text-muted">Select a contact or group to start messaging</p>
+                    <div class="welcome-hint mt-4">
+                        <div class="d-flex justify-content-center">
+                            <div class="hint-item mx-3 text-center">
+                                <i class="fas fa-user-circle mb-2" style="font-size: 2rem; color: var(--primary-color);"></i>
+                                <p>Direct Messages</p>
+                            </div>
+                            <div class="hint-item mx-3 text-center">
+                                <i class="fas fa-users mb-2" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                                <p>Group Chats</p>
                             </div>
                         </div>
-                    </form>
+                    </div>
+                </div>
+                
+                <div class="chat-interface d-none">
+                    <div class="chat-header border-bottom p-3">
+                        <h5 id="chatName"></h5>
+                    </div>
+                    
+                    <div class="chat-messages p-3" id="messageContainer">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    
+                    <div class="chat-input border-top p-3">
+                        <div id="selectedFileDisplay">
+                            <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                            <span id="selectedFileName"></span>
+                            <button id="removeSelectedFile"><i class="fas fa-times"></i></button>
+                        </div>
+                        <form id="messageForm">
+                            <div class="input-group">
+                                <button type="button" class="attachment-btn" id="attachmentBtn" title="Attach PDF">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <input type="text" class="form-control" id="messageInput" placeholder="Type a message...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1078,23 +1129,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Basic mobile menu toggle functionality
+    // Mobile menu toggle functionality
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    if (mobileMenuToggle) {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (mobileMenuToggle && sidebar && sidebarOverlay) {
+        console.log('Mobile menu elements found');
+        
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            console.log('Toggling sidebar');
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+            
+            // Update aria-expanded attribute
+            const isExpanded = sidebar.classList.contains('active');
+            mobileMenuToggle.setAttribute('aria-expanded', isExpanded);
+        }
+        
+        // Add click event to mobile menu toggle
         mobileMenuToggle.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent event bubbling
-            // Since PDash sidebar handling is included in sidebar_parent.html, 
-            // we only need to handle toggle for teacher users here
-            if (userIsStaff) {
-                const sidebar = document.getElementById('sidebar');
-                const sidebarOverlay = document.getElementById('sidebarOverlay');
-                if (sidebar) {
-                    sidebar.classList.toggle('active');
-                }
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.toggle('active');
-                }
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
+        });
+        
+        // Close sidebar when clicking overlay
+        sidebarOverlay.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (sidebar.classList.contains('active')) {
+                toggleSidebar();
             }
+        });
+        
+        // Close sidebar when pressing Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                toggleSidebar();
+            }
+        });
+    } else {
+        console.warn('One or more mobile menu elements not found:', {
+            mobileMenuToggle: !!mobileMenuToggle,
+            sidebar: !!sidebar,
+            sidebarOverlay: !!sidebarOverlay
         });
     }
     
@@ -1677,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadGroupMessages(currentChatId);
             }
         }
-    }, 3000);
+    }, 1000);
 });
 </script>
 {% endblock %} 
