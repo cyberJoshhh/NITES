@@ -12,7 +12,8 @@ from .models import (
     Event,
     EditableEvaluationTable,
     EvaluationData,
-    EvaluationDataTeacher)
+    EvaluationDataTeacher,
+    SchoolYear)
 from .forms import StudentForm
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
@@ -30,6 +31,10 @@ import pytz
 import traceback  # Add this import
 from django.utils.timesince import timesince
 from django.views.decorators.http import require_POST
+
+def current_school_year(request):
+    current_school_year = Student.get_current_school_year()
+    return render(request, 'manage_student_session.html', {'current_school_year': current_school_year})
 
 
 @login_required
@@ -54,12 +59,6 @@ def dashboard(request):
 
         context = {
             'student': student,
-            'gross_evaluations': GrossEvaluation.objects.filter(student_name=student.child_name),
-            'fine_evaluations': FineEvaluation.objects.filter(student_name=student.child_name),
-            'self_help_evaluations': SelfHelpEvaluation.objects.filter(student_name=student.child_name),
-            'expressive_evaluations': ExpressiveEvaluation.objects.filter(student_name=student.child_name),
-            'receptive_evaluations': ReceptiveEvaluation.objects.filter(student_name=student.child_name),
-            'cognitive_evaluations': CognitiveEvaluation.objects.filter(student_name=student.child_name),
             'recent_announcements': recent_announcements
         }
         return render(request, "PDash.html", context)
@@ -80,15 +79,7 @@ def dashboard(request):
         total_users = User.objects.count()
         # Get total number of students
         total_students = Student.objects.count()
-        # Count evaluations
-        evaluations_count = (
-            GrossEvaluation.objects.count() +
-            FineEvaluation.objects.count() +
-            SelfHelpEvaluation.objects.count() +
-            ExpressiveEvaluation.objects.count() +
-            ReceptiveEvaluation.objects.count() +
-            CognitiveEvaluation.objects.count()
-        )
+        
 
         # Get recent announcements for teacher dashboard
         recent_announcements = Announcement.objects.all().order_by('-created_at')[:5]
@@ -97,7 +88,6 @@ def dashboard(request):
             "students": students,
             "total_users": total_users,
             "total_students": total_students,
-            "evaluations_count": evaluations_count,
             "messages_count": 0,
             "recent_announcements": recent_announcements
         })
@@ -163,6 +153,7 @@ def add_student(request):
                     studying=request.POST.get('studying'),
                     birth_order=request.POST.get('birth_order'),
                     num_siblings=int(request.POST.get('num_siblings')),
+                    lrn=request.POST.get('lrn'),  # Add LRN field
 
                     # Address info
                     address=request.POST.get('address'),
@@ -272,6 +263,7 @@ def edit_student(request):
             student.studying = request.POST.get('studying')
             student.birth_order = request.POST.get('birth_order')
             student.num_siblings = int(request.POST.get('num_siblings', 0))
+            student.lrn = request.POST.get('lrn')  # Add LRN field
 
             # Address info
             student.address = request.POST.get('address')
@@ -819,6 +811,10 @@ def manage_student_session(request):
     student = None
     all_students = None
 
+    # Get current school year and all school years
+    current_school_year = SchoolYear.get_current_school_year()
+    school_years = SchoolYear.get_all_school_years()
+
     # Check if user is a student
     student = Student.objects.filter(gmail=user.username).first()
 
@@ -841,8 +837,7 @@ def manage_student_session(request):
                         target_student = Student.objects.get(id=student_id)
                         target_student.session_no = session_no
                         target_student.save()
-                        success_message = f"Session updated for {
-                            target_student.child_name}."
+                        success_message = f"Session updated for {target_student.child_name}."
                     except Student.DoesNotExist:
                         error_message = "Student not found."
                 else:
@@ -857,14 +852,14 @@ def manage_student_session(request):
                     error_message = "No student profile found for your account."
 
     context = {
-        'user': user,
-        'student': student,
+        'current_school_year': current_school_year.year if current_school_year else None,
+        'school_years': school_years,
         'all_students': all_students,
-        'is_staff': user.is_staff,
         'success_message': success_message,
         'error_message': error_message,
+        'is_staff': user.is_staff,
     }
-
+    
     return render(request, 'manage_student_session.html', context)
 
 

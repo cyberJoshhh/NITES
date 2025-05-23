@@ -28,6 +28,11 @@
                         <button type="button" id="addColBtn">Add Eval Column</button>
                         <button type="button" id="removeColBtn">Remove Eval Column</button>
                         <div class="eval-toggles">
+                            <div class="eval-toggles-header">
+                                <i class="fas fa-columns"></i>
+                                <span>Column Controls</span>
+                                <span class="header-description">Toggle evaluation columns on/off</span>
+                            </div>
                             <!-- Evaluation toggles will be added here dynamically -->
                         </div>
                     </div>
@@ -426,8 +431,43 @@ select.form-control:focus {
 
 .eval-toggles {
     display: flex;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-left: 1rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.eval-toggles-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    color: #495057;
+    font-weight: 500;
+    background: #f1f3f5;
+    border-radius: 6px;
+}
+
+.eval-toggles-header i {
+    color: #2d6a4f;
+    font-size: 1.1rem;
+}
+
+.eval-toggles-header span {
+    font-size: 0.95rem;
+    color: #2d6a4f;
+}
+
+.eval-toggles-header .header-description {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-left: auto;
 }
 
 .eval-toggle {
@@ -443,6 +483,13 @@ select.form-control:focus {
     gap: 0.5rem;
     font-size: 0.9rem;
     transition: all 0.3s ease;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.eval-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .eval-toggle.disabled {
@@ -451,6 +498,7 @@ select.form-control:focus {
 
 .eval-toggle i {
     transition: transform 0.3s ease;
+    font-size: 0.9rem;
 }
 
 .eval-toggle.disabled i {
@@ -459,6 +507,24 @@ select.form-control:focus {
 
 .eval-col.disabled {
     background-color: rgba(220, 53, 69, 0.1);
+    position: relative;
+}
+
+.eval-col.disabled::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(220, 53, 69, 0.1),
+        rgba(220, 53, 69, 0.1) 10px,
+        rgba(220, 53, 69, 0.05) 10px,
+        rgba(220, 53, 69, 0.05) 20px
+    );
+    pointer-events: none;
 }
 
 .eval-col.disabled input[type="checkbox"] {
@@ -601,7 +667,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function createEvalToggles() {
         const table = document.getElementById('editableTable');
         const evalToggles = document.querySelector('.eval-toggles');
-        evalToggles.innerHTML = ''; // Clear existing toggles
+        
+        // Store the header HTML
+        const headerHTML = `
+            <div class="eval-toggles-header">
+                <i class="fas fa-columns"></i>
+                <span>Column Controls</span>
+                <span class="header-description">Toggle evaluation columns on/off</span>
+            </div>
+        `;
+        
+        // Clear existing toggles but preserve the header
+        evalToggles.innerHTML = headerHTML;
         
         const evalColumns = table.tHead.rows[0].querySelectorAll('.eval-col');
         evalColumns.forEach((col, index) => {

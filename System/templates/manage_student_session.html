@@ -160,6 +160,10 @@
     <div class="main-content">
         <div class="page-header">
             <h1 class="page-title">Pupil's Management</h1>
+            <h2 class="current-year" style="margin-bottom: 20px; margin-left: 450px;">School Year: {{ current_school_year }}</h2>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#schoolYearModal">
+                <i class="fas fa-calendar-alt"></i> Change School Year
+            </button>
         </div>
         
         <div class="content-body">
@@ -198,7 +202,7 @@
                         </thead>
                         <tbody>
                             {% for student in all_students|dictsort:"child_name" %}
-                            <tr>
+                            <tr data-school-year="{{ student.school_year }}">
                                 <td>{{ student.child_name }}</td>
                                 <td>{{ student.username }}</td>
                                 <td>Session {{ student.session_no }}</td>
@@ -247,6 +251,10 @@
                             <!-- Basic Information -->
                             <div class="col-md-6">
                                 <h4>Basic Information</h4>
+                                <div class="form-group">
+                                    <label for="lrn">LRN (Optional)</label>
+                                    <input type="text" class="form-control" id="lrn" name="lrn" placeholder="Enter Learner Reference Number">
+                                </div>
                                 <div class="form-group">
                                     <label for="child_name">Child's Name</label>
                                     <input type="text" class="form-control" id="child_name" name="child_name" required>
@@ -428,6 +436,40 @@
         </div>
     </div>
 
+    <!-- School Year Selection Modal -->
+    <div class="modal fade" id="schoolYearModal" tabindex="-1" role="dialog" aria-labelledby="schoolYearModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="schoolYearModalLabel">Select School Year</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="schoolYearSelect">School Year:</label>
+                        <select id="schoolYearSelect" class="form-control">
+                            {% if school_years %}
+                                {% for school_year in school_years %}
+                                    <option value="{{ school_year.year }}" {% if school_year.year == current_school_year %}selected{% endif %}>
+                                        {{ school_year.year }} {% if school_year.is_active %}(Current){% endif %}
+                                    </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No school years available</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="applySchoolYearFilter()">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
@@ -456,6 +498,43 @@
                     }
                 });
             });
+
+            // School year filtering functionality
+            const schoolYearSelect = document.getElementById('schoolYearSelect');
+            
+            // Function to filter students by school year
+            function filterStudentsBySchoolYear() {
+                const selectedYear = schoolYearSelect.value;
+                const tableRows = document.querySelectorAll('.table tbody tr');
+                
+                tableRows.forEach(row => {
+                    const studentYear = row.getAttribute('data-school-year');
+                    if (studentYear === selectedYear) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Add event listener for school year selection
+            schoolYearSelect.addEventListener('change', function() {
+                filterStudentsBySchoolYear();
+                
+                // Update the current school year display
+                const pageTitle = document.querySelector('.page-title:last-child');
+                if (pageTitle) {
+                    pageTitle.textContent = `School Year: ${this.value}`;
+                }
+                
+                // Update URL with selected school year
+                const url = new URL(window.location.href);
+                url.searchParams.set('school_year', this.value);
+                window.history.pushState({}, '', url);
+            });
+            
+            // Initial filter on page load
+            filterStudentsBySchoolYear();
         });
     </script>
 
@@ -958,6 +1037,69 @@
             }
         });
     }
-    </script>
+
+    // School year filtering functionality
+    function applySchoolYearFilter() {
+        const schoolYearSelect = document.getElementById('schoolYearSelect');
+        const selectedYear = schoolYearSelect.value;
+        const tableRows = document.querySelectorAll('.table tbody tr');
+        
+        tableRows.forEach(row => {
+            const studentYear = row.getAttribute('data-school-year');
+            if (studentYear === selectedYear) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update the current school year display
+        const yearDisplay = document.querySelector('.current-year');
+        if (yearDisplay) {
+            yearDisplay.textContent = `School Year: ${selectedYear}`;
+        }
+        
+        // Update URL with selected school year
+        const url = new URL(window.location.href);
+        url.searchParams.set('school_year', selectedYear);
+        window.history.pushState({}, '', url);
+        
+        // Close the modal
+        $('#schoolYearModal').modal('hide');
+        
+        // Show success message
+        showSuccessMessage(`School year changed to ${selectedYear}`);
+    }
+
+    // Update the existing DOMContentLoaded event listener
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('studentSearch');
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const tableRows = document.querySelectorAll('.table tbody tr');
+            
+            tableRows.forEach(row => {
+                const studentName = row.cells[0].textContent.toLowerCase();
+                const username = row.cells[1].textContent.toLowerCase();
+                const session = row.cells[2].textContent.toLowerCase();
+                
+                if (studentName.includes(searchValue) || 
+                    username.includes(searchValue) || 
+                    session.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Initial filter on page load
+        const schoolYearSelect = document.getElementById('schoolYearSelect');
+        if (schoolYearSelect) {
+            applySchoolYearFilter();
+        }
+    });
+</script>
 </body>
 </html>

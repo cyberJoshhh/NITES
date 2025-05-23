@@ -409,24 +409,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error("No valid student name found");
         // Show a user-friendly message on the page
-        const tableBody = document.querySelector('#performance-table tbody');
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 20px;">
-                        <div style="max-width: 600px; margin: 0 auto;">
-                            <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">No student selected or found for your account.</p>
-                            <p style="margin-bottom: 10px;">To view a student report:</p>
-                            <ul style="text-align: left; margin-bottom: 15px;">
-                                <li>Go to the Performance Report page and select a student</li>
-                                <li>Check if your account is correctly linked to a student record</li>
-                                <li>Contact your administrator if you believe this is an error</li>
-                            </ul>
-                            <a href="{% url 'student_profile' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Go to Profile</a>
-                        </div>
-                    </td>
-                </tr>`;
-        }
     }
     
     // Mobile menu toggle functionality
@@ -507,45 +489,11 @@ function fetchStudentData(studentName) {
             } else {
                 console.error('Error in data:', data.message);
                 const tableBody = document.querySelector('#performance-table tbody');
-                if (tableBody) {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 20px;">
-                                <div style="max-width: 600px; margin: 0 auto;">
-                                    <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">Error: ${data.message}</p>
-                                    <p style="margin-bottom: 10px;">To view a student report:</p>
-                                    <ul style="text-align: left; margin-bottom: 15px;">
-                                        <li>Make sure your account is linked to a student record</li>
-                                        <li>Check that evaluations have been completed for this student</li>
-                                        <li>Contact your administrator if you believe this is an error</li>
-                                    </ul>
-                                    <a href="{% url 'student_profile' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Update Profile</a>
-                                </div>
-                            </td>
-                        </tr>`;
-                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
             const tableBody = document.querySelector('#performance-table tbody');
-            if (tableBody) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 20px;">
-                            <div style="max-width: 600px; margin: 0 auto;">
-                                <p style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">Error: ${error.message}</p>
-                                <p style="margin-bottom: 10px;">Please check that:</p>
-                                <ul style="text-align: left; margin-bottom: 15px;">
-                                    <li>Your account is linked to a student record</li>
-                                    <li>The student name is spelled correctly</li>
-                                    <li>You have the necessary permissions to view this data</li>
-                                </ul>
-                                <a href="{% url 'dashboard' %}" class="btn btn-primary" style="display: inline-block; margin-top: 10px;">Return to Dashboard</a>
-                            </div>
-                        </td>
-                    </tr>`;
-            }
         });
 }
 

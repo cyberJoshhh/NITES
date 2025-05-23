@@ -5,6 +5,9 @@ from django.dispatch import receiver
 import random
 import string
 from django.db.models import Sum
+from datetime import datetime
+from django.apps import apps
+from django.db.models.signals import post_migrate
 
 class Student(models.Model):
     child_name = models.CharField(max_length=255)
@@ -30,11 +33,46 @@ class Student(models.Model):
     gmail = models.CharField(max_length=100, unique=True, null=True, blank=True)
     username = models.CharField(max_length=255, null=True, blank=True)
     session_no = models.IntegerField(default=1)
-
     
+    # School year fields
+    enrollment_date = models.DateField(null=True, blank=True)
+    school_year = models.CharField(max_length=9, null=True, blank=True)  # Format: "2023-2024"
+
+    lrn = models.CharField(max_length=10, null=True, blank=True)
     
     def __str__(self):
         return self.child_name
+
+    @classmethod
+    def get_current_school_year(cls):
+        """Get the current school year based on the current date"""
+        current_date = datetime.now()
+        current_year = current_date.year
+        current_month = current_date.month  
+        
+        # If current month is before June, use previous year as start
+        if current_month < 6:
+            return f"{current_year-1}-{current_year}"
+        return f"{current_year}-{current_year+1}"
+    
+    @classmethod
+    def get_students_by_school_year(cls, school_year):
+        """Get all students enrolled in a specific school year"""
+        return cls.objects.filter(school_year=school_year)
+    
+    def save(self, *args, **kwargs):
+        """Override save to automatically set school year based on enrollment date"""
+        if self.enrollment_date and not self.school_year:
+            enrollment_month = self.enrollment_date.month
+            enrollment_year = self.enrollment_date.year
+            
+            # If enrolled before June, use previous year as start
+            if enrollment_month < 6:
+                self.school_year = f"{enrollment_year-1}-{enrollment_year}"
+            else:
+                self.school_year = f"{enrollment_year}-{enrollment_year+1}"
+        
+        super().save(*args, **kwargs)
 
     def get_highest_score(self):
         """Get the highest score across all evaluations for sorting"""
@@ -297,4 +335,92 @@ class EvaluationDataTeacher(models.Model):
     def __str__(self):
         return f"{self.child_name} - {self.evaluation_type} ({self.evaluator_type})"
     
+class SchoolYear(models.Model):
+    year = models.CharField(max_length=9, unique=True)  # Format: "2023-2024"
+    is_active = models.BooleanField(default=False)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-year']
+        verbose_name = "School Year"
+        verbose_name_plural = "School Years"
+
+    def __str__(self):
+        return self.year
+
+    @classmethod
+    def get_current_school_year(cls):
+        """Get the current school year based on the current date"""
+        current_date = datetime.now()
+        current_year = current_date.year
+        current_month = current_date.month
+        
+        # If current month is before June, use previous year as start
+        if current_month < 6:
+            year_str = f"{current_year-1}-{current_year}"
+        else:
+            year_str = f"{current_year}-{current_year+1}"
+            
+        # Try to get existing school year
+        school_year = cls.objects.filter(year=year_str).first()
+        
+        if not school_year:
+            # Create new school year if it doesn't exist
+            start_date = datetime(current_year if current_month >= 6 else current_year-1, 6, 1)
+            end_date = datetime(current_year+1 if current_month >= 6 else current_year, 5, 31)
+            
+            school_year = cls.objects.create(
+                year=year_str,
+                is_active=True,
+                start_date=start_date,
+                end_date=end_date
+            )
+        
+        return school_year
+
+    @classmethod
+    def get_all_school_years(cls):
+        """Get all school years ordered by year"""
+        return cls.objects.all().order_by('-year')
+
+    def save(self, *args, **kwargs):
+        """Override save to ensure only one active school year exists"""
+        if self.is_active:
+            # Set all other school years to inactive
+            SchoolYear.objects.exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+@receiver(post_migrate)
+def create_initial_school_year(sender, **kwargs):
+    """Create initial school year after migrations"""
+    if sender.name == 'System':
+        # Get the current school year
+        current_school_year = SchoolYear.get_current_school_year()
+        
+        # If no school year exists, create one
+        if not SchoolYear.objects.exists():
+            current_date = datetime.now()
+            current_year = current_date.year
+            current_month = current_date.month
+            
+            # If current month is before June, use previous year as start
+            if current_month < 6:
+                year_str = f"{current_year-1}-{current_year}"
+                start_date = datetime(current_year-1, 6, 1)
+                end_date = datetime(current_year, 5, 31)
+            else:
+                year_str = f"{current_year}-{current_year+1}"
+                start_date = datetime(current_year, 6, 1)
+                end_date = datetime(current_year+1, 5, 31)
+            
+            SchoolYear.objects.create(
+                year=year_str,
+                is_active=True,
+                start_date=start_date,
+                end_date=end_date
+            )
+
 

@@ -4,7 +4,7 @@ from . import views
 from .views import (
     add_student, dashboard, login_view, logout_view,
     edit_student,
-
+    current_school_year,
     get_evaluation_tables,
     view_evaluation_table,
     save_evaluation,
@@ -78,4 +78,5 @@ urlpatterns = [
     path('get-evaluation-data/', get_evaluation_data, name='get_evaluation_data'),
     path('evaluation-gross/', lambda request: redirect('student_full_report'), name='evaluation_gross'),
     path('teacher-evaluations/', views.view_teacher_evaluations, name='teacher_evaluations'),
+    path('current-school-year/', current_school_year, name='current_school_year'),
 ]
