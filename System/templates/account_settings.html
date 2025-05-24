@@ -63,6 +63,16 @@
                 <p>Manage your account information and password</p>
             </div>
 
+            {% if force_password_change %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="alert-content">
+                    <h4>Password Change Required</h4>
+                    <p>For security reasons, you must change your password before continuing.</p>
+                </div>
+            </div>
+            {% endif %}
+
             {% if success_message %}
             <div class="alert alert-success">
                 <i class="fas fa-check-circle"></i> {{ success_message }}
@@ -203,6 +213,26 @@
         background-color: #f8d7da;
         color: #721c24;
         border: 1px solid #f5c6cb;
+    }
+
+    .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .alert-content h4 {
+        margin: 0 0 5px 0;
+        font-size: 1.1rem;
+    }
+
+    .alert-content p {
+        margin: 0;
+        font-size: 0.9rem;
     }
     
     .settings-card {

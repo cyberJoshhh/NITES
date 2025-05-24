@@ -47,6 +47,7 @@ urlpatterns = [
     path('manage-account/', manage_account, name='manage_account'),
     path('manage-student-session/', manage_student_session, name='manage_student_session'),
     path('account_settings/', views.account_settings, name='account_settings'),
+    path('change_password/', views.change_password, name='change_password'),
     
     # Announcement URLs
     path('create-announcement/', create_announcement, name='create_announcement'),

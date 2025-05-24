@@ -30,6 +30,7 @@ import string
 import traceback  # Add this import
 from django.utils.timesince import timesince
 from django.views.decorators.http import require_POST
+from .utils import send_brevo_email
 
 def current_school_year(request):
     current_school_year = Student.get_current_school_year()
@@ -133,6 +134,34 @@ def add_student(request):
                     user.save()
                     print(
                         f"Created Django user - Username: {username}, Email: {email}")
+                    
+                    # Send email with login credentials
+                    subject = "Your OB Pagsasarili ECCD Center Account Credentials"
+                    html_content = f"""
+                    <html>
+                        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                                <h2 style="color: #2d6a4f;">Welcome to OB Pagsasarili ECCD Center!</h2>
+                                <p>Dear Parent/Guardian,</p>
+                                <p>Your account has been successfully created. Here are your login credentials:</p>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                    <p><strong>Username:</strong> {username}</p>
+                                    <p><strong>Password:</strong> {random_password}</p>
+                                </div>
+                                <p>Please keep these credentials safe and do not share them with anyone.</p>
+                                <p>For security reasons, we recommend changing your password after your first login.</p>
+                                <p>If you have any questions or need assistance, please don't hesitate to contact us.</p>
+                                <p>Best regards,<br>OB Pagsasarili ECCD Center Team</p>
+                            </div>
+                        </body>
+                    </html>
+                    """
+                    
+                    if send_brevo_email(email, subject, html_content):
+                        print(f"Sent login credentials email to {email}")
+                    else:
+                        print(f"Failed to send login credentials email to {email}")
+                        messages.warning(request, "Account created but failed to send email with login credentials.")
                 else:
                     username = user.username  # Use existing username
                     print(
@@ -174,7 +203,11 @@ def add_student(request):
                     mother_education=request.POST.get('mother_education'),
 
                     gmail=email,
-                    username=username
+                    username=username,
+                    
+                    # Automatically set school year and enrollment date
+                    school_year=SchoolYear.get_current_school_year().year if SchoolYear.get_current_school_year() else None,
+                    enrollment_date=timezone.now().date()
                 )
 
                 student.save()
@@ -184,7 +217,7 @@ def add_student(request):
             if created:
                 messages.success(
                     request,
-                    f'Student registered successfully. Credentials sent to {email}. Username: {username}')
+                    f'Student registered successfully. Login credentials have been sent to {email}.')
             else:
                 messages.success(
                     request,
@@ -321,6 +354,11 @@ def login_view(request):
                 print(
                     f"User authenticated successfully. Is staff: {
                         auth_user.is_staff}")  # Debug log
+
+                # Check if this is first login and password hasn't been changed
+                if auth_user.profile.is_first_login and not auth_user.profile.password_changed:
+                    messages.warning(request, 'Please change your password before continuing.')
+                    return redirect('change_password')
 
                 if auth_user.is_staff:
                     print("Redirecting to teacher dashboard")  # Debug log
@@ -911,6 +949,11 @@ def account_settings(request):
                 user.set_password(new_password)
                 user.save()
 
+                # Update password_changed flag
+                user.profile.password_changed = True
+                user.profile.is_first_login = False
+                user.profile.save()
+
                 # If user is a student, update Student model too
                 student = Student.objects.filter(gmail=user.username).first()
                 if student:
@@ -925,6 +968,7 @@ def account_settings(request):
         'user': user,
         'success_message': success_message,
         'error_message': error_message,
+        'force_password_change': user.profile.is_first_login and not user.profile.password_changed
     }
 
     return render(request, 'account_settings.html', context)
@@ -2540,3 +2584,50 @@ def generate_next_school_year(request, school_year_id):
         return JsonResponse({'status': 'error', 'message': 'School year not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def change_password(request):
+    """
+    View function for changing user password.
+    Handles both first-time password change and regular password updates.
+    """
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        user = request.user
+
+        # Verify current password
+        if not user.check_password(current_password):
+            messages.error(request, 'Current password is incorrect.')
+            return render(request, 'change_password.html')
+
+        # Validate new password
+        if new_password != confirm_password:
+            messages.error(request, 'New passwords do not match.')
+            return render(request, 'change_password.html')
+
+        if len(new_password) < 8:
+            messages.error(request, 'Password must be at least 8 characters long.')
+            return render(request, 'change_password.html')
+
+        # Set new password
+        user.set_password(new_password)
+        user.save()
+
+        # Update password_changed flag
+        user.profile.password_changed = True
+        user.profile.is_first_login = False
+        user.profile.save()
+
+        # If user is a student, update Student model too
+        student = Student.objects.filter(gmail=user.email).first()
+        if student:
+            student.password = new_password
+            student.save()
+
+        messages.success(request, 'Password updated successfully! Please log in again.')
+        logout(request)
+        return redirect('login')
+
+    return render(request, 'change_password.html')
