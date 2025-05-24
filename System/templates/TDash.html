@@ -140,7 +140,7 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            height: 405px;
+            height: 430px;
         }
 
         .section-header {
@@ -236,8 +236,8 @@
         }
 
         .btn-create {
-            background-color: var(--primary);
-            color: white;
+            background-color: #ffffff;
+            color: black;
             padding: 8px 16px;
             border-radius: 8px;
             border: none;
@@ -748,7 +748,7 @@
                     <div class="announcement-content-wrap">
                         <div class="section-header">
                             {% if request.user.is_staff %}
-                            <button class="btn-create" onclick="openCreateModal()">
+                            <button class="btn-create" onclick="openCreateModal()" style="background-color: #2d6a4f; color: white;">
                                 <i class="fas fa-plus"></i>
                                 Create Announcement
                             </button>

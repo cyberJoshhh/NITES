@@ -79,4 +79,5 @@ urlpatterns = [
     path('evaluation-gross/', lambda request: redirect('student_full_report'), name='evaluation_gross'),
     path('teacher-evaluations/', views.view_teacher_evaluations, name='teacher_evaluations'),
     path('current-school-year/', current_school_year, name='current_school_year'),
+    path('generate-next-school-year/<int:school_year_id>/', views.generate_next_school_year, name='generate_next_school_year'),
 ]

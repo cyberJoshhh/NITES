@@ -10,7 +10,11 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #f0f2f5;
+    background: linear-gradient(135deg, rgba(45, 106, 79, 0.85), rgba(27, 67, 50, 0.85)), url('../img/front.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -42,7 +46,10 @@ body {
 }
 
 .login-image {
-    background: linear-gradient(135deg, var(--primary), #1b4332);
+    background: linear-gradient(135deg, rgba(45, 106, 79, 0.9), rgba(27, 67, 50, 0.9));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     flex: 1;
     padding: 40px;
     display: flex;

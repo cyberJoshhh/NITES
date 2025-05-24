@@ -48,12 +48,31 @@ class Student(models.Model):
         """Get the current school year based on the current date"""
         current_date = datetime.now()
         current_year = current_date.year
-        current_month = current_date.month  
+        current_month = current_date.month
         
         # If current month is before June, use previous year as start
         if current_month < 6:
-            return f"{current_year-1}-{current_year}"
-        return f"{current_year}-{current_year+1}"
+            year_str = f"{current_year-1}-{current_year}"
+            start_date = datetime(current_year-1, 6, 1)
+            end_date = datetime(current_year, 4, 30)
+        else:
+            year_str = f"{current_year}-{current_year+1}"
+            start_date = datetime(current_year, 6, 1)
+            end_date = datetime(current_year+1, 4, 30)
+            
+        # Try to get existing school year
+        school_year = cls.objects.filter(year=year_str).first()
+        
+        if not school_year:
+            # Create new school year if it doesn't exist
+            school_year = cls.objects.create(
+                year=year_str,
+                is_active=True,
+                start_date=start_date,
+                end_date=end_date
+            )
+        
+        return school_year
     
     @classmethod
     def get_students_by_school_year(cls, school_year):
@@ -152,18 +171,6 @@ class EvaluationRecord(models.Model):
 
     class Meta:
         unique_together = ['student', 'evaluation_number']
-
-
-
-
-
-
- #teacher's evaluation
-
-
-
-#parent's evaluation
-        
 
 class PDFFile(models.Model):
     name = models.CharField(max_length=255)
@@ -351,6 +358,45 @@ class SchoolYear(models.Model):
     def __str__(self):
         return self.year
 
+    @property
+    def is_expired(self):
+        """Check if the current school year has expired"""
+        current_date = datetime.now().date()  # Convert datetime to date
+        return current_date > self.end_date
+
+    @property
+    def next_school_year(self):
+        """Get the next school year string"""
+        start_year = int(self.year.split('-')[0])
+        return f"{start_year+1}-{start_year+2}"
+
+    def generate_next_school_year(self):
+        """Generate the next school year"""
+        if not self.is_expired:
+            return None, "Current school year is not expired yet."
+
+        try:
+            # Check if next school year already exists
+            next_year = self.next_school_year
+            if SchoolYear.objects.filter(year=next_year).exists():
+                return None, f"School year {next_year} already exists. Please select it from the school year list instead of creating a new one."
+
+            # Create new school year
+            new_school_year = SchoolYear.objects.create(
+                year=next_year,
+                is_active=True,
+                start_date=datetime(self.end_date.year + 1, 6, 1).date(),  # Convert to date
+                end_date=datetime(self.end_date.year + 2, 4, 30).date()  # Convert to date
+            )
+            
+            # Set current school year to inactive
+            self.is_active = False
+            self.save()
+            
+            return new_school_year, "Successfully generated new school year."
+        except Exception as e:
+            return None, f"Error generating new school year: {str(e)}"
+
     @classmethod
     def get_current_school_year(cls):
         """Get the current school year based on the current date"""
@@ -361,17 +407,18 @@ class SchoolYear(models.Model):
         # If current month is before June, use previous year as start
         if current_month < 6:
             year_str = f"{current_year-1}-{current_year}"
+            start_date = datetime(current_year-1, 6, 1).date()  # Convert to date
+            end_date = datetime(current_year, 4, 30).date()  # Convert to date
         else:
             year_str = f"{current_year}-{current_year+1}"
+            start_date = datetime(current_year, 6, 1).date()  # Convert to date
+            end_date = datetime(current_year+1, 4, 30).date()  # Convert to date
             
         # Try to get existing school year
         school_year = cls.objects.filter(year=year_str).first()
         
         if not school_year:
             # Create new school year if it doesn't exist
-            start_date = datetime(current_year if current_month >= 6 else current_year-1, 6, 1)
-            end_date = datetime(current_year+1 if current_month >= 6 else current_year, 5, 31)
-            
             school_year = cls.objects.create(
                 year=year_str,
                 is_active=True,
@@ -410,11 +457,11 @@ def create_initial_school_year(sender, **kwargs):
             if current_month < 6:
                 year_str = f"{current_year-1}-{current_year}"
                 start_date = datetime(current_year-1, 6, 1)
-                end_date = datetime(current_year, 5, 31)
+                end_date = datetime(current_year, 4, 30)
             else:
                 year_str = f"{current_year}-{current_year+1}"
                 start_date = datetime(current_year, 6, 1)
-                end_date = datetime(current_year+1, 5, 31)
+                end_date = datetime(current_year+1, 4, 30)
             
             SchoolYear.objects.create(
                 year=year_str,

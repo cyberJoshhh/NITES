@@ -161,9 +161,16 @@
         <div class="page-header">
             <h1 class="page-title">Pupil's Management</h1>
             <h2 class="current-year" style="margin-bottom: 20px; margin-left: 450px;">School Year: {{ current_school_year }}</h2>
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#schoolYearModal">
-                <i class="fas fa-calendar-alt"></i> Change School Year
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#schoolYearModal">
+                    <i class="fas fa-calendar-alt"></i> Change School Year
+                </button>
+                {% if current_school_year_obj.is_expired %}
+                <button type="button" class="btn btn-success" onclick="generateNextSchoolYear()">
+                    <i class="fas fa-plus-circle"></i> Generate Next School Year
+                </button>
+                {% endif %}
+            </div>
         </div>
         
         <div class="content-body">
@@ -539,567 +546,594 @@
     </script>
 
     <!-- Add this script section at the bottom of the file -->
-    <script>
-    function openEditModal(studentName) {
-        // Add console log to verify the student name
-        console.log('Opening edit modal for student:', studentName);
-        
-        // Fetch student data with proper error handling - using the correct URL
-        fetch(`/system/edit-student/?name=${encodeURIComponent(studentName)}`)
+    <script type="text/javascript">
+        function openEditModal(studentName) {
+            // Add console log to verify the student name
+            console.log('Opening edit modal for student:', studentName);
+            
+            // Fetch student data with proper error handling - using the correct URL
+            fetch(`/system/edit-student/?name=${encodeURIComponent(studentName)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    console.log('Response received:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Student data received:', data);
+                    if (data.status === 'error') {
+                        throw new Error(data.message || 'Failed to fetch student data');
+                    }
+                    
+                    // Populate form fields with null checks
+                    const setFieldValue = (fieldId, value) => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            field.value = value || '';
+                        } else {
+                            console.warn(`Field ${fieldId} not found`);
+                        }
+                    };
+
+                    setFieldValue('student_id', studentName);
+                    setFieldValue('child_name', data.child_name);
+                    setFieldValue('sex', data.sex);
+                    setFieldValue('dob', data.dob);
+                    setFieldValue('handedness', data.handedness);
+                    setFieldValue('studying', data.studying);
+                    setFieldValue('num_siblings', data.num_siblings);
+                    setFieldValue('birth_order', data.birth_order);
+                    setFieldValue('father_name', data.father_name);
+                    setFieldValue('father_age', data.father_age);
+                    setFieldValue('father_occupation', data.father_occupation);
+                    setFieldValue('father_education', data.father_education);
+                    setFieldValue('mother_name', data.mother_name);
+                    setFieldValue('mother_age', data.mother_age);
+                    setFieldValue('mother_occupation', data.mother_occupation);
+                    setFieldValue('mother_education', data.mother_education);
+                    setFieldValue('address', data.address);
+                    setFieldValue('barangay', data.barangay);
+                    setFieldValue('municipality', data.municipality);
+                    setFieldValue('province', data.province);
+                    setFieldValue('region', data.region);
+                    setFieldValue('gmail', data.gmail);
+                    setFieldValue('username', data.username);
+                    
+                    // Show the modal
+                    $('#editStudentModal').modal('show');
+                })
+                .catch(error => {
+                    console.error('Error fetching student data:', error);
+                    alert(`Failed to fetch student data: ${error.message}`);
+                });
+        }
+
+        function saveStudentChanges() {
+            const formData = new FormData(document.getElementById('editStudentForm'));
+            const studentName = document.getElementById('student_id').value;
+            
+            // Add the student name to the form data
+            formData.append('student_name', studentName);
+            
+            fetch('/system/edit-student/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                console.log('Response received:', response);
-                return response.json();
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        // If the response is not JSON (e.g., a redirect), just return
+                        return { redirected: true };
+                    }
+                });
             })
             .then(data => {
-                console.log('Student data received:', data);
-                if (data.status === 'error') {
-                    throw new Error(data.message || 'Failed to fetch student data');
-                }
-                
-                // Populate form fields with null checks
-                const setFieldValue = (fieldId, value) => {
-                    const field = document.getElementById(fieldId);
-                    if (field) {
-                        field.value = value || '';
-                    } else {
-                        console.warn(`Field ${fieldId} not found`);
-                    }
-                };
-
-                setFieldValue('student_id', studentName);
-                setFieldValue('child_name', data.child_name);
-                setFieldValue('sex', data.sex);
-                setFieldValue('dob', data.dob);
-                setFieldValue('handedness', data.handedness);
-                setFieldValue('studying', data.studying);
-                setFieldValue('num_siblings', data.num_siblings);
-                setFieldValue('birth_order', data.birth_order);
-                setFieldValue('father_name', data.father_name);
-                setFieldValue('father_age', data.father_age);
-                setFieldValue('father_occupation', data.father_occupation);
-                setFieldValue('father_education', data.father_education);
-                setFieldValue('mother_name', data.mother_name);
-                setFieldValue('mother_age', data.mother_age);
-                setFieldValue('mother_occupation', data.mother_occupation);
-                setFieldValue('mother_education', data.mother_education);
-                setFieldValue('address', data.address);
-                setFieldValue('barangay', data.barangay);
-                setFieldValue('municipality', data.municipality);
-                setFieldValue('province', data.province);
-                setFieldValue('region', data.region);
-                setFieldValue('gmail', data.gmail);
-                setFieldValue('username', data.username);
-                
-                // Show the modal
-                $('#editStudentModal').modal('show');
-            })
-            .catch(error => {
-                console.error('Error fetching student data:', error);
-                alert(`Failed to fetch student data: ${error.message}`);
-            });
-    }
-
-    function saveStudentChanges() {
-        const formData = new FormData(document.getElementById('editStudentForm'));
-        const studentName = document.getElementById('student_id').value;
-        
-        // Add the student name to the form data
-        formData.append('student_name', studentName);
-        
-        fetch('/system/edit-student/', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.text().then(text => {
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    // If the response is not JSON (e.g., a redirect), just return
-                    return { redirected: true };
-                }
-            });
-        })
-        .then(data => {
-            if (data.redirected) {
-                // Show success message before reload
-                showSuccessMessage('Student information updated successfully!');
-                // Wait a moment to show the message before reloading
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else if (data.status === 'success') {
-                showSuccessMessage('Student information updated successfully!');
-                $('#editStudentModal').modal('hide');
-                // Wait a moment to show the message before reloading
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
-            } else {
-                showErrorMessage(data.message || 'Failed to update student information');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showErrorMessage('Failed to update student information: ' + error.message);
-        });
-    }
-
-    // Add these helper functions for showing messages
-    function showSuccessMessage(message) {
-        // Remove any existing message
-        removeExistingMessages();
-        
-        // Create success alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success fade show';
-        alertDiv.role = 'alert';
-        alertDiv.style.position = 'fixed';
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.style.minWidth = '300px';
-        alertDiv.style.textAlign = 'center';
-        alertDiv.innerHTML = `<strong>Success!</strong> ${message}`;
-        
-        // Add to document
-        document.body.appendChild(alertDiv);
-        
-        // Auto dismiss after 3 seconds
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.parentNode.removeChild(alertDiv);
-            }
-        }, 3000);
-    }
-
-    function showErrorMessage(message) {
-        // Remove any existing message
-        removeExistingMessages();
-        
-        // Create error alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger fade show';
-        alertDiv.role = 'alert';
-        alertDiv.style.position = 'fixed';
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.style.minWidth = '300px';
-        alertDiv.style.textAlign = 'center';
-        alertDiv.innerHTML = `<strong>Error!</strong> ${message}`;
-        
-        // Add to document
-        document.body.appendChild(alertDiv);
-        
-        // Auto dismiss after 5 seconds
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.parentNode.removeChild(alertDiv);
-            }
-        }, 5000);
-    }
-
-    function removeExistingMessages() {
-        // Remove any existing alerts
-        const existingAlerts = document.querySelectorAll('.alert');
-        existingAlerts.forEach(alert => {
-            if (alert.parentNode) {
-                alert.parentNode.removeChild(alert);
-            }
-        });
-    }
-
-    function openEvaluationTables(studentName) {
-        // Fetch evaluation tables
-        fetch(`/system/get-evaluation-tables/?student=${encodeURIComponent(studentName)}`)
-            .then(response => response.json())
-            .then(data => {
-                const tablesList = document.getElementById('evaluationTablesList');
-                tablesList.innerHTML = ''; // Clear existing content
-
-                if (data.tables && data.tables.length > 0) {
-                    // Filter tables to only show those with evaluator_type = TEACHER
-                    const teacherTables = data.tables.filter(table => 
-                        table.evaluator_type && table.evaluator_type.toUpperCase() === 'TEACHER'
-                    );
-                    
-                    if (teacherTables.length > 0) {
-                        teacherTables.forEach(table => {
-                            const tableCard = document.createElement('div');
-                            tableCard.className = 'card mb-3';
-                            tableCard.innerHTML = `
-                                <div class="card-body">
-                                    <h5 class="card-title">${table.name}</h5>
-                                    <p class="card-text">Last updated: ${new Date(table.updated_at).toLocaleString()}</p>
-                                    <button onclick="viewTable('${table.id}', '${studentName}')" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-eye"></i> View Table
-                                    </button>
-                                </div>
-                            `;
-                            tablesList.appendChild(tableCard);
-                        });
-                    } else {
-                        tablesList.innerHTML = '<p class="text-center">No teacher evaluation tables available.</p>';
-                    }
-                } else {
-                    tablesList.innerHTML = '<p class="text-center">No evaluation tables available.</p>';
-                }
-
-                // Show the modal
-                $('#evaluationTablesModal').modal('show');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to fetch evaluation tables');
-            });
-    }
-
-    function viewTable(tableId, studentName) {
-        // Hide the evaluation tables modal
-        $('#evaluationTablesModal').modal('hide');
-
-        // Fetch table data
-        fetch(`/system/view-evaluation-table/${tableId}/?student_name=${encodeURIComponent(studentName)}`, {
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 'error') {
-                throw new Error(data.message);
-            }
-
-            const table = data.table;
-            const content = document.getElementById('viewTableContent');
-            if (!content) {
-                console.error('viewTableContent element not found');
-                return;
-            }
-            
-            // Set student name in the modal for later use
-            document.getElementById('viewTableModalLabel').dataset.studentName = studentName;
-            document.getElementById('viewTableModalLabel').textContent = `Evaluating: ${studentName} - ${table.name}`;
-            
-            // Show message if viewing existing evaluation
-            if (table.has_existing_evaluation) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
-                alertDiv.role = 'alert';
-                alertDiv.innerHTML = `
-                    <strong>Existing Evaluation Found!</strong> 
-                    You are viewing an existing evaluation for ${studentName}.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                `;
-                content.insertBefore(alertDiv, content.firstChild);
-            }
-            
-            // Store evaluation type for later use
-            content.dataset.evaluationType = table.evaluation_type;
-            
-            // Create the evaluation form
-            let html = `<h4>${table.name}</h4>`;
-            html += '<div id="evaluationForm">';
-            html += '<table class="table table-bordered">';
-            
-            // Add headers
-            if (table.data.headers && table.data.headers.length > 0) {
-                html += '<tr>';
-                table.data.headers.forEach(header => {
-                    html += `<th>${header}</th>`;
-                });
-                html += '</tr>';
-            }
-            
-            // Add data rows
-            if (table.data.rows && table.data.rows.length > 0) {
-                table.data.rows.forEach(row => {
-                    html += '<tr>';
-                    row.forEach((cell, index) => {
-                        if (typeof cell === 'boolean') {
-                            html += `<td><input type="checkbox" class="form-check-input" ${cell ? 'checked' : ''}></td>`;
-                        } else {
-                            html += `<td>${cell}</td>`;
-                        }
-                    });
-                    html += '</tr>';
-                });
-            }
-            
-            // Add total row
-            html += '<tr class="table-info"><td colspan="2">Total Score</td>';
-            const evalColumns = [];
-            if (table.data.rows && table.data.rows.length > 0) {
-                table.data.rows[0].forEach((cell, index) => {
-                    if (typeof cell === 'boolean') {
-                        evalColumns.push(index);
-                        html += '<td class="total-score">-</td>';
-                    }
-                });
-            }
-            html += '<td></td></tr>';
-            
-            html += '</table>';
-            html += '</div>';
-            
-            // Store eval columns for score calculation
-            content.dataset.evalColumns = JSON.stringify(evalColumns);
-            content.dataset.tableId = table.id;
-            
-            // Set the HTML and show modal
-            content.innerHTML = html;
-            $('#viewTableModal').modal('show');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading table: ' + error.message);
-        });
-    }
-
-    function saveTableChanges() {
-        const tableId = document.getElementById('viewTableContent').dataset.tableId;
-        const tableName = document.querySelector('#viewTableContent h4').textContent.trim();
-        const childName = document.querySelector('#viewTableModalLabel').dataset.studentName || '';
-        const evaluationType = document.getElementById('viewTableContent').dataset.evaluationType;
-        const rows = [];
-        
-        // Get the current table data
-        const table = document.querySelector('#evaluationForm table');
-        const headerCount = table.rows[0].cells.length;
-        
-        // Process each row except the total row
-        for (let i = 1; i < table.rows.length - 1; i++) {
-            const row = table.rows[i];
-            const rowData = [];
-            
-            // Process each cell
-            for (let j = 0; j < headerCount; j++) {
-                const cell = row.cells[j];
-                const checkbox = cell.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    rowData.push(checkbox.checked);
-                } else {
-                    rowData.push(cell.textContent.trim());
-                }
-            }
-            rows.push(rowData);
-        }
-
-        // Calculate total scores manually without using updateTotalScores
-        const evalColumns = JSON.parse(document.getElementById('viewTableContent').dataset.evalColumns);
-        const evalScores = new Array(evalColumns.length).fill(0);
-        rows.forEach(row => {
-            evalColumns.forEach((colIndex, evalIndex) => {
-                if (row[colIndex] === true) {
-                    evalScores[evalIndex]++;
-                }
-            });
-        });
-
-        // Save changes to server
-        fetch(`/system/view-evaluation-table/${tableId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                data: {
-                    headers: Array.from(table.rows[0].cells).map(cell => cell.textContent.trim()),
-                    rows: rows
-                },
-                evaluation_data: {
-                    child_name: childName,
-                    evaluation_type: evaluationType,
-                    evaluator_type: 'TEACHER',
-                    first_eval_score: evalScores[0] || 0,
-                    second_eval_score: evalScores[1] || 0,
-                    third_eval_score: evalScores[2] || 0,
-                    date_evaluated: new Date().toISOString().split('T')[0]
-                }
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                // Show success message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
-                alertDiv.role = 'alert';
-                alertDiv.innerHTML = `
-                    <strong>Success!</strong> 
-                    Evaluation saved for ${childName}.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                `;
-                document.getElementById('viewTableContent').insertBefore(alertDiv, document.getElementById('evaluationForm'));
-            } else {
-                throw new Error(data.message || 'Failed to save evaluation');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error saving changes: ' + error.message);
-        });
-    }
-
-    // Add this function to handle session update form submission
-    document.addEventListener('DOMContentLoaded', function() {
-        const sessionForms = document.querySelectorAll('form[action="/system/manage-student-session/"]');
-        
-        sessionForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    // Show success message
-                    showSessionMessage('Session updated successfully!', 'success');
-                    // Reload after a delay
+                if (data.redirected) {
+                    // Show success message before reload
+                    showSuccessMessage('Student information updated successfully!');
+                    // Wait a moment to show the message before reloading
                     setTimeout(() => {
                         window.location.reload();
                     }, 1500);
+                } else if (data.status === 'success') {
+                    showSuccessMessage('Student information updated successfully!');
+                    $('#editStudentModal').modal('hide');
+                    // Wait a moment to show the message before reloading
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showErrorMessage(data.message || 'Failed to update student information');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showErrorMessage('Failed to update student information: ' + error.message);
+            });
+        }
+
+        // Add these helper functions for showing messages
+        function showSuccessMessage(message) {
+            // Remove any existing message
+            removeExistingMessages();
+            
+            // Create success alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success fade show';
+            alertDiv.role = 'alert';
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.textAlign = 'center';
+            alertDiv.innerHTML = `<strong>Success!</strong> ${message}`;
+            
+            // Add to document
+            document.body.appendChild(alertDiv);
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+
+        function showErrorMessage(message) {
+            // Remove any existing message
+            removeExistingMessages();
+            
+            // Create error alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger fade show';
+            alertDiv.role = 'alert';
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.textAlign = 'center';
+            alertDiv.innerHTML = `<strong>Error!</strong> ${message}`;
+            
+            // Add to document
+            document.body.appendChild(alertDiv);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        function removeExistingMessages() {
+            // Remove any existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            });
+        }
+
+        function openEvaluationTables(studentName) {
+            // Fetch evaluation tables
+            fetch(`/system/get-evaluation-tables/?student=${encodeURIComponent(studentName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tablesList = document.getElementById('evaluationTablesList');
+                    tablesList.innerHTML = ''; // Clear existing content
+
+                    if (data.tables && data.tables.length > 0) {
+                        // Filter tables to only show those with evaluator_type = TEACHER
+                        const teacherTables = data.tables.filter(table => 
+                            table.evaluator_type && table.evaluator_type.toUpperCase() === 'TEACHER'
+                        );
+                        
+                        if (teacherTables.length > 0) {
+                            teacherTables.forEach(table => {
+                                const tableCard = document.createElement('div');
+                                tableCard.className = 'card mb-3';
+                                tableCard.innerHTML = `
+                                    <div class="card-body">
+                                        <h5 class="card-title">${table.name}</h5>
+                                        <p class="card-text">Last updated: ${new Date(table.updated_at).toLocaleString()}</p>
+                                        <button onclick="viewTable('${table.id}', '${studentName}')" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View Table
+                                        </button>
+                                    </div>
+                                `;
+                                tablesList.appendChild(tableCard);
+                            });
+                        } else {
+                            tablesList.innerHTML = '<p class="text-center">No teacher evaluation tables available.</p>';
+                        }
+                    } else {
+                        tablesList.innerHTML = '<p class="text-center">No evaluation tables available.</p>';
+                    }
+
+                    // Show the modal
+                    $('#evaluationTablesModal').modal('show');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showSessionMessage('Failed to update session: ' + error.message, 'error');
+                    alert('Failed to fetch evaluation tables');
+                });
+        }
+
+        function viewTable(tableId, studentName) {
+            // Hide the evaluation tables modal
+            $('#evaluationTablesModal').modal('hide');
+
+            // Fetch table data
+            fetch(`/system/view-evaluation-table/${tableId}/?student_name=${encodeURIComponent(studentName)}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'error') {
+                    throw new Error(data.message);
+                }
+
+                const table = data.table;
+                const content = document.getElementById('viewTableContent');
+                if (!content) {
+                    console.error('viewTableContent element not found');
+                    return;
+                }
+                
+                // Set student name in the modal for later use
+                document.getElementById('viewTableModalLabel').dataset.studentName = studentName;
+                document.getElementById('viewTableModalLabel').textContent = `Evaluating: ${studentName} - ${table.name}`;
+                
+                // Show message if viewing existing evaluation
+                if (table.has_existing_evaluation) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+                    alertDiv.role = 'alert';
+                    alertDiv.innerHTML = `
+                        <strong>Existing Evaluation Found!</strong> 
+                        You are viewing an existing evaluation for ${studentName}.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    content.insertBefore(alertDiv, content.firstChild);
+                }
+                
+                // Store evaluation type for later use
+                content.dataset.evaluationType = table.evaluation_type;
+                
+                // Create the evaluation form
+                let html = `<h4>${table.name}</h4>`;
+                html += '<div id="evaluationForm">';
+                html += '<table class="table table-bordered">';
+                
+                // Add headers
+                if (table.data.headers && table.data.headers.length > 0) {
+                    html += '<tr>';
+                    table.data.headers.forEach(header => {
+                        html += `<th>${header}</th>`;
+                    });
+                    html += '</tr>';
+                }
+                
+                // Add data rows
+                if (table.data.rows && table.data.rows.length > 0) {
+                    table.data.rows.forEach(row => {
+                        html += '<tr>';
+                        row.forEach((cell, index) => {
+                            if (typeof cell === 'boolean') {
+                                html += `<td><input type="checkbox" class="form-check-input" ${cell ? 'checked' : ''}></td>`;
+                            } else {
+                                html += `<td>${cell}</td>`;
+                            }
+                        });
+                        html += '</tr>';
+                    });
+                }
+                
+                // Add total row
+                html += '<tr class="table-info"><td colspan="2">Total Score</td>';
+                const evalColumns = [];
+                if (table.data.rows && table.data.rows.length > 0) {
+                    table.data.rows[0].forEach((cell, index) => {
+                        if (typeof cell === 'boolean') {
+                            evalColumns.push(index);
+                            html += '<td class="total-score">-</td>';
+                        }
+                    });
+                }
+                html += '<td></td></tr>';
+                
+                html += '</table>';
+                html += '</div>';
+                
+                // Store eval columns for score calculation
+                content.dataset.evalColumns = JSON.stringify(evalColumns);
+                content.dataset.tableId = table.id;
+                
+                // Set the HTML and show modal
+                content.innerHTML = html;
+                $('#viewTableModal').modal('show');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading table: ' + error.message);
+            });
+        }
+
+        function saveTableChanges() {
+            const tableId = document.getElementById('viewTableContent').dataset.tableId;
+            const tableName = document.querySelector('#viewTableContent h4').textContent.trim();
+            const childName = document.querySelector('#viewTableModalLabel').dataset.studentName || '';
+            const evaluationType = document.getElementById('viewTableContent').dataset.evaluationType;
+            const rows = [];
+            
+            // Get the current table data
+            const table = document.querySelector('#evaluationForm table');
+            const headerCount = table.rows[0].cells.length;
+            
+            // Process each row except the total row
+            for (let i = 1; i < table.rows.length - 1; i++) {
+                const row = table.rows[i];
+                const rowData = [];
+                
+                // Process each cell
+                for (let j = 0; j < headerCount; j++) {
+                    const cell = row.cells[j];
+                    const checkbox = cell.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        rowData.push(checkbox.checked);
+                    } else {
+                        rowData.push(cell.textContent.trim());
+                    }
+                }
+                rows.push(rowData);
+            }
+
+            // Calculate total scores manually without using updateTotalScores
+            const evalColumns = JSON.parse(document.getElementById('viewTableContent').dataset.evalColumns);
+            const evalScores = new Array(evalColumns.length).fill(0);
+            rows.forEach(row => {
+                evalColumns.forEach((colIndex, evalIndex) => {
+                    if (row[colIndex] === true) {
+                        evalScores[evalIndex]++;
+                    }
+                });
+            });
+
+            // Save changes to server
+            fetch(`/system/view-evaluation-table/${tableId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    data: {
+                        headers: Array.from(table.rows[0].cells).map(cell => cell.textContent.trim()),
+                        rows: rows
+                    },
+                    evaluation_data: {
+                        child_name: childName,
+                        evaluation_type: evaluationType,
+                        evaluator_type: 'TEACHER',
+                        first_eval_score: evalScores[0] || 0,
+                        second_eval_score: evalScores[1] || 0,
+                        third_eval_score: evalScores[2] || 0,
+                        date_evaluated: new Date().toISOString().split('T')[0]
+                    }
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+                    alertDiv.role = 'alert';
+                    alertDiv.innerHTML = `
+                        <strong>Success!</strong> 
+                        Evaluation saved for ${childName}.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.getElementById('viewTableContent').insertBefore(alertDiv, document.getElementById('evaluationForm'));
+                } else {
+                    throw new Error(data.message || 'Failed to save evaluation');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving changes: ' + error.message);
+            });
+        }
+
+        // Add this function to handle session update form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const sessionForms = document.querySelectorAll('form[action="/system/manage-student-session/"]');
+            
+            sessionForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        // Show success message
+                        showSessionMessage('Session updated successfully!', 'success');
+                        // Reload after a delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showSessionMessage('Failed to update session: ' + error.message, 'error');
+                    });
                 });
             });
         });
-    });
 
-    // Add function for showing session update messages
-    function showSessionMessage(message, type) {
-        // Remove any existing message
-        removeExistingMessages();
-        
-        // Create alert div
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} fade show`;
-        alertDiv.role = 'alert';
-        alertDiv.style.position = 'fixed';
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.style.minWidth = '300px';
-        alertDiv.style.textAlign = 'center';
-        alertDiv.innerHTML = `<strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}`;
-        
-        // Add to document
-        document.body.appendChild(alertDiv);
-        
-        // Auto dismiss after delay
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.parentNode.removeChild(alertDiv);
-            }
-        }, type === 'success' ? 3000 : 5000);
-    }
-
-    // Update the existing removeExistingMessages function to handle both types of alerts
-    function removeExistingMessages() {
-        // Remove any existing alerts
-        const existingAlerts = document.querySelectorAll('.alert');
-        existingAlerts.forEach(alert => {
-            if (alert.parentNode) {
-                alert.parentNode.removeChild(alert);
-            }
-        });
-    }
-
-    // School year filtering functionality
-    function applySchoolYearFilter() {
-        const schoolYearSelect = document.getElementById('schoolYearSelect');
-        const selectedYear = schoolYearSelect.value;
-        const tableRows = document.querySelectorAll('.table tbody tr');
-        
-        tableRows.forEach(row => {
-            const studentYear = row.getAttribute('data-school-year');
-            if (studentYear === selectedYear) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Update the current school year display
-        const yearDisplay = document.querySelector('.current-year');
-        if (yearDisplay) {
-            yearDisplay.textContent = `School Year: ${selectedYear}`;
+        // Add function for showing session update messages
+        function showSessionMessage(message, type) {
+            // Remove any existing message
+            removeExistingMessages();
+            
+            // Create alert div
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.textAlign = 'center';
+            alertDiv.innerHTML = `<strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}`;
+            
+            // Add to document
+            document.body.appendChild(alertDiv);
+            
+            // Auto dismiss after delay
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, type === 'success' ? 3000 : 5000);
         }
-        
-        // Update URL with selected school year
-        const url = new URL(window.location.href);
-        url.searchParams.set('school_year', selectedYear);
-        window.history.pushState({}, '', url);
-        
-        // Close the modal
-        $('#schoolYearModal').modal('hide');
-        
-        // Show success message
-        showSuccessMessage(`School year changed to ${selectedYear}`);
-    }
 
-    // Update the existing DOMContentLoaded event listener
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('studentSearch');
-        
-        searchInput.addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
+        // Update the existing removeExistingMessages function to handle both types of alerts
+        function removeExistingMessages() {
+            // Remove any existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            });
+        }
+
+        // School year filtering functionality
+        function applySchoolYearFilter() {
+            const schoolYearSelect = document.getElementById('schoolYearSelect');
+            const selectedYear = schoolYearSelect.value;
             const tableRows = document.querySelectorAll('.table tbody tr');
             
             tableRows.forEach(row => {
-                const studentName = row.cells[0].textContent.toLowerCase();
-                const username = row.cells[1].textContent.toLowerCase();
-                const session = row.cells[2].textContent.toLowerCase();
-                
-                if (studentName.includes(searchValue) || 
-                    username.includes(searchValue) || 
-                    session.includes(searchValue)) {
+                const studentYear = row.getAttribute('data-school-year');
+                if (studentYear === selectedYear) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
             });
+            
+            // Update the current school year display
+            const yearDisplay = document.querySelector('.current-year');
+            if (yearDisplay) {
+                yearDisplay.textContent = `School Year: ${selectedYear}`;
+            }
+            
+            // Update URL with selected school year
+            const url = new URL(window.location.href);
+            url.searchParams.set('school_year', selectedYear);
+            window.history.pushState({}, '', url);
+            
+            // Close the modal
+            $('#schoolYearModal').modal('hide');
+            
+            // Show success message
+            showSuccessMessage(`School year changed to ${selectedYear}`);
+        }
+
+        // Update the existing DOMContentLoaded event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('studentSearch');
+            
+            searchInput.addEventListener('keyup', function() {
+                const searchValue = this.value.toLowerCase();
+                const tableRows = document.querySelectorAll('.table tbody tr');
+                
+                tableRows.forEach(row => {
+                    const studentName = row.cells[0].textContent.toLowerCase();
+                    const username = row.cells[1].textContent.toLowerCase();
+                    const session = row.cells[2].textContent.toLowerCase();
+                    
+                    if (studentName.includes(searchValue) || 
+                        username.includes(searchValue) || 
+                        session.includes(searchValue)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+
+            // Initial filter on page load
+            const schoolYearSelect = document.getElementById('schoolYearSelect');
+            if (schoolYearSelect) {
+                applySchoolYearFilter();
+            }
         });
 
-        // Initial filter on page load
-        const schoolYearSelect = document.getElementById('schoolYearSelect');
-        if (schoolYearSelect) {
-            applySchoolYearFilter();
+        function generateNextSchoolYear() {
+            if (confirm('Are you sure you want to generate the next school year? This will set the current school year to inactive.')) {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                fetch(`/system/generate-next-school-year/{{ current_school_year_obj.id }}/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showSuccessMessage(data.message);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        throw new Error(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showErrorMessage('Failed to generate next school year: ' + error.message);
+                });
+            }
         }
-    });
-</script>
+    </script>
 </body>
 </html>

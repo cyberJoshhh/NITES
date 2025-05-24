@@ -27,7 +27,6 @@ from datetime import datetime
 from django.urls import reverse
 import random
 import string
-import pytz
 import traceback  # Add this import
 from django.utils.timesince import timesince
 from django.views.decorators.http import require_POST
@@ -853,6 +852,7 @@ def manage_student_session(request):
 
     context = {
         'current_school_year': current_school_year.year if current_school_year else None,
+        'current_school_year_obj': current_school_year,  # Pass the entire object
         'school_years': school_years,
         'all_students': all_students,
         'success_message': success_message,
@@ -2521,3 +2521,22 @@ def average_evaluation_scores(request):
     }
 
     return render(request, 'TDash.html', context)
+
+@login_required
+def generate_next_school_year(request, school_year_id):
+    """View to generate the next school year"""
+    if not request.user.is_staff:
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+    
+    try:
+        school_year = SchoolYear.objects.get(id=school_year_id)
+        new_school_year, message = school_year.generate_next_school_year()
+        
+        if new_school_year:
+            return JsonResponse({'status': 'success', 'message': message})
+        else:
+            return JsonResponse({'status': 'error', 'message': message}, status=400)
+    except SchoolYear.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'School year not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
