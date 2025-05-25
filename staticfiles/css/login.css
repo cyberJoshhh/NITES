@@ -10,7 +10,11 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #f0f2f5;
+    background: linear-gradient(135deg, rgba(45, 106, 79, 0.85), rgba(27, 67, 50, 0.85)), url('../img/front.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -42,7 +46,10 @@ body {
 }
 
 .login-image {
-    background: linear-gradient(135deg, var(--primary), #1b4332);
+    background: linear-gradient(135deg, rgba(45, 106, 79, 0.9), rgba(27, 67, 50, 0.9));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     flex: 1;
     padding: 40px;
     display: flex;
@@ -213,6 +220,50 @@ body {
     text-decoration: underline;
 }
 
+/* Forgot Password Link */
+.forgot-password-container {
+    text-align: right;
+    margin-bottom: 15px;
+}
+
+.forgot-password-link {
+    color: #4e73df;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.forgot-password-link:hover {
+    color: #2e59d9;
+    text-decoration: underline;
+}
+
+.back-to-login {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back-to-login a {
+    color: #4e73df;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.back-to-login a:hover {
+    color: #2e59d9;
+    text-decoration: underline;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
 /* Responsive styles */
 @media (max-width: 992px) {
     .login-card {
@@ -233,42 +284,75 @@ body {
     }
     
     .login-container {
-        padding: 0;
+        padding: 15px;
         min-height: auto;
     }
 }
 
 @media (max-width: 576px) {
     .login-container {
-        align-items: flex-start;
-        padding: 10px;
+        padding: 12px;
+        height: 100vh;
+        align-items: center;
     }
     
     .login-card {
         border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        width: 100%;
     }
     
     .login-image {
-        padding: 20px;
+        padding: 25px 15px;
     }
     
     .login-image h2 {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
+        margin-bottom: 10px;
     }
     
     .login-image p {
-        font-size: 1rem;
+        font-size: 0.9rem;
+        max-width: 95%;
     }
     
     .login-form {
-        padding: 20px;
+        padding: 20px 15px;
     }
     
     .login-header h3 {
         font-size: 1.5rem;
     }
     
+    .login-header p {
+        font-size: 0.9rem;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        font-size: 0.85rem;
+    }
+    
     .form-control {
         padding: 12px 12px 12px 40px;
+        font-size: 0.9rem;
+    }
+    
+    .form-icon {
+        top: 38px;
+    }
+    
+    .login-btn {
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+    
+    .login-image .logo {
+        font-size: 3rem;
+        margin-bottom: 15px;
     }
 } 
