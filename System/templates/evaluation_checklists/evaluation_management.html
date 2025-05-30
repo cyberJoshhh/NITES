@@ -607,6 +607,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get the number of columns from the header
         const columnCount = headerRow.cells.length;
+        const rowIndex = table.tBodies[0].rows.length;
+        const timestamp = new Date().getTime(); // Add timestamp for uniqueness
         
         // Create cells based on the header structure
         for (let i = 0; i < columnCount; i++) {
@@ -618,6 +620,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 cell.className = 'eval-col';
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
+                cb.name = `eval_${i-1}_row_${rowIndex}_${timestamp}`;
+                cb.id = `eval_${i-1}_row_${rowIndex}_${timestamp}`;
                 cb.addEventListener('change', calculateScores);
                 if (evaluationsDisabled) {
                     cell.classList.add('disabled');
@@ -629,7 +633,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = 'comment-input';
-                input.name = `comment_${table.tBodies[0].rows.length}`;
+                input.name = `comment_row_${rowIndex}_${timestamp}`;
+                input.id = `comment_row_${rowIndex}_${timestamp}`;
                 input.placeholder = 'Enter comment...';
                 input.style.width = '100%';
                 input.style.padding = '8px';
@@ -740,12 +745,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Modify addEvalColumn function to add toggle button
+    // Modify addEvalColumn function to add unique IDs
     function addEvalColumn() {
         const table = document.getElementById('editableTable');
         const headerRow = table.tHead.rows[0];
         const evalColumnCount = headerRow.querySelectorAll('.eval-col').length;
         const columnCount = headerRow.cells.length;
+        const timestamp = new Date().getTime(); // Add timestamp for uniqueness
         
         // Insert new header before the Comments column
         const newHeaderCell = document.createElement('th');
@@ -761,6 +767,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
+            checkbox.name = `eval_${evalColumnCount}_row_${i+1}_${timestamp}`;
+            checkbox.id = `eval_${evalColumnCount}_row_${i+1}_${timestamp}`;
             checkbox.addEventListener('change', calculateScores);
             newCell.appendChild(checkbox);
             
@@ -1200,6 +1208,8 @@ document.addEventListener('DOMContentLoaded', function() {
             evalCell.className = 'eval-col';
             const cb = document.createElement('input');
             cb.type = 'checkbox';
+            cb.name = `eval_${i}_row_1`;
+            cb.id = `eval_${i}_row_1`;
             cb.addEventListener('change', calculateScores);
             evalCell.appendChild(cb);
             tr.appendChild(evalCell);
@@ -1210,6 +1220,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'comment-input';
+        input.name = 'comment_row_1';
+        input.id = 'comment_row_1';
         commentCell.appendChild(input);
         tr.appendChild(commentCell);
         
@@ -1279,98 +1291,209 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to save form with a given name
     function saveFormWithName(formName) {
         const spinner = document.getElementById('loading-spinner');
-        const evaluatorType = document.getElementById('evaluatorTypeSelect').value;
         
-        // Validate form name and evaluator type
-        if (!formName.trim()) {
-            alert('Please enter a form name');
-            return;
-        }
-        
-        if (!evaluatorType) {
-            alert('Please select an evaluator type (Teacher or Parent)');
-            return;
-        }
-        
-        spinner.style.display = 'block';
-        const tableData = serializeTable();
-        
-        // Debug logging
-        console.log('Form name:', formName);
-        console.log('Selected evaluator type:', evaluatorType);
-        
-        const requestData = {
-            table: tableData,
-            name: formName,
-            evaluator_type: evaluatorType
-        };
-        
-        console.log('Request data being sent to server:', requestData);
-        
-        fetch("{% url 'save_evaluation_management' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            spinner.style.display = 'none';
-            console.log('Server response:', data);
-            if (data.status === 'success') {
-                alert(data.message || 'Saved!');
-                formNameModal.style.display = 'none';
-                loadSavedForms();
-            } else {
-                alert(data.message || 'Error saving form!');
+        try {
+            // Basic validation
+            if (!formName || !formName.trim()) {
+                alert('Please enter a form name');
+                return;
             }
-        })
-        .catch(error => {
+            
+            const evaluatorType = document.getElementById('evaluatorTypeSelect').value;
+            if (!evaluatorType) {
+                alert('Please select an evaluator type (Teacher or Parent)');
+                return;
+            }
+            
+            // Get basic table structure
+            const table = document.getElementById('editableTable');
+            if (!table) {
+                throw new Error('Table element not found');
+            }
+            
+            // Get headers
+            const headers = Array.from(table.tHead.rows[0].cells).map(cell => cell.textContent.trim());
+            
+            // Get rows data
+            const rows = [];
+            const tableRows = table.tBodies[0].rows;
+            
+            for (let row of tableRows) {
+                const rowData = [];
+                for (let cell of row.cells) {
+                    if (cell.classList.contains('eval-col')) {
+                        // For evaluation columns, get checkbox state
+                        const checkbox = cell.querySelector('input[type="checkbox"]');
+                        rowData.push(checkbox ? checkbox.checked : false);
+                    } else if (cell.querySelector('.comment-input')) {
+                        // For comment cells, get input value
+                        const input = cell.querySelector('.comment-input');
+                        rowData.push(input ? input.value : '');
+                    } else {
+                        // For regular cells, get text content
+                        rowData.push(cell.textContent.trim());
+                    }
+                }
+                rows.push(rowData);
+            }
+            
+            // Create form data object with full table data
+            const formData = {
+                name: formName.trim(),
+                evaluator_type: evaluatorType,
+                headers: headers,
+                rows: rows
+            };
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+            
+            spinner.style.display = 'block';
+            
+            // Make the request
+            fetch("{% url 'save_evaluation_management' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(responseData => {
+                if (!responseData) {
+                    throw new Error('No response data received');
+                }
+                
+                spinner.style.display = 'none';
+                
+                if (responseData.status === 'success') {
+                    alert('Form saved successfully!');
+                    formNameModal.style.display = 'none';
+                    loadSavedForms();
+                } else {
+                    throw new Error(responseData.message || 'Error saving form');
+                }
+            })
+            .catch(error => {
+                spinner.style.display = 'none';
+                console.error('Save error:', error);
+                alert('Error: ' + error.message);
+            });
+            
+        } catch (error) {
             spinner.style.display = 'none';
-            console.error('Error:', error);
-            alert('Error saving!');
-        });
+            console.error('Form save error:', error);
+            alert('Error: ' + error.message);
+        }
     }
 
     // Function to update an existing form
     function updateForm(formId) {
         const spinner = document.getElementById('loading-spinner');
         spinner.style.display = 'block';
-        const tableData = serializeTable();
-        const evaluatorType = document.getElementById('evaluatorTypeSelect').value;
         
-        console.log('Updating form with data:', tableData);
-        
-        fetch(`{% url "update_evaluation_form" form_id=0 %}`.replace('0', formId), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                table: tableData,
-                name: formNameInput.value.trim() || undefined,
-                evaluator_type: evaluatorType
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            spinner.style.display = 'none';
-            if (data.status === 'success') {
-                alert(data.message || 'Form updated successfully!');
-                // Refresh the forms list
-                loadSavedForms();
-            } else {
-                alert(data.message || 'Error updating form!');
+        try {
+            // Get table data
+            const table = document.getElementById('editableTable');
+            if (!table) {
+                throw new Error('Table element not found');
             }
-        })
-        .catch(error => {
+            
+            // Get headers
+            const headers = Array.from(table.tHead.rows[0].cells).map(cell => cell.textContent.trim());
+            
+            // Get rows data
+            const rows = [];
+            const tableRows = table.tBodies[0].rows;
+            
+            for (let row of tableRows) {
+                const rowData = [];
+                for (let cell of row.cells) {
+                    if (cell.classList.contains('eval-col')) {
+                        // For evaluation columns, get checkbox state
+                        const checkbox = cell.querySelector('input[type="checkbox"]');
+                        rowData.push(checkbox ? checkbox.checked : false);
+                    } else if (cell.querySelector('.comment-input')) {
+                        // For comment cells, get input value
+                        const input = cell.querySelector('.comment-input');
+                        rowData.push(input ? input.value : '');
+                    } else {
+                        // For regular cells, get text content
+                        rowData.push(cell.textContent.trim());
+                    }
+                }
+                rows.push(rowData);
+            }
+            
+            // Get disabled columns state
+            const disabledColumns = [];
+            const evalColumns = table.tHead.rows[0].querySelectorAll('.eval-col');
+            evalColumns.forEach((col, index) => {
+                if (col.classList.contains('disabled')) {
+                    disabledColumns.push({
+                        index: index,
+                        disabled: true
+                    });
+                }
+            });
+            
+            const formData = {
+                name: document.getElementById('formNameInput').value.trim(),
+                evaluator_type: document.getElementById('evaluatorTypeSelect').value,
+                headers: headers,
+                rows: rows,
+                disabled_columns: disabledColumns
+            };
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+            
+            fetch(`{% url "update_evaluation_form" form_id=0 %}`.replace('0', formId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                spinner.style.display = 'none';
+                if (data.status === 'success') {
+                    alert('Form updated successfully!');
+                    loadSavedForms();
+                } else {
+                    throw new Error(data.message || 'Error updating form');
+                }
+            })
+            .catch(error => {
+                spinner.style.display = 'none';
+                console.error('Update error:', error);
+                alert('Error updating form: ' + error.message);
+            });
+            
+        } catch (error) {
             spinner.style.display = 'none';
-            console.error('Error:', error);
-            alert('Error updating form!');
-        });
+            console.error('Form update error:', error);
+            alert('Error: ' + error.message);
+        }
     }
 
     // Add event listener to log dropdown changes
@@ -1546,48 +1669,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
-
-function serializeTable() {
-    const table = document.getElementById('editableTable');
-    const data = {
-        headers: [],
-        rows: [],
-        disabled_columns: []
-    };
-    
-    // Headers
-    table.tHead.rows[0].querySelectorAll('th').forEach(th => {
-        data.headers.push(th.textContent.trim());
-    });
-    
-    // Get disabled columns state
-    const evalColumns = table.tHead.rows[0].querySelectorAll('.eval-col');
-    data.disabled_columns = Array.from(evalColumns).map((col, index) => ({
-        index: index,
-        disabled: col.classList.contains('disabled')
-    }));
-    
-    // Rows
-    for (let row of table.tBodies[0].rows) {
-        let rowData = [];
-        for (let cell of row.cells) {
-            if (cell.classList.contains('eval-col')) {
-                // Checkbox
-                const cb = cell.querySelector('input[type=checkbox]');
-                rowData.push(cb ? cb.checked : false);
-            } else if (cell.querySelector('input.comment-input')) {
-                // Comment input
-                const input = cell.querySelector('input.comment-input');
-                rowData.push(input ? input.value : '');
-            } else {
-                // Regular cell
-                rowData.push(cell.textContent.trim());
-            }
-        }
-        data.rows.push(rowData);
-    }
-    
-    return data;
-}
 </script>
 {% endblock %} 

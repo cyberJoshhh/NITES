@@ -1842,55 +1842,43 @@ def evaluation_management(request):
 
 @login_required
 def save_evaluation_management(request):
-    """
-    API view to save evaluation management settings.
-    """
     if request.method != 'POST':
         return JsonResponse({
             'status': 'error',
-            'message': 'Only POST method is allowed'
-        }, status=405)
+            'message': 'Invalid request method'
+        }, status=403)
 
     try:
-        # Only staff members can access this API
-        if not request.user.is_staff:
+        # Parse the JSON data from the request
+        data = json.loads(request.body)
+        
+        # Extract form data
+        form_name = data.get('name')
+        evaluator_type = data.get('evaluator_type')
+        headers = data.get('headers', [])
+        rows = data.get('rows', [])
+        
+        if not form_name or not evaluator_type:
             return JsonResponse({
                 'status': 'error',
-                'message': "You don't have permission to update evaluation forms."
-            }, status=403)
+                'message': 'Form name and evaluator type are required'
+            }, status=400)
 
-        # Parse the JSON data from the request
-            data = json.loads(request.body)
+        # Create new table with full data
+        table = EditableEvaluationTable.objects.create(
+            name=form_name,
+            evaluator_type=evaluator_type,
+            data={
+                'headers': headers,
+                'rows': rows
+            }
+        )
 
-        # Get the tables to update
-        tables = data.get('tables', [])
-
-        # Update each table
-        for table_data in tables:
-            table_id = table_data.get('id')
-            name = table_data.get('name')
-            description = table_data.get('description', '')
-            evaluator_type = table_data.get('evaluator_type', 'BOTH')
-
-            if table_id:
-                # Update existing table
-                table = get_object_or_404(EditableEvaluationTable, id=table_id)
-                table.name = name
-                table.description = description
-                table.evaluator_type = evaluator_type
-                table.save()
-            else:
-                # Create new table
-                EditableEvaluationTable.objects.create(
-                    name=name,
-                    description=description,
-                    evaluator_type=evaluator_type
-                )
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Evaluation management settings saved successfully'
-            })
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Evaluation form saved successfully',
+            'form_id': table.id
+        })
 
     except json.JSONDecodeError:
         return JsonResponse({
@@ -2014,82 +2002,59 @@ def get_evaluation_form_data(request, form_id):
 
 @login_required
 def update_evaluation_form(request, form_id):
-    """
-    View to update or delete an existing evaluation form.
-    Handles both form templates (EditableEvaluationTable) and evaluation data (EvaluationDataTeacher).
-    """
+    if request.method != 'POST':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid request method'
+        }, status=403)
+
     try:
-        # Only staff members can access this API
-        if not request.user.is_staff:
+        # Get the table to update
+        table = EditableEvaluationTable.objects.get(id=form_id)
+        
+        # Parse the JSON data from the request
+        data = json.loads(request.body)
+        
+        # Extract form data
+        form_name = data.get('name')
+        evaluator_type = data.get('evaluator_type')
+        headers = data.get('headers', [])
+        rows = data.get('rows', [])
+        disabled_columns = data.get('disabled_columns', [])
+        
+        if not form_name or not evaluator_type:
             return JsonResponse({
                 'status': 'error',
-                'message': "You don't have permission to modify evaluation forms."
-            }, status=403)
+                'message': 'Form name and evaluator type are required'
+            }, status=400)
 
-        # Check if we're updating a template or evaluation data
-        source = request.GET.get('source', 'template')
-
-        if source == 'evaluation':
-            # Handle evaluation data
-            form = get_object_or_404(EvaluationDataTeacher, id=form_id)
-
-            if request.method == 'DELETE':
-                form.delete()
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Evaluation data deleted successfully'
-                })
-            elif request.method == 'POST':
-                data = json.loads(request.body)
-                
-                # Update evaluation data fields
-                if 'child_name' in data:
-                    form.child_name = data['child_name']
-                if 'evaluation_type' in data:
-                    form.evaluation_type = data['evaluation_type']
-                if 'first_eval_score' in data:
-                    form.first_eval_score = data['first_eval_score']
-                if 'second_eval_score' in data:
-                    form.second_eval_score = data['second_eval_score']
-                if 'third_eval_score' in data:
-                    form.third_eval_score = data['third_eval_score']
-                if 'data' in data:
-                    form.data = data['data']
-                
-                form.save()
-        else:
-            # Handle form template
-            form = get_object_or_404(EditableEvaluationTable, id=form_id)
-
-            if request.method == 'DELETE':
-                form.delete()
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Form template deleted successfully'
-                })
-            elif request.method == 'POST':
-                data = json.loads(request.body)
-                
-                # Update template fields
-                if 'name' in data:
-                    form.name = data['name']
-                if 'evaluator_type' in data:
-                    form.evaluator_type = data['evaluator_type']
-                if 'table' in data:
-                    form.data = data['table']
-                
-                form.save()
+        # Update the table
+        table.name = form_name
+        table.evaluator_type = evaluator_type
+        table.data = {
+            'headers': headers,
+            'rows': rows,
+            'disabled_columns': disabled_columns
+        }
+        table.save()
 
         return JsonResponse({
             'status': 'success',
-            'message': 'Form updated successfully'
+            'message': 'Evaluation form updated successfully'
         })
+
+    except EditableEvaluationTable.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Form not found'
+        }, status=404)
 
     except json.JSONDecodeError:
         return JsonResponse({
             'status': 'error',
             'message': 'Invalid JSON data'
         }, status=400)
+
     except Exception as e:
         return JsonResponse({
             'status': 'error',
